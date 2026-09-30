@@ -1,0 +1,125 @@
+name: ai-iot-news
+
+x-app: &app
+  build:
+    context: .
+    target: runtime
+  environment: &app-environment
+    APP_ENV: development
+    DATABASE_URL: postgresql+psycopg://news:${POSTGRES_PASSWORD:-development-only}@db:5432/news
+    SOURCES_CONFIG_PATH: /app/config/sources.yaml
+  depends_on:
+    db:
+      condition: service_healthy
+  networks: [backend]
+  restart: unless-stopped
+
+services:
+  db:
+    image: postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    environment:
+      POSTGRES_DB: news
+      POSTGRES_USER: news
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-development-only}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U news -d news"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks: [backend]
+    restart: unless-stopped
+
+  migrate:
+    <<: *app
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    read_only: true
+    tmpfs: [/tmp]
+
+  api:
+    <<: *app
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    tmpfs: [/tmp]
+    networks: [backend, frontend]
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  scheduler:
+    <<: *app
+    command: ["python", "-m", "app.jobs.scheduler"]
+    networks: [backend, collection]
+    environment:
+      <<: *app-environment
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    tmpfs: [/tmp]
+
+  collect:
+    <<: *app
+    profiles: [tools]
+    command: ["ai-iot-news", "collect", "run"]
+    networks: [backend, collection]
+    environment:
+      <<: *app-environment
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+    read_only: true
+    tmpfs: [/tmp]
+
+  test:
+    <<: *app
+    profiles: [test]
+    build:
+      context: .
+      target: test
+    environment:
+      <<: *app-environment
+      APP_ENV: test
+      TEST_DATABASE_URL: postgresql+psycopg://news:${POSTGRES_PASSWORD:-development-only}@db:5432/news
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command: ["sh", "-ec", "ruff check --no-cache . && mypy --cache-dir /tmp/mypy-cache app && pytest -p no:cacheprovider"]
+    restart: "no"
+    read_only: true
+    tmpfs: [/tmp]
+
+volumes:
+  postgres-data:
+
+networks:
+  backend:
+    internal: true
+  frontend:
+    driver: bridge
+  collection:
+    driver: bridge

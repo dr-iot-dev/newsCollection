@@ -1,0 +1,12 @@
+categories:
+  - key: "generative_ai"
+    label_ja: "生成AI"
+    keywords: ["LLM", "生成AI", "foundation model"]
+  - key: "edge_ai"
+    label_ja: "エッジAI"
+  - key: "iot_platform"
+    label_ja: "IoTプラットフォーム"
+  - key: "security"
+    label_ja: "セキュリティ"
+  - key: "standards"
+    label_ja: "規格・標準化"

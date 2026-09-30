@@ -1,0 +1,62 @@
+version: 1
+defaults:
+  interval_minutes: 60
+  timeout_seconds: 20
+  max_response_bytes: 5242880
+  user_agent: "CompanyNewsBot/1.0 (+https://example.jp/crawler-policy)"
+  language_hint: null
+  publish_mode: "draft_only"
+
+sources:
+  - key: "vendor-official-feed"
+    name: "Vendor Official News"
+    type: "rss"
+    enabled: true
+    url: "https://vendor.example/news/feed.xml"
+    interval_minutes: 30
+    legal:
+      status: "approved"
+      collection_basis: "official_feed"
+      terms_url: "https://vendor.example/terms"
+      terms_reviewed_at: "2026-09-30T00:00:00Z"
+      approved_by: "editor@example.jp"
+      text_use: "facts_only"
+      media_use: "none"
+
+  - key: "github-esphome"
+    name: "ESPHome Releases"
+    type: "github_releases"
+    enabled: true
+    repository: "esphome/esphome"
+    include_prereleases: false
+    include_drafts: false
+    legal:
+      status: "approved"
+      collection_basis: "public_api"
+      terms_url: "https://docs.github.com/site-policy/github-terms/github-terms-of-service"
+      terms_reviewed_at: "2026-09-30T00:00:00Z"
+      approved_by: "editor@example.jp"
+      text_use: "facts_only"
+      media_use: "none"
+
+  - key: "vendor-newsroom"
+    name: "Vendor Newsroom"
+    type: "web"
+    enabled: false
+    list_url: "https://vendor.example/news/"
+    allowed_hosts: ["vendor.example"]
+    allow_url_patterns: ["^https://vendor\\.example/news/[0-9]{4}/"]
+    deny_url_patterns: ["/login", "\\.pdf$"]
+    selectors:
+      list_links: "main a.news-card"
+      title: "h1"
+      published_at: "time[datetime]"
+      body: "article"
+    min_delay_seconds: 3
+    max_pages_per_run: 20
+    legal:
+      status: "pending"
+      collection_basis: "permitted_web"
+      terms_url: "https://vendor.example/terms"
+      text_use: "facts_only"
+      media_use: "none"
