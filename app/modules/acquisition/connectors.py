@@ -120,7 +120,8 @@ def decode_text(response: FetchResponse) -> str:
         if key.lower() == "charset":
             encoding = value.strip("\"'")
     try:
-        return response.body.decode(encoding)
+        # PostgreSQL text cannot store NUL; retain the original byte hash in snapshots.
+        return response.body.decode(encoding).replace("\x00", "\ufffd")
     except (UnicodeDecodeError, LookupError):
         raise CollectionError("INVALID_ENCODING") from None
 

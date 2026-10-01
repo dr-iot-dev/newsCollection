@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.infrastructure.db.models import LegalStatus, Source, SourceType
+from app.infrastructure.db.models import LegalStatus, Source, SourceCursor, SourceType
 from app.sources.config import DefaultsConfig, SourceConfig, SourcesFile
 
 
@@ -36,10 +36,24 @@ def sync_sources(session: Session, config: SourcesFile, *, dry_run: bool) -> lis
     for source_config in config.sources:
         legal_status = source_config.legal.effective_status(now)
         action = "create" if source_config.key not in existing else "update"
+        row = existing.get(source_config.key)
+        gate_cursor = session.get(SourceCursor, row.id) if row is not None else None
+        gate = gate_cursor.cursor_json.get("web_gate", {}) if gate_cursor else {}
+        if gate.get("blocked") and legal_status == "approved":
+            blocked_at = datetime.fromisoformat(gate["checked_at"])
+            reviewed_dates = [
+                source_config.legal.terms_reviewed_at,
+                source_config.legal.robots_reviewed_at,
+            ]
+            if any(
+                value is None
+                or (value.replace(tzinfo=UTC) if value.tzinfo is None else value) <= blocked_at
+                for value in reviewed_dates
+            ):
+                legal_status = "pending"
         actions.append(SyncAction(source_config.key, action, legal_status))
         if dry_run:
             continue
-        row = existing.get(source_config.key)
         if row is None:
             row = Source(key=source_config.key)
             session.add(row)

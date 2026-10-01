@@ -3,9 +3,10 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any, Literal
 from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 SECRET_KEY = re.compile(r"(authorization|cookie|password|secret|token|api[_-]?key)", re.I)
 HTTPS_FIELDS = {"url", "list_url", "terms_url", "privacy_url"}
@@ -63,7 +64,18 @@ class SourceBase(StrictModel):
     user_agent: str | None = Field(default=None, min_length=10, max_length=500)
     language_hint: str | None = Field(default=None, max_length=10)
     min_delay_seconds: float = Field(default=3, ge=1, le=60)
+    timezone_hint: str | None = None
     legal: LegalConfig
+
+    @field_validator("timezone_hint")
+    @classmethod
+    def valid_timezone(cls, value: str | None) -> str | None:
+        if value is not None:
+            try:
+                ZoneInfo(value)
+            except (ZoneInfoNotFoundError, ValueError) as exc:
+                raise ValueError("unknown publication timezone") from exc
+        return value
 
     def assert_collectable(self, now: datetime | None = None) -> None:
         legal_status = self.legal.effective_status(now)
@@ -92,6 +104,7 @@ class WebSelectors(StrictModel):
     title: str
     published_at: str
     body: str
+    next_page: str | None = None
 
 
 class WebSource(SourceBase):
@@ -101,8 +114,30 @@ class WebSource(SourceBase):
     allow_url_patterns: list[str] = Field(min_length=1)
     deny_url_patterns: list[str] = Field(default_factory=list)
     selectors: WebSelectors
-    min_delay_seconds: float = Field(default=3, ge=1)
-    max_pages_per_run: int = Field(default=20, ge=1, le=100)
+    min_delay_seconds: float = Field(default=3, ge=1, le=60)
+    max_pages_per_run: int = Field(default=20, ge=2, le=100)
+
+    @model_validator(mode="after")
+    def valid_web_policy(self) -> "WebSource":
+        from soupsieve import compile as compile_selector
+
+        for pattern in self.allow_url_patterns + self.deny_url_patterns:
+            try:
+                re.compile(pattern)
+            except re.error as exc:
+                raise ValueError("invalid URL pattern") from exc
+        for selector in self.selectors.model_dump().values():
+            if selector:
+                try:
+                    compile_selector(selector)
+                except Exception as exc:
+                    raise ValueError("invalid CSS selector") from exc
+        if self.legal.status == "approved":
+            if self.legal.collection_basis != "permitted_web":
+                raise ValueError("Web collection requires permitted_web approval")
+            if self.legal.robots_reviewed_at is None:
+                raise ValueError("Web approval requires robots_reviewed_at")
+        return self
 
 
 SourceConfig = Annotated[RssSource | GitHubSource | WebSource, Field(discriminator="type")]

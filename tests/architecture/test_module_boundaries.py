@@ -4,6 +4,7 @@ from pathlib import Path
 MODULES = {
     "acquisition",
     "extraction",
+    "deduplication",
     "selection",
     "comparison",
     "writing",

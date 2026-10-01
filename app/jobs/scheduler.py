@@ -7,9 +7,10 @@ from sqlalchemy import or_, select
 
 from app.core.config import get_settings
 from app.core.logging import configure_logging
-from app.infrastructure.db.models import LegalStatus, Source, SourceType
+from app.infrastructure.db.models import LegalStatus, Source
 from app.infrastructure.db.session import SessionLocal
 from app.modules.acquisition.service import collect_source
+from app.orchestration.phase2 import process_phase2
 
 logger = structlog.get_logger()
 
@@ -23,7 +24,6 @@ def poll_sources() -> None:
                 .where(
                     Source.enabled.is_(True),
                     Source.legal_status == LegalStatus.APPROVED,
-                    Source.type.in_([SourceType.RSS, SourceType.GITHUB_RELEASES]),
                     or_(Source.next_run_at.is_(None), Source.next_run_at <= datetime.now(UTC)),
                 )
                 .order_by(Source.key)
@@ -50,6 +50,14 @@ def poll_sources() -> None:
         except Exception:
             # Database/driver exceptions can include connection URLs or raw SQL parameters.
             logger.error("source_collection_error", source_key=key, error_code="INTERNAL_ERROR")
+
+    try:
+        with SessionLocal.begin() as session:
+            counts = process_phase2(session)
+        if any(counts.values()):
+            logger.info("phase2_processed", **counts)
+    except Exception:
+        logger.error("phase2_processing_error", error_code="PROCESSING_ERROR")
 
 
 def main() -> None:

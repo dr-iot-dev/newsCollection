@@ -1,3 +1,4 @@
+import hashlib
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
@@ -19,8 +20,8 @@ from app.infrastructure.db.models import (
     Source,
     SourceCursor,
 )
-from app.modules.acquisition.http import SafeHttpClient
-from app.modules.acquisition.service import collect_source
+from app.modules.acquisition.http import FetchResponse, SafeHttpClient
+from app.modules.acquisition.service import collect_source, store_snapshot
 from app.sources.config import SourceConfig, load_sources
 from app.sources.service import sync_sources
 
@@ -430,3 +431,23 @@ def test_page_limit_does_not_commit_partial_items(acquisition_session: Session) 
     assert result.error_code == "PAGE_LIMIT"
     assert count(acquisition_session, Item) == count(acquisition_session, SourceCursor) == 0
     assert count(acquisition_session, RawSnapshot) == 1
+
+
+def test_snapshot_invalid_encoding_and_nul_can_be_persisted(acquisition_session: Session) -> None:
+    session = acquisition_session
+    source = session.scalars(select(Source)).first()
+    assert source is not None
+    body = b"<html>\xff\x00</html>"
+    response = FetchResponse(
+        requested_url="https://vendor.example/news/one",
+        final_url="https://vendor.example/news/one",
+        status_code=200,
+        headers={"content-type": "text/html; charset=utf-8"},
+        body=body,
+        fetched_at=datetime.now(UTC),
+    )
+    snapshot = store_snapshot(session, source.id, response)
+    session.commit()
+    session.refresh(snapshot)
+    assert snapshot.body_sha256 == hashlib.sha256(body).hexdigest()
+    assert snapshot.body_text == "<html>\ufffd\ufffd</html>"

@@ -10,6 +10,7 @@ from app.core.config import get_settings
 from app.infrastructure.db.models import Source
 from app.infrastructure.db.session import SessionLocal
 from app.modules.acquisition.service import collect_source
+from app.orchestration.phase2 import process_phase2
 from app.sources.config import load_sources
 from app.sources.service import sync_sources
 
@@ -84,6 +85,9 @@ def run_collection(
                     if settings.github_token
                     else None,
                 )
+            if not dry_run and result.status in {"success", "not_modified"}:
+                with SessionLocal.begin() as session:
+                    process_phase2(session)
             typer.echo(
                 f"{result.source_key}: {result.status} created={result.created} "
                 f"updated={result.updated} unchanged={result.unchanged}"
@@ -100,6 +104,23 @@ def run_collection(
             raise typer.Exit(1)
     except SQLAlchemyError:
         typer.echo("collection failed: DATABASE_ERROR", err=True)
+        raise typer.Exit(1) from None
+
+
+pipeline_app = typer.Typer(no_args_is_help=True, pretty_exceptions_show_locals=False)
+app.add_typer(pipeline_app, name="pipeline")
+
+
+@pipeline_app.command("run")
+def run_pipeline(limit: Annotated[int, typer.Option(min=1, max=1000)] = 100) -> None:
+    try:
+        with SessionLocal.begin() as session:
+            counts = process_phase2(session, limit=limit)
+        typer.echo(
+            f"processed: extraction={counts['extraction']} deduplication={counts['deduplication']}"
+        )
+    except (SQLAlchemyError, ValueError):
+        typer.echo("pipeline failed: PROCESSING_ERROR", err=True)
         raise typer.Exit(1) from None
 
 

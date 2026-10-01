@@ -1,0 +1,103 @@
+version: 1
+defaults:
+  interval_minutes: 120
+  timeout_seconds: 20
+  max_response_bytes: 10485760
+  user_agent: "NewsCollectionBot/1.0 (public news collection)"
+  language_hint: "ja"
+  publish_mode: "draft_only"
+
+sources:
+  - key: "prtimes-iot"
+    name: "PR TIMES IoT"
+    type: "web"
+    enabled: true
+    list_url: "https://prtimes.jp/topics/keywords/IoT"
+    allowed_hosts: ["prtimes.jp"]
+    allow_url_patterns:
+      - '^https://prtimes\.jp/main/html/rd/p/[0-9]+\.[0-9]+\.html$'
+    deny_url_patterns: ['/login', '/api/', '/im/', '/upload/']
+    selectors:
+      list_links: 'a.link-title-item[href^="/main/html/rd/p/"]'
+      title: '#press-release-title'
+      published_at: 'time[datetime]'
+      body: '#press-release-body'
+    timezone_hint: "Asia/Tokyo"
+    min_delay_seconds: 5
+    max_pages_per_run: 6
+    legal:
+      status: "approved"
+      collection_basis: "permitted_web"
+      terms_url: "https://prtimes.jp/main/html/kiyaku"
+      terms_reviewed_at: "2026-09-30T22:35:12.259941+00:00"
+      robots_reviewed_at: "2026-09-30T22:35:12.259941+00:00"
+      approved_by: "user-source-request-2026-10-01"
+      text_use: "facts_only"
+      media_use: "none"
+      notes: >-
+        User-designated source for public information collection. Reviewed robots.txt
+        and PR TIMES basic/general terms and media terms on 2026-10-01 JST.
+        This records authorization to collect public news, not a publisher license
+        for republication or commercial reuse. Images and restricted information
+        are excluded; publishing requires a separate rights review.
+
+  - key: "prtimes-electronics"
+    name: "PR TIMES 電子工作"
+    type: "web"
+    enabled: true
+    list_url: "https://prtimes.jp/topics/keywords/%E9%9B%BB%E5%AD%90%E5%B7%A5%E4%BD%9C"
+    allowed_hosts: ["prtimes.jp"]
+    allow_url_patterns:
+      - '^https://prtimes\.jp/main/html/rd/p/[0-9]+\.[0-9]+\.html$'
+    deny_url_patterns: ['/login', '/api/', '/im/', '/upload/']
+    selectors:
+      list_links: 'a.link-title-item[href^="/main/html/rd/p/"]'
+      title: '#press-release-title'
+      published_at: 'time[datetime]'
+      body: '#press-release-body'
+    timezone_hint: "Asia/Tokyo"
+    min_delay_seconds: 5
+    max_pages_per_run: 6
+    legal:
+      status: "approved"
+      collection_basis: "permitted_web"
+      terms_url: "https://prtimes.jp/main/html/kiyaku"
+      terms_reviewed_at: "2026-09-30T22:35:12.259941+00:00"
+      robots_reviewed_at: "2026-09-30T22:35:12.259941+00:00"
+      approved_by: "user-source-request-2026-10-01"
+      text_use: "facts_only"
+      media_use: "none"
+      notes: >-
+        User-designated source for public information collection. Reviewed robots.txt
+        and PR TIMES basic/general terms and media terms on 2026-10-01 JST.
+        This records authorization to collect public news, not a publisher license
+        for republication or commercial reuse. Images and restricted information
+        are excluded; publishing requires a separate rights review.
+
+  - key: "nikkei-topic-24032506"
+    name: "日本経済新聞 トピック 24032506"
+    type: "web"
+    enabled: false
+    list_url: "https://www.nikkei.com/topics/24032506"
+    allowed_hosts: ["www.nikkei.com"]
+    allow_url_patterns: ['^https://www\.nikkei\.com/article/[A-Z0-9]+/?$']
+    deny_url_patterns: ['/login', '/auth/', '/registration', '/signup', '\.pdf$']
+    selectors:
+      list_links: 'a[href*="/article/"]'
+      title: 'h1'
+      published_at: 'time[datetime]'
+      body: 'article'
+    min_delay_seconds: 5
+    max_pages_per_run: 6
+    legal:
+      status: "pending"
+      collection_basis: "permitted_web"
+      terms_url: "https://www.nikkei.com/info/copyright.html"
+      text_use: "facts_only"
+      media_use: "none"
+      notes: >-
+        Requested on 2026-10-01 JST. The verification browser was denied by
+        robots.txt for the topic, robots file and copyright page. The rules
+        for NewsCollectionBot and article selectors have not been verified.
+        Keep disabled until an authorized acquisition route and content-use
+        rights are confirmed. No login, paywall or robot restriction bypass.

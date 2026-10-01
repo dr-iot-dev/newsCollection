@@ -448,32 +448,3 @@ class AuditEvent(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-
-
-class ExtractionResult(VersionedPayloadMixin, Base):
-    __tablename__ = "extraction_results"
-    __table_args__ = (
-        UniqueConstraint("item_id", "revision"),
-        Index("ix_extraction_body_sha", "body_sha256"),
-        Index("ix_extraction_url", "canonical_url"),
-    )
-    snapshot_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("raw_snapshots.id"), nullable=False)
-    body_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
-    canonical_url: Mapped[str] = mapped_column(Text, nullable=False)
-
-
-class DuplicateDecision(Base):
-    __tablename__ = "duplicate_decisions"
-    __table_args__ = (UniqueConstraint("item_id", "revision", "candidate_id"),)
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    item_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("items.id"), nullable=False)
-    revision: Mapped[int] = mapped_column(Integer, nullable=False)
-    candidate_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("items.id"))
-    candidate_revision: Mapped[int | None] = mapped_column(Integer)
-    decision: Mapped[str] = mapped_column(String(20), nullable=False)
-    score: Mapped[Decimal] = mapped_column(Numeric(4, 3), nullable=False)
-    reasons: Mapped[dict[str, Any]] = mapped_column(JSON_STORAGE, nullable=False)
-    policy_version: Mapped[str] = mapped_column(String(50), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )

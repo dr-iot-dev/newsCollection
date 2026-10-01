@@ -14,6 +14,7 @@ class FactReferenceV1(ContractModel):
 
 class EvidencePackageV1(ContractModel):
     item_id: UUID
+    item_version: int = Field(default=1, ge=1)
     canonical_url: AnyHttpUrl
     title: str = Field(min_length=1, max_length=1000)
     published_at: datetime | None = None

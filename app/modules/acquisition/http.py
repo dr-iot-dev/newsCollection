@@ -89,8 +89,7 @@ class URLPolicy:
                 if host == "localhost" or host.endswith((".localhost", ".local", ".internal")):
                     raise CollectionError("URL_BLOCKED") from None
             else:
-                if not public_address(host):
-                    raise CollectionError("URL_BLOCKED") from None
+                raise CollectionError("URL_BLOCKED") from None
             return url.copy_with(fragment=None)
         except (ValueError, httpx.InvalidURL):
             raise CollectionError("URL_BLOCKED") from None
@@ -223,6 +222,7 @@ class SafeHttpClient:
         etag: str | None = None,
         last_modified: str | None = None,
         headers: dict[str, str] | None = None,
+        url_guard: Callable[[str], None] | None = None,
     ) -> FetchResponse:
         # A daemon bounds DNS and slow trickle responses as well as socket operations.
         # The worker only performs GETs; it never touches the database or source cursor.
@@ -238,6 +238,7 @@ class SafeHttpClient:
                         last_modified=last_modified,
                         headers=headers,
                         deadline=deadline,
+                        url_guard=url_guard,
                     )
                 )
             except CollectionError as exc:
@@ -262,6 +263,7 @@ class SafeHttpClient:
         last_modified: str | None,
         headers: dict[str, str] | None,
         deadline: float,
+        url_guard: Callable[[str], None] | None,
     ) -> FetchResponse:
         requested = str(self.policy.validate(value))
         current = requested
@@ -274,6 +276,8 @@ class SafeHttpClient:
         attempts = 0
         while True:
             url = self.policy.validate(current)
+            if url_guard:
+                url_guard(str(url))
             self._pace(url.host, deadline)
             remaining = deadline - time.monotonic()
             if remaining <= 0:

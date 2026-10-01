@@ -1,7 +1,8 @@
 """Initial schema."""
+
 from alembic import op
 
-from app.infrastructure.db.models import Base
+from migrations.schema_0001 import Base
 
 revision = "20260930_0001"
 down_revision = None

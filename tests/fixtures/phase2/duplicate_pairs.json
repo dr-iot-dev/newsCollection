@@ -1,0 +1,898 @@
+[
+  {
+    "name": "X1-syndication",
+    "duplicate": true,
+    "left": {
+      "title": "Acme X1 gateway released",
+      "body": "Acme announced the X1 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 2 ports and supports local installation.",
+      "url": "https://acme.example/news/X1",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Acme X1 gateway released",
+      "body": "Acme announced the X1 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 2 ports and supports local installation.",
+      "url": "https://mirror.example/articles/X1",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "X1-tracking",
+    "duplicate": true,
+    "left": {
+      "title": "Acme X1 gateway released",
+      "body": "Acme announced the X1 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 2 ports and supports local installation.",
+      "url": "https://acme.example/news/X1",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Acme X1 gateway released",
+      "body": "Acme announced the X1 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 2 ports and supports local installation.",
+      "url": "https://acme.example/news/X1?utm_source=feed#top",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "X1-punctuation",
+    "duplicate": true,
+    "left": {
+      "title": "Acme X1 gateway released",
+      "body": "Acme announced the X1 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 2 ports and supports local installation.",
+      "url": "https://acme.example/news/X1",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Acme X1 gateway released",
+      "body": "Acme announced the X1 gateway! The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 2 ports and supports local installation.",
+      "url": "https://mirror.example/articles/X1",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "X1-other_maker",
+    "duplicate": false,
+    "left": {
+      "title": "Acme X1 gateway released",
+      "body": "Acme announced the X1 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 2 ports and supports local installation.",
+      "url": "https://acme.example/news/X1",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Zenith X1 gateway released",
+      "body": "Zenith announced the X1 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 2 ports and supports local installation.",
+      "url": "https://acme.example/news/X1-other_maker",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "X1-other_model",
+    "duplicate": false,
+    "left": {
+      "title": "Acme X1 gateway released",
+      "body": "Acme announced the X1 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 2 ports and supports local installation.",
+      "url": "https://acme.example/news/X1",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Acme X1Pro gateway released",
+      "body": "Acme announced the X1Pro gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 2 ports and supports local installation.",
+      "url": "https://acme.example/news/X1-other_model",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "X1-changed_spec",
+    "duplicate": false,
+    "left": {
+      "title": "Acme X1 gateway released",
+      "body": "Acme announced the X1 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 2 ports and supports local installation.",
+      "url": "https://acme.example/news/X1",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Acme X1 gateway released",
+      "body": "Acme announced the X1 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 3 ports and supports local installation.",
+      "url": "https://acme.example/news/X1-changed_spec",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "X1-different_date",
+    "duplicate": false,
+    "left": {
+      "title": "Acme X1 gateway released",
+      "body": "Acme announced the X1 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 2 ports and supports local installation.",
+      "url": "https://acme.example/news/X1",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Acme X1 gateway released",
+      "body": "Acme announced the X1 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 2 ports and supports local installation. A later launch uses a different firmware branch.",
+      "url": "https://acme.example/news/X1-different_date",
+      "date": "2026-12-01"
+    }
+  },
+  {
+    "name": "B2-syndication",
+    "duplicate": true,
+    "left": {
+      "title": "Beacon B2 gateway released",
+      "body": "Beacon announced the B2 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 3 ports and supports local installation.",
+      "url": "https://beacon.example/news/B2",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Beacon B2 gateway released",
+      "body": "Beacon announced the B2 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 3 ports and supports local installation.",
+      "url": "https://mirror.example/articles/B2",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "B2-tracking",
+    "duplicate": true,
+    "left": {
+      "title": "Beacon B2 gateway released",
+      "body": "Beacon announced the B2 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 3 ports and supports local installation.",
+      "url": "https://beacon.example/news/B2",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Beacon B2 gateway released",
+      "body": "Beacon announced the B2 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 3 ports and supports local installation.",
+      "url": "https://beacon.example/news/B2?utm_source=feed#top",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "B2-punctuation",
+    "duplicate": true,
+    "left": {
+      "title": "Beacon B2 gateway released",
+      "body": "Beacon announced the B2 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 3 ports and supports local installation.",
+      "url": "https://beacon.example/news/B2",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Beacon B2 gateway released",
+      "body": "Beacon announced the B2 gateway! The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 3 ports and supports local installation.",
+      "url": "https://mirror.example/articles/B2",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "B2-other_maker",
+    "duplicate": false,
+    "left": {
+      "title": "Beacon B2 gateway released",
+      "body": "Beacon announced the B2 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 3 ports and supports local installation.",
+      "url": "https://beacon.example/news/B2",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Zenith B2 gateway released",
+      "body": "Zenith announced the B2 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 3 ports and supports local installation.",
+      "url": "https://beacon.example/news/B2-other_maker",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "B2-other_model",
+    "duplicate": false,
+    "left": {
+      "title": "Beacon B2 gateway released",
+      "body": "Beacon announced the B2 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 3 ports and supports local installation.",
+      "url": "https://beacon.example/news/B2",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Beacon B2Pro gateway released",
+      "body": "Beacon announced the B2Pro gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 3 ports and supports local installation.",
+      "url": "https://beacon.example/news/B2-other_model",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "B2-changed_spec",
+    "duplicate": false,
+    "left": {
+      "title": "Beacon B2 gateway released",
+      "body": "Beacon announced the B2 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 3 ports and supports local installation.",
+      "url": "https://beacon.example/news/B2",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Beacon B2 gateway released",
+      "body": "Beacon announced the B2 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 4 ports and supports local installation.",
+      "url": "https://beacon.example/news/B2-changed_spec",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "B2-different_date",
+    "duplicate": false,
+    "left": {
+      "title": "Beacon B2 gateway released",
+      "body": "Beacon announced the B2 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 3 ports and supports local installation.",
+      "url": "https://beacon.example/news/B2",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Beacon B2 gateway released",
+      "body": "Beacon announced the B2 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 3 ports and supports local installation. A later launch uses a different firmware branch.",
+      "url": "https://beacon.example/news/B2-different_date",
+      "date": "2026-12-01"
+    }
+  },
+  {
+    "name": "C3-syndication",
+    "duplicate": true,
+    "left": {
+      "title": "Cedar C3 gateway released",
+      "body": "Cedar announced the C3 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 4 ports and supports local installation.",
+      "url": "https://cedar.example/news/C3",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Cedar C3 gateway released",
+      "body": "Cedar announced the C3 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 4 ports and supports local installation.",
+      "url": "https://mirror.example/articles/C3",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "C3-tracking",
+    "duplicate": true,
+    "left": {
+      "title": "Cedar C3 gateway released",
+      "body": "Cedar announced the C3 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 4 ports and supports local installation.",
+      "url": "https://cedar.example/news/C3",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Cedar C3 gateway released",
+      "body": "Cedar announced the C3 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 4 ports and supports local installation.",
+      "url": "https://cedar.example/news/C3?utm_source=feed#top",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "C3-punctuation",
+    "duplicate": true,
+    "left": {
+      "title": "Cedar C3 gateway released",
+      "body": "Cedar announced the C3 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 4 ports and supports local installation.",
+      "url": "https://cedar.example/news/C3",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Cedar C3 gateway released",
+      "body": "Cedar announced the C3 gateway! The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 4 ports and supports local installation.",
+      "url": "https://mirror.example/articles/C3",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "C3-other_maker",
+    "duplicate": false,
+    "left": {
+      "title": "Cedar C3 gateway released",
+      "body": "Cedar announced the C3 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 4 ports and supports local installation.",
+      "url": "https://cedar.example/news/C3",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Zenith C3 gateway released",
+      "body": "Zenith announced the C3 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 4 ports and supports local installation.",
+      "url": "https://cedar.example/news/C3-other_maker",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "C3-other_model",
+    "duplicate": false,
+    "left": {
+      "title": "Cedar C3 gateway released",
+      "body": "Cedar announced the C3 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 4 ports and supports local installation.",
+      "url": "https://cedar.example/news/C3",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Cedar C3Pro gateway released",
+      "body": "Cedar announced the C3Pro gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 4 ports and supports local installation.",
+      "url": "https://cedar.example/news/C3-other_model",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "C3-changed_spec",
+    "duplicate": false,
+    "left": {
+      "title": "Cedar C3 gateway released",
+      "body": "Cedar announced the C3 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 4 ports and supports local installation.",
+      "url": "https://cedar.example/news/C3",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Cedar C3 gateway released",
+      "body": "Cedar announced the C3 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 5 ports and supports local installation.",
+      "url": "https://cedar.example/news/C3-changed_spec",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "C3-different_date",
+    "duplicate": false,
+    "left": {
+      "title": "Cedar C3 gateway released",
+      "body": "Cedar announced the C3 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 4 ports and supports local installation.",
+      "url": "https://cedar.example/news/C3",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Cedar C3 gateway released",
+      "body": "Cedar announced the C3 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 4 ports and supports local installation. A later launch uses a different firmware branch.",
+      "url": "https://cedar.example/news/C3-different_date",
+      "date": "2026-12-01"
+    }
+  },
+  {
+    "name": "D4-syndication",
+    "duplicate": true,
+    "left": {
+      "title": "Delta D4 gateway released",
+      "body": "Delta announced the D4 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 5 ports and supports local installation.",
+      "url": "https://delta.example/news/D4",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Delta D4 gateway released",
+      "body": "Delta announced the D4 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 5 ports and supports local installation.",
+      "url": "https://mirror.example/articles/D4",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "D4-tracking",
+    "duplicate": true,
+    "left": {
+      "title": "Delta D4 gateway released",
+      "body": "Delta announced the D4 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 5 ports and supports local installation.",
+      "url": "https://delta.example/news/D4",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Delta D4 gateway released",
+      "body": "Delta announced the D4 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 5 ports and supports local installation.",
+      "url": "https://delta.example/news/D4?utm_source=feed#top",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "D4-punctuation",
+    "duplicate": true,
+    "left": {
+      "title": "Delta D4 gateway released",
+      "body": "Delta announced the D4 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 5 ports and supports local installation.",
+      "url": "https://delta.example/news/D4",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Delta D4 gateway released",
+      "body": "Delta announced the D4 gateway! The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 5 ports and supports local installation.",
+      "url": "https://mirror.example/articles/D4",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "D4-other_maker",
+    "duplicate": false,
+    "left": {
+      "title": "Delta D4 gateway released",
+      "body": "Delta announced the D4 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 5 ports and supports local installation.",
+      "url": "https://delta.example/news/D4",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Zenith D4 gateway released",
+      "body": "Zenith announced the D4 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 5 ports and supports local installation.",
+      "url": "https://delta.example/news/D4-other_maker",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "D4-other_model",
+    "duplicate": false,
+    "left": {
+      "title": "Delta D4 gateway released",
+      "body": "Delta announced the D4 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 5 ports and supports local installation.",
+      "url": "https://delta.example/news/D4",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Delta D4Pro gateway released",
+      "body": "Delta announced the D4Pro gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 5 ports and supports local installation.",
+      "url": "https://delta.example/news/D4-other_model",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "D4-changed_spec",
+    "duplicate": false,
+    "left": {
+      "title": "Delta D4 gateway released",
+      "body": "Delta announced the D4 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 5 ports and supports local installation.",
+      "url": "https://delta.example/news/D4",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Delta D4 gateway released",
+      "body": "Delta announced the D4 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 6 ports and supports local installation.",
+      "url": "https://delta.example/news/D4-changed_spec",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "D4-different_date",
+    "duplicate": false,
+    "left": {
+      "title": "Delta D4 gateway released",
+      "body": "Delta announced the D4 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 5 ports and supports local installation.",
+      "url": "https://delta.example/news/D4",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Delta D4 gateway released",
+      "body": "Delta announced the D4 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 5 ports and supports local installation. A later launch uses a different firmware branch.",
+      "url": "https://delta.example/news/D4-different_date",
+      "date": "2026-12-01"
+    }
+  },
+  {
+    "name": "E5-syndication",
+    "duplicate": true,
+    "left": {
+      "title": "Elm E5 gateway released",
+      "body": "Elm announced the E5 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 6 ports and supports local installation.",
+      "url": "https://elm.example/news/E5",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Elm E5 gateway released",
+      "body": "Elm announced the E5 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 6 ports and supports local installation.",
+      "url": "https://mirror.example/articles/E5",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "E5-tracking",
+    "duplicate": true,
+    "left": {
+      "title": "Elm E5 gateway released",
+      "body": "Elm announced the E5 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 6 ports and supports local installation.",
+      "url": "https://elm.example/news/E5",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Elm E5 gateway released",
+      "body": "Elm announced the E5 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 6 ports and supports local installation.",
+      "url": "https://elm.example/news/E5?utm_source=feed#top",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "E5-punctuation",
+    "duplicate": true,
+    "left": {
+      "title": "Elm E5 gateway released",
+      "body": "Elm announced the E5 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 6 ports and supports local installation.",
+      "url": "https://elm.example/news/E5",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Elm E5 gateway released",
+      "body": "Elm announced the E5 gateway! The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 6 ports and supports local installation.",
+      "url": "https://mirror.example/articles/E5",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "E5-other_maker",
+    "duplicate": false,
+    "left": {
+      "title": "Elm E5 gateway released",
+      "body": "Elm announced the E5 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 6 ports and supports local installation.",
+      "url": "https://elm.example/news/E5",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Zenith E5 gateway released",
+      "body": "Zenith announced the E5 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 6 ports and supports local installation.",
+      "url": "https://elm.example/news/E5-other_maker",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "E5-other_model",
+    "duplicate": false,
+    "left": {
+      "title": "Elm E5 gateway released",
+      "body": "Elm announced the E5 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 6 ports and supports local installation.",
+      "url": "https://elm.example/news/E5",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Elm E5Pro gateway released",
+      "body": "Elm announced the E5Pro gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 6 ports and supports local installation.",
+      "url": "https://elm.example/news/E5-other_model",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "E5-changed_spec",
+    "duplicate": false,
+    "left": {
+      "title": "Elm E5 gateway released",
+      "body": "Elm announced the E5 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 6 ports and supports local installation.",
+      "url": "https://elm.example/news/E5",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Elm E5 gateway released",
+      "body": "Elm announced the E5 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 7 ports and supports local installation.",
+      "url": "https://elm.example/news/E5-changed_spec",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "E5-different_date",
+    "duplicate": false,
+    "left": {
+      "title": "Elm E5 gateway released",
+      "body": "Elm announced the E5 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 6 ports and supports local installation.",
+      "url": "https://elm.example/news/E5",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Elm E5 gateway released",
+      "body": "Elm announced the E5 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 6 ports and supports local installation. A later launch uses a different firmware branch.",
+      "url": "https://elm.example/news/E5-different_date",
+      "date": "2026-12-01"
+    }
+  },
+  {
+    "name": "F6-syndication",
+    "duplicate": true,
+    "left": {
+      "title": "Faro F6 gateway released",
+      "body": "Faro announced the F6 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 7 ports and supports local installation.",
+      "url": "https://faro.example/news/F6",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Faro F6 gateway released",
+      "body": "Faro announced the F6 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 7 ports and supports local installation.",
+      "url": "https://mirror.example/articles/F6",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "F6-tracking",
+    "duplicate": true,
+    "left": {
+      "title": "Faro F6 gateway released",
+      "body": "Faro announced the F6 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 7 ports and supports local installation.",
+      "url": "https://faro.example/news/F6",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Faro F6 gateway released",
+      "body": "Faro announced the F6 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 7 ports and supports local installation.",
+      "url": "https://faro.example/news/F6?utm_source=feed#top",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "F6-punctuation",
+    "duplicate": true,
+    "left": {
+      "title": "Faro F6 gateway released",
+      "body": "Faro announced the F6 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 7 ports and supports local installation.",
+      "url": "https://faro.example/news/F6",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Faro F6 gateway released",
+      "body": "Faro announced the F6 gateway! The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 7 ports and supports local installation.",
+      "url": "https://mirror.example/articles/F6",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "F6-other_maker",
+    "duplicate": false,
+    "left": {
+      "title": "Faro F6 gateway released",
+      "body": "Faro announced the F6 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 7 ports and supports local installation.",
+      "url": "https://faro.example/news/F6",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Zenith F6 gateway released",
+      "body": "Zenith announced the F6 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 7 ports and supports local installation.",
+      "url": "https://faro.example/news/F6-other_maker",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "F6-other_model",
+    "duplicate": false,
+    "left": {
+      "title": "Faro F6 gateway released",
+      "body": "Faro announced the F6 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 7 ports and supports local installation.",
+      "url": "https://faro.example/news/F6",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Faro F6Pro gateway released",
+      "body": "Faro announced the F6Pro gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 7 ports and supports local installation.",
+      "url": "https://faro.example/news/F6-other_model",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "F6-changed_spec",
+    "duplicate": false,
+    "left": {
+      "title": "Faro F6 gateway released",
+      "body": "Faro announced the F6 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 7 ports and supports local installation.",
+      "url": "https://faro.example/news/F6",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Faro F6 gateway released",
+      "body": "Faro announced the F6 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 8 ports and supports local installation.",
+      "url": "https://faro.example/news/F6-changed_spec",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "F6-different_date",
+    "duplicate": false,
+    "left": {
+      "title": "Faro F6 gateway released",
+      "body": "Faro announced the F6 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 7 ports and supports local installation.",
+      "url": "https://faro.example/news/F6",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Faro F6 gateway released",
+      "body": "Faro announced the F6 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 7 ports and supports local installation. A later launch uses a different firmware branch.",
+      "url": "https://faro.example/news/F6-different_date",
+      "date": "2026-12-01"
+    }
+  },
+  {
+    "name": "G7-syndication",
+    "duplicate": true,
+    "left": {
+      "title": "Grove G7 gateway released",
+      "body": "Grove announced the G7 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 8 ports and supports local installation.",
+      "url": "https://grove.example/news/G7",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Grove G7 gateway released",
+      "body": "Grove announced the G7 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 8 ports and supports local installation.",
+      "url": "https://mirror.example/articles/G7",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "G7-tracking",
+    "duplicate": true,
+    "left": {
+      "title": "Grove G7 gateway released",
+      "body": "Grove announced the G7 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 8 ports and supports local installation.",
+      "url": "https://grove.example/news/G7",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Grove G7 gateway released",
+      "body": "Grove announced the G7 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 8 ports and supports local installation.",
+      "url": "https://grove.example/news/G7?utm_source=feed#top",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "G7-punctuation",
+    "duplicate": true,
+    "left": {
+      "title": "Grove G7 gateway released",
+      "body": "Grove announced the G7 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 8 ports and supports local installation.",
+      "url": "https://grove.example/news/G7",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Grove G7 gateway released",
+      "body": "Grove announced the G7 gateway! The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 8 ports and supports local installation.",
+      "url": "https://mirror.example/articles/G7",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "G7-other_maker",
+    "duplicate": false,
+    "left": {
+      "title": "Grove G7 gateway released",
+      "body": "Grove announced the G7 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 8 ports and supports local installation.",
+      "url": "https://grove.example/news/G7",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Zenith G7 gateway released",
+      "body": "Zenith announced the G7 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 8 ports and supports local installation.",
+      "url": "https://grove.example/news/G7-other_maker",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "G7-other_model",
+    "duplicate": false,
+    "left": {
+      "title": "Grove G7 gateway released",
+      "body": "Grove announced the G7 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 8 ports and supports local installation.",
+      "url": "https://grove.example/news/G7",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Grove G7Pro gateway released",
+      "body": "Grove announced the G7Pro gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 8 ports and supports local installation.",
+      "url": "https://grove.example/news/G7-other_model",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "G7-changed_spec",
+    "duplicate": false,
+    "left": {
+      "title": "Grove G7 gateway released",
+      "body": "Grove announced the G7 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 8 ports and supports local installation.",
+      "url": "https://grove.example/news/G7",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Grove G7 gateway released",
+      "body": "Grove announced the G7 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 9 ports and supports local installation.",
+      "url": "https://grove.example/news/G7-changed_spec",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "G7-different_date",
+    "duplicate": false,
+    "left": {
+      "title": "Grove G7 gateway released",
+      "body": "Grove announced the G7 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 8 ports and supports local installation.",
+      "url": "https://grove.example/news/G7",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Grove G7 gateway released",
+      "body": "Grove announced the G7 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 8 ports and supports local installation. A later launch uses a different firmware branch.",
+      "url": "https://grove.example/news/G7-different_date",
+      "date": "2026-12-01"
+    }
+  },
+  {
+    "name": "H8-syndication",
+    "duplicate": true,
+    "left": {
+      "title": "Harbor H8 gateway released",
+      "body": "Harbor announced the H8 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 9 ports and supports local installation.",
+      "url": "https://harbor.example/news/H8",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Harbor H8 gateway released",
+      "body": "Harbor announced the H8 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 9 ports and supports local installation.",
+      "url": "https://mirror.example/articles/H8",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "H8-tracking",
+    "duplicate": true,
+    "left": {
+      "title": "Harbor H8 gateway released",
+      "body": "Harbor announced the H8 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 9 ports and supports local installation.",
+      "url": "https://harbor.example/news/H8",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Harbor H8 gateway released",
+      "body": "Harbor announced the H8 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 9 ports and supports local installation.",
+      "url": "https://harbor.example/news/H8?utm_source=feed#top",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "H8-punctuation",
+    "duplicate": true,
+    "left": {
+      "title": "Harbor H8 gateway released",
+      "body": "Harbor announced the H8 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 9 ports and supports local installation.",
+      "url": "https://harbor.example/news/H8",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Harbor H8 gateway released",
+      "body": "Harbor announced the H8 gateway! The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 9 ports and supports local installation.",
+      "url": "https://mirror.example/articles/H8",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "H8-other_maker",
+    "duplicate": false,
+    "left": {
+      "title": "Harbor H8 gateway released",
+      "body": "Harbor announced the H8 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 9 ports and supports local installation.",
+      "url": "https://harbor.example/news/H8",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Zenith H8 gateway released",
+      "body": "Zenith announced the H8 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 9 ports and supports local installation.",
+      "url": "https://harbor.example/news/H8-other_maker",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "H8-other_model",
+    "duplicate": false,
+    "left": {
+      "title": "Harbor H8 gateway released",
+      "body": "Harbor announced the H8 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 9 ports and supports local installation.",
+      "url": "https://harbor.example/news/H8",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Harbor H8Pro gateway released",
+      "body": "Harbor announced the H8Pro gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 9 ports and supports local installation.",
+      "url": "https://harbor.example/news/H8-other_model",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "H8-changed_spec",
+    "duplicate": false,
+    "left": {
+      "title": "Harbor H8 gateway released",
+      "body": "Harbor announced the H8 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 9 ports and supports local installation.",
+      "url": "https://harbor.example/news/H8",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Harbor H8 gateway released",
+      "body": "Harbor announced the H8 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 10 ports and supports local installation.",
+      "url": "https://harbor.example/news/H8-changed_spec",
+      "date": "2026-09-30"
+    }
+  },
+  {
+    "name": "H8-different_date",
+    "duplicate": false,
+    "left": {
+      "title": "Harbor H8 gateway released",
+      "body": "Harbor announced the H8 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 9 ports and supports local installation.",
+      "url": "https://harbor.example/news/H8",
+      "date": "2026-09-30"
+    },
+    "right": {
+      "title": "Harbor H8 gateway released",
+      "body": "Harbor announced the H8 gateway. The gateway supports Matter and Thread alongside Ethernet and Wi-Fi. Administrators can configure local processing without cloud services. The documented integration interface connects existing monitoring systems. Installation instructions and a maintenance guide accompany the official release. The gateway has 9 ports and supports local installation. A later launch uses a different firmware branch.",
+      "url": "https://harbor.example/news/H8-different_date",
+      "date": "2026-12-01"
+    }
+  }
+]

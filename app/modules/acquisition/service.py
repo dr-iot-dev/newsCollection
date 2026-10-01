@@ -33,7 +33,7 @@ from app.modules.acquisition.connectors import (
     response_host,
 )
 from app.modules.acquisition.http import CollectionError, FetchResponse, SafeHttpClient, retry_time
-from app.sources.config import GitHubSource, RssSource, SourceConfig
+from app.sources.config import GitHubSource, RssSource, SourceConfig, WebSource
 
 SOURCE_ADAPTER: TypeAdapter[SourceConfig] = TypeAdapter(SourceConfig)
 HttpFactory = Callable[[SourceConfig], SafeHttpClient]
@@ -81,6 +81,8 @@ def source_config(row: Source) -> SourceConfig:
 def build_http(config: SourceConfig) -> SafeHttpClient:
     if isinstance(config, RssSource):
         hosts = config.allowed_hosts or [response_host(config.url)]
+    elif isinstance(config, WebSource):
+        hosts = config.allowed_hosts
     else:
         hosts = ["api.github.com"]
     return SafeHttpClient(
@@ -96,7 +98,7 @@ def store_snapshot(session: Session, source_id: UUID, response: FetchResponse) -
     try:
         body_text = decode_text(response)
     except CollectionError:
-        body_text = response.body.decode("utf-8", errors="replace")
+        body_text = response.body.decode("utf-8", errors="replace").replace("\x00", "\ufffd")
     snapshot = RawSnapshot(
         source_id=source_id,
         requested_url=response.requested_url,
@@ -205,8 +207,18 @@ def collect_source(
         return CollectionResult(key, "blocked", error_code="LEGAL_GATE_BLOCKED")
     except CollectionError as exc:
         return CollectionResult(key, "blocked", error_code=exc.code)
-    if not isinstance(config, (RssSource, GitHubSource)):
-        return CollectionResult(key, "blocked", error_code="UNSUPPORTED_SOURCE_TYPE")
+    if isinstance(config, WebSource):
+        from app.modules.acquisition.web import collect_web
+
+        return collect_web(
+            session,
+            source,
+            config,
+            http_factory=http_factory,
+            dry_run=dry_run,
+            force=force,
+            current=current,
+        )
     previous_job = session.scalar(
         select(JobRun)
         .where(
