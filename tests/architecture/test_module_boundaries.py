@@ -34,3 +34,16 @@ def test_modules_do_not_import_other_module_internals() -> None:
                     if target in MODULES and target != owner:
                         violations.append(f"{source}: imports {name}")
     assert not violations, "\n".join(violations)
+
+
+def test_writer_and_verifier_do_not_access_network_storage_or_orchestration() -> None:
+    for owner in ("writing", "verification"):
+        for source in (Path("app/modules") / owner).rglob("*.py"):
+            for node in ast.walk(ast.parse(source.read_text(encoding="utf-8"))):
+                names = [a.name for a in node.names] if isinstance(node, ast.Import) else []
+                if isinstance(node, ast.ImportFrom) and node.module:
+                    names.append(node.module)
+                for name in names:
+                    assert not name.startswith(
+                        ("app.infrastructure", "app.orchestration", "httpx", "urllib", "subprocess")
+                    ), source

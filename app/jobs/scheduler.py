@@ -10,6 +10,8 @@ from app.core.logging import configure_logging
 from app.infrastructure.db.models import LegalStatus, Source
 from app.infrastructure.db.session import SessionLocal
 from app.modules.acquisition.service import collect_source
+from app.orchestration.editorial import process_editorial_outbox, process_facts_outbox
+from app.orchestration.editorial_jobs import process_editorial_jobs
 from app.orchestration.phase2 import process_phase2
 
 logger = structlog.get_logger()
@@ -54,6 +56,15 @@ def poll_sources() -> None:
     try:
         with SessionLocal.begin() as session:
             counts = process_phase2(session)
+        with SessionLocal.begin() as session:
+            fact_count = process_facts_outbox(session, settings)
+        with SessionLocal.begin() as session:
+            job_count = process_editorial_jobs(session, settings)
+        for consumer in ("selection", "comparison", "writing", "verification"):
+            with SessionLocal.begin() as session:
+                process_editorial_outbox(session, settings, consumer)
+        if fact_count or job_count:
+            logger.info("phase3_processed", facts=fact_count, jobs=job_count)
         if any(counts.values()):
             logger.info("phase2_processed", **counts)
     except Exception:

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, cast
 
 import typer
 from pydantic import ValidationError
@@ -121,6 +121,92 @@ def run_pipeline(limit: Annotated[int, typer.Option(min=1, max=1000)] = 100) -> 
         )
     except (SQLAlchemyError, ValueError):
         typer.echo("pipeline failed: PROCESSING_ERROR", err=True)
+        raise typer.Exit(1) from None
+
+
+auth_app = typer.Typer(no_args_is_help=True, pretty_exceptions_show_locals=False)
+app.add_typer(auth_app, name="auth")
+
+
+@auth_app.command("create-user")
+def create_api_identity(
+    name: Annotated[str, typer.Option()],
+    role: Annotated[list[str], typer.Option(help="Repeat viewer/editor/reviewer as needed.")],
+) -> None:
+    from app.api.auth import create_user
+    from app.core.editorial import EditorialError
+
+    if not role or any(r not in {"viewer", "editor", "reviewer"} for r in role):
+        typer.echo("invalid role", err=True)
+        raise typer.Exit(1)
+    try:
+        with SessionLocal.begin() as session:
+            user, token = create_user(session, name, role)
+            user_id = user.id
+        typer.echo(f"user_id: {user_id}")
+        typer.echo("Bearer token (displayed once; keep private): " + token)
+    except (SQLAlchemyError, EditorialError):
+        typer.echo("user creation failed", err=True)
+        raise typer.Exit(1) from None
+
+
+@auth_app.command("revoke")
+def revoke_api_identity(name: Annotated[str, typer.Option()]) -> None:
+    from app.infrastructure.db.models import ApiUser
+
+    with SessionLocal.begin() as session:
+        user = session.scalar(select(ApiUser).where(ApiUser.name == name))
+        if user is None:
+            typer.echo("user not found", err=True)
+            raise typer.Exit(1)
+        user.active = False
+    typer.echo("revoked")
+
+
+editorial_app = typer.Typer(no_args_is_help=True, pretty_exceptions_show_locals=False)
+app.add_typer(editorial_app, name="editorial")
+
+
+@editorial_app.command("run")
+def run_editorial(
+    item: Annotated[str, typer.Option(help="Article UUID")],
+    stage: Annotated[str, typer.Option()] = "facts",
+    mode: Annotated[str, typer.Option()] = "rules",
+    draft: Annotated[str | None, typer.Option()] = None,
+) -> None:
+    import json
+    from uuid import UUID
+
+    from app.core.editorial import EditorialError
+    from app.orchestration.editorial import EditorialService
+    from app.orchestration.editorial_jobs import EditorialJobRequest, Operation, execute_job
+
+    if stage not in {
+        "facts",
+        "select",
+        "comparison",
+        "draft",
+        "verify",
+        "pipeline",
+    } or mode not in {"rules", "ai"}:
+        typer.echo("invalid stage or mode", err=True)
+        raise typer.Exit(1)
+    try:
+        with SessionLocal.begin() as session:
+            result = execute_job(
+                EditorialService(session, get_settings()),
+                cast(Operation, stage),
+                UUID(item),
+                EditorialJobRequest(
+                    expected_version=1, mode=mode, draft_id=UUID(draft) if draft else None
+                ),
+            )
+        typer.echo(json.dumps(result, ensure_ascii=False))
+    except (EditorialError, ValueError) as exc:
+        typer.echo(getattr(exc, "code", "INVALID_ARGUMENT"), err=True)
+        raise typer.Exit(1) from None
+    except SQLAlchemyError:
+        typer.echo("DATABASE_ERROR", err=True)
         raise typer.Exit(1) from None
 
 

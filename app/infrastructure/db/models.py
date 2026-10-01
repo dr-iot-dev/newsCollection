@@ -175,6 +175,9 @@ class Item(CreatedUpdatedMixin, Base):
         nullable=False,
     )
     duplicate_of_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("items.id"))
+    workflow_version: Mapped[int] = mapped_column(
+        Integer, default=1, server_default="1", nullable=False
+    )
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
 
@@ -198,6 +201,13 @@ class Fact(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     item_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("items.id"), nullable=False)
+    item_version: Mapped[int] = mapped_column(
+        Integer, default=1, server_default="1", nullable=False
+    )
+    evidence_id: Mapped[uuid.UUID | None] = mapped_column(unique=True)
+    evidence_package_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("evidence_packages.id", name="fk_facts_evidence_package")
+    )
     fact_type: Mapped[str] = mapped_column(String(50), nullable=False)
     subject: Mapped[str] = mapped_column(Text, nullable=False)
     predicate: Mapped[str] = mapped_column(Text, nullable=False)
@@ -477,3 +487,22 @@ class DuplicateDecision(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class EvidencePackage(VersionedPayloadMixin, Base):
+    __tablename__ = "evidence_packages"
+    __table_args__ = (
+        UniqueConstraint("item_id", "revision"),
+        UniqueConstraint("item_id", "input_hash"),
+    )
+    item_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    input_hash: Mapped[str] = mapped_column(String(71), nullable=False)
+
+
+class ApiUser(CreatedUpdatedMixin, Base):
+    __tablename__ = "api_users"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    roles: Mapped[list[str]] = mapped_column(JSON_STORAGE, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

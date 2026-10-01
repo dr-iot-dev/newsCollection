@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import AnyHttpUrl, Field
 
 from app.contracts.base import ContractModel
+from app.contracts.facts_v1 import VerifiedFactV1
 
 
 class FactReferenceV1(ContractModel):
@@ -13,6 +14,10 @@ class FactReferenceV1(ContractModel):
 
 
 class EvidencePackageV1(ContractModel):
+    package_id: UUID | None = None
+    revision: int = Field(default=1, ge=1)
+    verified_facts: tuple[VerifiedFactV1, ...] = ()
+    uncertainties: tuple[str, ...] = ()
     item_id: UUID
     item_version: int = Field(default=1, ge=1)
     canonical_url: AnyHttpUrl

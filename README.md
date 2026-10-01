@@ -156,3 +156,86 @@ docker compose run --rm collect ai-iot-news sources sync config/sources.yaml
 docker compose run --rm collect ai-iot-news collect run --source prtimes-iot --force
 docker compose run --rm collect ai-iot-news collect run --source prtimes-electronics --force
 ```
+
+## Phase 3: facts・AI・内部レビュー API
+
+根拠付きfacts、候補選択、比較データ、ArticlePackage、草稿、独立検証、人間レビューを実装しています。
+各成果物は版とハッシュで追跡し、取得した記事の新版・草稿の新版・検証モデルやpolicyの変更後には旧承認を流用できません。
+
+### 記事を読む
+
+APIはこのPCの `http://127.0.0.1:8000`、開発用OpenAPI画面は `/docs` です。
+記事本文・facts・草稿は内部情報のため、Bearer認証を必須にしています。
+通常の起動では閲覧用アカウントも自動で作成しません。CLIで次のように作成できます。
+
+```console
+docker compose run --rm collect ai-iot-news auth create-user --name reader --role viewer
+```
+
+表示されたtokenを `/docs` の **Authorize** に入力します。tokenはDBにハッシュだけを保存します。
+既存ユーザーのtokenは再表示できません。不要なユーザーは `auth revoke --name reader` で無効化できます。
+
+- `GET /api/v1/items`: ページング、状態・source key・タイトル検索。
+- `GET /api/v1/items/{id}`: 抽出本文、公開日時、factと根拠の文字位置、草稿、前版との差分、検証結果。
+- `GET /api/v1/items/{id}/candidate-decisions`: 採用・保留・却下とその理由。
+- `GET /api/v1/article-packages/{id}`: Writerへ渡す検証済み情報。
+- `GET /api/v1/drafts/{id}/verifications`: 独立検証履歴。
+- `GET /api/v1/audit-events?item_id={id}`: 操作者と状態遷移。
+
+編集操作には `editor`、レビューには `reviewer` roleが必要です。異なる人にそれぞれのアカウントを発行してください。
+同一アカウントによる草稿作成と承認は、既定の4-eyes設定で拒否します。
+
+### 処理を実行する
+
+収集済みの代表記事をschedulerがrulesによるfacts抽出、候補選択、比較パッケージ生成へ進めます。
+低品質・権利未確認・重複・プロンプトインジェクション疑いは処理を止めます。
+rulesは明示的な企業名・製品名ラベル、仕様、円価格、発売日ラベルのみを抽出する保守的な補助処理です。
+必要情報が足りない記事は候補を保留し、製品・企業・日付・比較値を推定しません。
+
+```console
+docker compose run --rm collect ai-iot-news editorial run --item ARTICLE_UUID --stage facts --mode rules
+docker compose run --rm collect ai-iot-news editorial run --item ARTICLE_UUID --stage facts --mode ai
+docker compose run --rm collect ai-iot-news editorial run --item ARTICLE_UUID --stage pipeline --mode ai
+```
+
+APIでは `/items/{id}/facts`、`/select`、`/comparison-package`、`/ai-draft`、`/reprocess`、
+`/drafts/{id}/verify` をPOSTします。`expected_version`には一覧・詳細で取得した **workflow_version** を指定します。
+202とjob_idを返し、schedulerが実行します。`GET /api/v1/jobs/{job_id}` で結果を確認してください。
+再送は同じjobを返します。失敗した要求を明示的に再試行する場合は、新しい `request_id` UUIDを指定します。
+`POST /items/{id}/drafts` は検証済みWritingOutputから手動の新しい草稿revisionを作ります。
+
+比較は承認済みの既存記事に含まれる検証済みfactsだけを利用します。
+`comparison-package` に `previous_item_ids` と `competitor_item_ids` を指定できます。
+従来製品は同じ企業かつ発表日が前、競合製品は別企業であることを確認します。
+比較資料が足りない場合は調査範囲と「比較不能・追加調査が必要」を保存し、取得モジュールへの検索要求をoutboxへ記録します。
+任意URLの自動検索や禁止ページの取得は行いません。参照記事を承認済み収集経路で追加してから比較要求を再実行してください。
+
+### 外部 AI の設定
+
+既定値は `AI_PROVIDER=disabled` です。`.env` でプロバイダーを明示し、用途別モデルを設定して再起動してください。
+
+```dotenv
+AI_PROVIDER=openai
+AI_API_KEY=YOUR_PRIVATE_KEY
+AI_MODEL_FACTS=YOUR_FACTS_MODEL
+AI_SELECTOR_MODEL=YOUR_SELECTOR_MODEL
+AI_WRITER_MODEL=YOUR_WRITER_MODEL
+AI_VERIFIER_MODEL=YOUR_DIFFERENT_VERIFIER_MODEL
+AI_REQUIRE_DISTINCT_MODELS=true
+```
+
+Responses APIの [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs) を利用します。
+API keyは環境変数だけで渡し、ツール権限を与えず、`store: false`、入力・出力サイズ上限を適用します。
+問い合わせ先は文字位置を保持したままマスクします。factsの根拠は元の抽出本文と照合します。
+不正なfacts・Writer出力の修復は最大1回です。Verifierのエラー・不正JSONは合格になりません。
+モデル・prompt・入力hash・request ID・token数・処理時間を `ai_runs` に記録します。
+費用は単価が設定されている場合だけ推計し、未設定では不明として保存します。
+外部AIを有効にするとschedulerが待機中の草稿作成・検証メッセージも実行します。
+
+### 承認条件
+
+`POST /api/v1/items/{id}/reviews` には最新の `draft_id`、`expected_version`、decisionと全checklist項目が必要です。
+`approve` では最新草稿・最新ArticlePackage・最新policy/modelの独立検証pass、ソース条件、全checklist完了を検証します。
+古い版、不完全なchecklist、検証失敗、同一作成者による承認は409で拒否します。
+Writerにない数値・固有名詞、比較欠落、条件差、原文の長い一致、個人情報はコードの検査とVerifierの両方で確認します。
+人間レビューを省略しません。WordPress送信・公開はPhase 4です。
