@@ -1,16 +1,19 @@
 import difflib
-from typing import Annotated, Any
-from uuid import UUID
+from typing import Annotated, Any, cast
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.auth import current_user, require_role
+from app.contracts.base import ContractModel
 from app.contracts.editorial_v1 import ManualDraftRequestV1, ReviewRequestV1
 from app.core.config import get_settings
 from app.core.editorial import EditorialError
 from app.infrastructure.db.models import (
+    AiRun,
     ApiUser,
     ArticleDraft,
     ArticlePackage,
@@ -26,7 +29,12 @@ from app.infrastructure.db.models import (
     Source,
     VerificationRun,
 )
+from app.infrastructure.db.repositories.audit import AuditEventWriter
 from app.infrastructure.db.session import get_db
+from app.modules.research.service import POLICY_VERSION as RESEARCH_POLICY
+from app.modules.research.topics import POLICY_VERSION as TOPIC_POLICY
+from app.modules.verification.service import POLICY_VERSION as VERIFICATION_POLICY
+from app.orchestration.comparison_analysis import analysis_for_items, record_contract
 from app.orchestration.editorial import EditorialService, item_for_update, latest
 from app.orchestration.editorial_jobs import EditorialJobRequest, Operation, queue_job
 
@@ -54,12 +62,114 @@ def verification_view(row: VerificationRun) -> dict[str, Any]:
         "id": str(row.id),
         "draft_id": str(row.draft_id),
         "policy_version": row.policy_version,
+        "policy_current": row.policy_version == VERIFICATION_POLICY,
+        "reverification_required": row.policy_version != VERIFICATION_POLICY,
         "overall_result": row.overall_result,
         "criteria": row.criteria_json,
         "blocking_issues": row.blocking_issues_json,
         "warnings": row.warnings_json,
         "verified_at": row.verified_at.isoformat(),
     }
+
+
+def ai_run_view(row: AiRun) -> dict[str, Any]:
+    return {
+        "id": str(row.id),
+        "item_id": str(row.item_id) if row.item_id else None,
+        "task_type": row.task_type,
+        "model": row.model,
+        "validation_status": row.validation_status,
+        "validation_errors": row.validation_errors_json,
+        "token_in": row.token_in,
+        "token_out": row.token_out,
+        "created_at": row.created_at.isoformat(),
+    }
+
+
+class ComparisonAnalysisRequest(ContractModel):
+    expected_version: int = Field(ge=1)
+    previous_item_ids: tuple[UUID, ...] = Field(default=(), max_length=10)
+    competitor_item_ids: tuple[UUID, ...] = Field(default=(), max_length=10)
+
+
+def analysis_records(
+    session: Session, item_id: UUID, consumer: str, limit: int = 20
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": str(row.message_id),
+            "created_at": row.created_at.isoformat(),
+            "analysis": row.payload_json,
+        }
+        for row in session.scalars(
+            select(ModuleMessage)
+            .where(
+                ModuleMessage.consumer == consumer,
+                ModuleMessage.payload_json["item_id"].as_string() == str(item_id),
+            )
+            .order_by(ModuleMessage.created_at.desc(), ModuleMessage.message_id.desc())
+            .limit(limit)
+        )
+    ]
+
+
+def current_topic(
+    session: Session, item: Item, extracted: ExtractionResult | None
+) -> dict[str, Any] | None:
+    for value in analysis_records(session, item.id, "article_topic"):
+        topic = value["analysis"]
+        if (
+            extracted
+            and topic["item_version"] == item.version
+            and topic["extraction_hash"] == extracted.payload_hash
+            and topic["policy_version"] == TOPIC_POLICY
+        ):
+            return cast(dict[str, Any], topic)
+    return None
+
+
+@router.get("/items/{item_id}/comparison-analysis")
+def comparison_analysis_history(item_id: UUID, session: DB, user: User) -> dict[str, Any]:
+    item = session.get(Item, item_id)
+    if item is None:
+        raise EditorialError("ITEM_NOT_FOUND", 404)
+    extracted = session.scalar(
+        select(ExtractionResult).where(
+            ExtractionResult.item_id == item.id, ExtractionResult.revision == item.version
+        )
+    )
+    return {
+        "selection_policy_version": RESEARCH_POLICY,
+        "topic_policy_version": TOPIC_POLICY,
+        "topic_profile": current_topic(session, item, extracted),
+        "analyses": analysis_records(session, item_id, "comparison_audit"),
+        "topic_history": analysis_records(session, item_id, "article_topic"),
+    }
+
+
+@router.post("/items/{item_id}/comparison-analysis")
+def analyze_comparison(
+    item_id: UUID, request: ComparisonAnalysisRequest, session: DB, user: User
+) -> dict[str, Any]:
+    """Record topic, selection checks and feature differences without generation or collection."""
+    require_role(user, "editor")
+    item = item_for_update(session, item_id, request.expected_version)
+    service = EditorialService(session, get_settings(), actor_id=user.id)
+    analysis = analysis_for_items(
+        service, item, request.previous_item_ids, request.competitor_item_ids
+    )
+    key = record_contract(service, analysis, "comparison_audit")
+    AuditEventWriter(session).append(
+        actor_type="user",
+        actor_id=str(user.id),
+        action="comparison.analyzed",
+        entity_type="item",
+        entity_id=str(item.id),
+        trace_id=str(uuid4()),
+        after={"analysis_id": str(key), "policy_version": analysis.policy_version},
+    )
+    session.commit()
+    return {"analysis_id": str(key), "analysis": analysis.model_dump(mode="json")}
 
 
 @router.get("/items")
@@ -139,13 +249,34 @@ def item_detail(item_id: UUID, session: DB, user: User) -> dict[str, Any]:
         )
     )
     result = item_view(item, source)
+    result["topic_profile"] = current_topic(session, item, extracted)
+    result["comparison_analyses"] = analysis_records(session, item.id, "comparison_audit")
+    package = latest(session, ArticlePackage, item.id)
+    result["article_package"] = package.payload_json if package else None
     result["research_requests"] = [
-        {"id": str(m.message_id), "status": m.status, "request": m.payload_json}
+        {
+            "id": str(m.message_id),
+            "status": m.status,
+            "request": m.payload_json,
+            "result": m.result_json,
+            "attempt": m.attempt,
+            "error": m.error_json,
+            "available_at": m.available_at.isoformat(),
+        }
         for m in research
         if m.payload_json.get("item_id") == str(item.id)
     ]
     result.update(
         {
+            "ai_runs": [
+                ai_run_view(row)
+                for row in session.scalars(
+                    select(AiRun)
+                    .where(AiRun.item_id == item.id)
+                    .order_by(AiRun.created_at.desc(), AiRun.id.desc())
+                    .limit(20)
+                )
+            ],
             "extraction": extracted.payload_json if extracted else None,
             "evidence_package": evidence.payload_json if evidence else None,
             "facts": [
@@ -291,7 +422,14 @@ def job_detail(job_id: UUID, session: DB, user: User) -> dict[str, Any]:
     return {
         "job_id": str(job.id),
         "status": job.status,
+        "attempt": job.attempt,
+        "next_run_at": job.scheduled_for.isoformat() if job.status == "waiting_research" else None,
         "error_code": job.error_code,
+        "ai_runs": [
+            ai_run_view(row)
+            for run_id in job.stats_json.get("ai_run_ids", [])
+            if (row := session.get(AiRun, UUID(run_id))) is not None
+        ],
         "result": job.stats_json.get("result", {}),
     }
 

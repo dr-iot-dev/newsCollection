@@ -81,8 +81,8 @@ def writing(package):
         ),
         category_keys=("iot_platform",),
         importance=3,
-        previous_comparison=package["comparison"]["previous_products"][0]["unavailable_reason"],
-        competitor_comparison=package["comparison"]["competitor_products"][0]["unavailable_reason"],
+        previous_comparison="",
+        competitor_comparison="",
     )
 
 
@@ -215,7 +215,7 @@ def test_invalid_ai_facts_repair_only_once_and_never_persist(acquisition_session
     assert {r.validation_status for r in session.scalars(select(AiRun))} == {"invalid"}
 
 
-@pytest.mark.parametrize("fault", ["number", "previous", "competitor"])
+@pytest.mark.parametrize("fault", ["number", "title", "previous", "competitor"])
 def test_rule_verifier_blocks_errors_even_if_model_returns_pass(acquisition_session, fault):
     session = acquisition_session
     item, svc, _ = prepared(session)
@@ -225,9 +225,14 @@ def test_rule_verifier_blocks_errors_even_if_model_returns_pass(acquisition_sess
     if fault == "number":
         value["lead"] = "価格は99999円です。"
         draft.lead = value["lead"]
+    elif fault == "title":
+        value["title"] = "長いタイトル" * 20
+        draft.title = value["title"]
     else:
         heading = "## 従来製品との比較" if fault == "previous" else "## 他社製品との比較"
-        value["body_markdown"] = value["body_markdown"].replace(heading, "比較情報")
+        value["body_markdown"] = value["body_markdown"].replace(
+            "\n## 出典\n", "\n" + heading + "\n比較不能。\n## 出典\n"
+        )
         draft.body_markdown = value["body_markdown"]
     draft.source_block = {
         **draft.source_block,
@@ -237,7 +242,11 @@ def test_rule_verifier_blocks_errors_even_if_model_returns_pass(acquisition_sess
     verification = svc.verify(draft.id)
     assert verification.overall_result == "fail"
     assert (
-        "fact_support" if fault == "number" else fault + "_comparison"
+        "fact_support"
+        if fault == "number"
+        else "title_clarity"
+        if fault == "title"
+        else fault + "_comparison"
     ) in verification.blocking_issues_json
     assert item.status == ItemStatus.VERIFICATION_FAILED
     with pytest.raises(EditorialError, match="REVIEW_STATE_INVALID"):
@@ -512,3 +521,114 @@ def test_changed_distinct_model_policy_invalidates_old_pass(acquisition_session)
     altered = EditorialService(session, changed, AIRunner(session, changed, Provider()))
     with pytest.raises(EditorialError, match="VERIFICATION_STALE"):
         altered.review(item.id, review_request(item, draft), uuid4())
+
+
+def test_writing_allows_supplied_comparison_check_date_but_rejects_new_numbers(acquisition_session):
+    from app.modules.writing.service import validate_writing
+
+    session = acquisition_session
+    item = seed(session)
+    config = settings()
+    service = EditorialService(session, config, AIRunner(session, config, Provider()))
+    service.facts(item.id)
+    service.select(item.id)
+    service.comparison(item.id, request_missing=False)
+    _, package = service.package(item)
+    output = writing(package.model_dump(mode="json"))
+    day = package.comparison.previous_products[0].as_of
+    updated = output.model_copy(
+        update={"lead": f"比較の確認日は{day.year}年{day.month}月{day.day}日です。"}
+    )
+    validate_writing(updated, package)
+    with pytest.raises(EditorialError, match="DRAFT_NUMBER_UNSUPPORTED"):
+        validate_writing(output.model_copy(update={"lead": "価格は123456円です。"}), package)
+
+
+@pytest.mark.parametrize(
+    "criterion", ["title_clarity", "editorial_conciseness", "previous_comparison"]
+)
+def test_independent_verifier_can_reject_editorial_issues(acquisition_session, criterion):
+    class TitleVerifier(Provider):
+        def generate(self, **kwargs):
+            response = super().generate(**kwargs)
+            if kwargs["model"] == "verifier-test":
+                for result in response.output["criteria"]:
+                    if result["key"] == criterion:
+                        result.update(
+                            result="fail",
+                            detail="Independent editorial check failed",
+                        )
+                response.output["overall_result"] = "fail"
+            return response
+
+    session = acquisition_session
+    item, svc, _ = prepared(session)
+    draft = svc.draft(item.id)
+    svc.runner.provider = TitleVerifier()
+    verification = svc.verify(draft.id)
+    assert verification.overall_result == "fail"
+    assert criterion in verification.blocking_issues_json
+    assert item.status == ItemStatus.VERIFICATION_FAILED
+
+
+@pytest.mark.parametrize("invalid_fact_id", [False, True])
+def test_verifier_schema_limits_references_and_keeps_independent_verdict(
+    acquisition_session, invalid_fact_id
+):
+    class ScopedVerifier(Provider):
+        def generate(self, **kwargs):
+            response = super().generate(**kwargs)
+            if kwargs["model"] == "verifier-test":
+                data = kwargs["data"]
+                schema = strict_schema(kwargs["schema"])
+                properties = schema["properties"]
+                assert properties["draft_id"]["enum"] == [data["draft"]["draft_id"]]
+                assert properties["article_package_id"]["enum"] == [
+                    data["draft"]["article_package_id"]
+                ]
+                assert properties["policy_version"]["enum"] == [data["policy_version"]]
+                criterion = schema["$defs"]["VerificationCriterionV1"]["properties"]
+                assert set(criterion["key"]["enum"]) == set(data["required_criteria"])
+                assert set(criterion["fact_ids"]["items"]["enum"]) == set(
+                    data["package"]["verified_fact_ids"]
+                )
+                assert set(properties["overall_result"]["enum"]) == {"pass", "fail", "error"}
+                if invalid_fact_id:
+                    response.output["criteria"][0]["fact_ids"] = [str(uuid4())]
+            return response
+
+    session = acquisition_session
+    item, svc, _ = prepared(session)
+    draft = svc.draft(item.id)
+    svc.runner.provider = ScopedVerifier()
+    verification = svc.verify(draft.id)
+    assert verification.overall_result == ("error" if invalid_fact_id else "pass")
+    if invalid_fact_id:
+        run = session.get(AiRun, verification.ai_run_id)
+        assert run.validation_errors_json[0]["path"] == ["criteria", 0, "fact_ids"]
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        "見守りサービスの通信方式を比較",
+        "見守りサービスの通信方式を比較。",
+        "見守りサービスの通信方式を比較  ",
+    ],
+)
+def test_writer_and_verifier_reject_redundant_title_suffix(acquisition_session, title):
+    from app.contracts.draft_v1 import ArticleDraftV1
+    from app.modules.verification.service import rule_criteria
+    from app.modules.writing.service import validate_writing
+
+    session = acquisition_session
+    item, svc, package_row = prepared(session)
+    _, package = svc.package(item)
+    output = writing(package_row.payload_json)
+    with pytest.raises(EditorialError, match="DRAFT_TITLE_REDUNDANT_SUFFIX"):
+        validate_writing(output.model_copy(update={"title": title}), package)
+    draft = svc.draft(item.id, manual=output)
+    dto = ArticleDraftV1.model_validate(draft.source_block["draft"]).model_copy(
+        update={"title": title}
+    )
+    assert {c.key: c.result for c in rule_criteria(dto, package)}["title_clarity"] == "fail"

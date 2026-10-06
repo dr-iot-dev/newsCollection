@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy.orm import Session
 
 from app.contracts.editorial_v1 import ResearchRequestV1
@@ -11,8 +13,8 @@ class QueuedResearchAcquisition:
     def __init__(self, session: Session) -> None:
         self.session = session
 
-    def request_search(self, request: ResearchRequestV1) -> None:
-        ModuleMessageRepository(self.session).enqueue_once(
+    def request_search(self, request: ResearchRequestV1) -> UUID:
+        message = ModuleMessageRepository(self.session).enqueue_once(
             ContractEnvelope.build(
                 request,
                 contract_type="ResearchRequest",
@@ -21,3 +23,4 @@ class QueuedResearchAcquisition:
             ),
             consumer="acquisition_research",
         )
+        return message.message_id

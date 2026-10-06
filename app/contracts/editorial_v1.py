@@ -27,8 +27,8 @@ class WritingOutputV1(ContractModel):
     category_keys: tuple[Category, ...] = Field(min_length=1)
     audiences: tuple[str, ...] = ()
     importance: int = Field(ge=1, le=5)
-    previous_comparison: str = Field(min_length=1, max_length=3000)
-    competitor_comparison: str = Field(min_length=1, max_length=3000)
+    previous_comparison: str = Field(default="", max_length=3000)
+    competitor_comparison: str = Field(default="", max_length=3000)
     risk_flags: tuple[str, ...] = ()
 
 
@@ -38,6 +38,11 @@ class ResearchRequestV1(ContractModel):
     relation: Literal["previous", "competitor"]
     query: str
     approved_source_keys: tuple[str, ...]
+    evidence_package_id: UUID | None = None
+    evidence_hash: str | None = None
+    expected_workflow_version: int | None = Field(default=None, ge=1)
+    job_id: UUID | None = None
+    policy_version: str = "research-v1"
 
 
 class ReviewChecklistV1(ContractModel):

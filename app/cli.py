@@ -131,12 +131,14 @@ app.add_typer(auth_app, name="auth")
 @auth_app.command("create-user")
 def create_api_identity(
     name: Annotated[str, typer.Option()],
-    role: Annotated[list[str], typer.Option(help="Repeat viewer/editor/reviewer as needed.")],
+    role: Annotated[
+        list[str], typer.Option(help="Repeat viewer/editor/reviewer/publisher as needed.")
+    ],
 ) -> None:
     from app.api.auth import create_user
     from app.core.editorial import EditorialError
 
-    if not role or any(r not in {"viewer", "editor", "reviewer"} for r in role):
+    if not role or any(r not in {"viewer", "editor", "reviewer", "publisher"} for r in role):
         typer.echo("invalid role", err=True)
         raise typer.Exit(1)
     try:

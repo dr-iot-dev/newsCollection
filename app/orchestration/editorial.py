@@ -1,14 +1,17 @@
 """Revision-aware Phase 3 application services; modules exchange validated DTOs only."""
 
 import difflib
-from datetime import UTC, datetime
+import re
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Literal, cast
 from uuid import UUID, uuid4
 
+import structlog
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.ai.diagnostics import validation_diagnostics
 from app.ai.runner import AIRunner
 from app.contracts.article_package_v1 import ArticlePackageV1, SourceReferenceV1
 from app.contracts.base import ContractModel
@@ -30,7 +33,8 @@ from app.contracts.verification_v1 import (
     VerificationReportV1,
 )
 from app.core.config import Settings
-from app.core.editorial import INJECTION, EditorialError, redact_contacts
+from app.core.editorial import INJECTION, EditorialError, numbers, redact_contacts
+from app.core.evidence_support import supported_text
 from app.infrastructure.db.models import (
     AiRun,
     ArticleDraft,
@@ -54,14 +58,19 @@ from app.infrastructure.research_requests import QueuedResearchAcquisition
 from app.modules.acquisition.ports import ResearchAcquisitionPort
 from app.modules.acquisition.service import source_config
 from app.modules.comparison.service import build_comparison
-from app.modules.extraction.facts import rule_facts, validate_facts
+from app.modules.extraction.facts import (
+    evidence_passages,
+    rule_facts,
+    supported_ai_facts,
+    validate_facts,
+)
 from app.modules.review.service import validate_checklist
 from app.modules.selection.service import POLICY_VERSION as SELECTION_POLICY
 from app.modules.selection.service import rule_selection
 from app.modules.verification.service import POLICY_VERSION as VERIFICATION_POLICY
 from app.modules.verification.service import REQUIRED_CRITERIA, rule_criteria
 from app.modules.writing.service import POLICY_VERSION as WRITING_POLICY
-from app.modules.writing.service import validate_writing
+from app.modules.writing.service import render_comparison, validate_writing
 from app.orchestration.phase2 import lock_item
 
 
@@ -138,6 +147,7 @@ class EditorialService:
         self.session, self.settings = session, settings
         self.runner = runner or AIRunner(session, settings)
         self.actor_id = actor_id
+        self.research_job_id: UUID | None = None
         self.research_port: ResearchAcquisitionPort = QueuedResearchAcquisition(session)
 
     def enqueue(
@@ -173,6 +183,9 @@ class EditorialService:
                 reason="EXTRACTION_QUALITY_OR_INJECTION",
             )
             return None
+        from app.orchestration.comparison_analysis import topic_for_item
+
+        topic_for_item(self, item)
         identity = canonical_payload_hash(
             {
                 "extraction": extracted.payload_hash,
@@ -197,17 +210,47 @@ class EditorialService:
         ):
             raise EditorialError("DEDUPLICATION_REQUIRED")
         if mode == "ai":
-            output, _ = self.runner.run(
+            omitted: tuple[EditorialError, ...] = ()
+            normalize_attempt = 0
+
+            def normalize(value: FactsOutputV1) -> FactsOutputV1:
+                nonlocal omitted, normalize_attempt
+                normalize_attempt += 1
+                retained, omitted = supported_ai_facts(content, value)
+                return retained
+
+            output, run_id = self.runner.run(
                 "facts",
                 item.id,
-                {"body": redact_contacts(content.body), "source_url": str(content.canonical_url)},
+                {
+                    "body": redact_contacts(content.body),
+                    "evidence_passages": evidence_passages(redact_contacts(content.body)),
+                    "source_url": str(content.canonical_url),
+                },
                 FactsOutputV1,
+                normalize=normalize,
                 validate=lambda value: validate_facts(content, value),
                 repair=True,
             )
             if output is None:
                 touch(self.session, item, "facts.invalid", self.actor_id, ItemStatus.REVIEW_PENDING)
                 return None
+            if omitted:
+                run = self.session.get(AiRun, run_id)
+                assert run is not None
+                run.validation_status = "valid_with_rejections"
+                run.validation_errors_json = [
+                    diagnostic
+                    for exc in omitted
+                    for diagnostic in validation_diagnostics(exc, FactsOutputV1, normalize_attempt)
+                ]
+                structlog.get_logger().warning(
+                    "ai_fact_candidates_rejected",
+                    ai_run_id=str(run.id),
+                    item_id=str(item.id),
+                    retained_fact_count=len(output.facts),
+                    validation_errors=run.validation_errors_json,
+                )
         else:
             try:
                 output = rule_facts(content)
@@ -380,6 +423,8 @@ class EditorialService:
         item_id: UUID,
         previous_ids: tuple[UUID, ...] = (),
         competitor_ids: tuple[UUID, ...] = (),
+        *,
+        request_missing: bool = True,
     ) -> ArticlePackage:
         item = item_for_update(self.session, item_id)
         eligible(self.session, item)
@@ -431,6 +476,10 @@ class EditorialService:
                         fact_ids=tuple(f.fact_id for f in other_evidence.verified_facts),
                     )
                 )
+        from app.modules.research.service import POLICY_VERSION as RESEARCH_POLICY
+        from app.orchestration.comparison_analysis import analysis_for_items
+
+        analysis = analysis_for_items(self, item, previous_ids, competitor_ids, enforce=True)
         identity = canonical_payload_hash(
             {
                 "candidate": str(candidate.id),
@@ -438,6 +487,8 @@ class EditorialService:
                 "previous": [str(i) for i in previous_ids],
                 "competitor": [str(i) for i in competitor_ids],
                 "policy": WRITING_POLICY,
+                "research_policy": RESEARCH_POLICY,
+                "analysis": canonical_payload_hash(analysis.model_dump(mode="json")),
             }
         )
         existing = latest(self.session, ArticlePackage, item.id)
@@ -452,6 +503,7 @@ class EditorialService:
             tuple(competitors),
             datetime.now(UTC).date(),
         )
+        comparison = comparison.model_copy(update={"analysis": analysis})
         dataset = ComparisonDataset(
             item_id=item.id,
             revision=revision,
@@ -466,7 +518,8 @@ class EditorialService:
             revision=revision,
             candidate_id=candidate.id,
             request_hash=identity,
-            topic=evidence.title,
+            topic=analysis.target_topic.topic_label,
+            topic_profile=analysis.target_topic,
             facts=tuple(all_facts),
             verified_fact_ids=tuple(f.fact_id for f in all_facts),
             comparison_dataset_id=dataset.id,
@@ -484,7 +537,7 @@ class EditorialService:
         self.session.add(result)
         self.session.flush()
         for relation, values in (("previous", previous), ("competitor", competitors)):
-            if not values:
+            if not values and request_missing:
                 approved = tuple(
                     self.session.scalars(
                         select(Source.key)
@@ -501,6 +554,10 @@ class EditorialService:
                         relation=relation,
                         query=evidence.title,
                         approved_source_keys=approved,
+                        evidence_package_id=evidence_row.id,
+                        evidence_hash=evidence_row.payload_hash,
+                        expected_workflow_version=item.workflow_version + 1,
+                        job_id=self.research_job_id,
                     )
                 )
         self.enqueue(package, "ArticlePackage", "writing", "comparison")
@@ -553,10 +610,19 @@ class EditorialService:
             validate_writing(manual, package)
             output, run_id = manual, None
         else:
+            supported = supported_text(package)
+            data = {
+                **package.model_dump(mode="json"),
+                "allowed_numbers": sorted(numbers(supported)),
+                "allowed_entities": sorted(
+                    set(re.findall(r"(?<![A-Za-z0-9_-])[A-Z][A-Za-z0-9_-]{2,}", supported))
+                    | {f.value for f in package.facts if f.fact_type in {"organization", "product"}}
+                ),
+            }
             output, run_id = self.runner.run(
                 "writer",
                 item.id,
-                package.model_dump(mode="json"),
+                data,
                 WritingOutputV1,
                 validate=lambda value: validate_writing(value, package),
                 repair=True,
@@ -568,9 +634,8 @@ class EditorialService:
         revision = (prior.revision if prior else 0) + 1
         sources = "\n".join("- " + str(ref.url) for ref in package.source_references)
         body = "\n\n".join(p.text for p in output.paragraphs)
-        body += "\n## 従来製品との比較\n" + output.previous_comparison
-        body += "\n## 他社製品との比較\n" + output.competitor_comparison
-        body += "\n## 出典\n" + sources
+        body += render_comparison(output, package)
+        body += "\n\n## 出典\n\n" + sources
         draft_id = uuid4()
         payload = ArticleDraftV1(
             draft_id=draft_id,
@@ -668,22 +733,31 @@ class EditorialService:
             "draft": dto.model_dump(mode="json"),
             "package": package.model_dump(mode="json"),
             "required_criteria": sorted(REQUIRED_CRITERIA),
+            "verifier_profile_key": self.runner.profile("verifier").key,
+            "verification_id": str(uuid4()),
+            "policy_version": VERIFICATION_POLICY,
             "policy": VERIFICATION_POLICY,
         }
 
         def validate(report: VerificationReportV1) -> None:
-            if (
-                report.draft_id != dto.draft_id
-                or report.article_package_id != row.id
-                or report.policy_version != VERIFICATION_POLICY
-                or report.verifier_profile_key != self.runner.profile("verifier").key
-                or len(report.criteria) != len(REQUIRED_CRITERIA)
-                or {c.key for c in report.criteria} != REQUIRED_CRITERIA
-                or any(
-                    not set(c.fact_ids) <= set(package.verified_fact_ids) for c in report.criteria
-                )
+            for field, expected in (
+                ("draft_id", dto.draft_id),
+                ("article_package_id", row.id),
+                ("policy_version", VERIFICATION_POLICY),
+                ("verifier_profile_key", self.runner.profile("verifier").key),
             ):
-                raise EditorialError("VERIFIER_OUTPUT_SCOPE_INVALID")
+                if getattr(report, field) != expected:
+                    raise EditorialError("VERIFIER_OUTPUT_SCOPE_INVALID", path=(field,))
+            if (
+                len(report.criteria) != len(REQUIRED_CRITERIA)
+                or {c.key for c in report.criteria} != REQUIRED_CRITERIA
+            ):
+                raise EditorialError("VERIFIER_OUTPUT_SCOPE_INVALID", path=("criteria",))
+            for index, criterion in enumerate(report.criteria):
+                if not set(criterion.fact_ids) <= set(package.verified_fact_ids):
+                    raise EditorialError(
+                        "VERIFIER_OUTPUT_SCOPE_INVALID", path=("criteria", index, "fact_ids")
+                    )
 
         report, run_id = self.runner.run(
             "verifier", item.id, data, VerificationReportV1, validate=validate
@@ -740,6 +814,57 @@ class EditorialService:
         )
         return result
 
+    def validate_for_approval(
+        self, item: Item, draft: ArticleDraft, reviewer_id: UUID, *, require_pending: bool = True
+    ) -> None:
+        """Recheck revision, rights, independent verification and four-eyes at every send."""
+        current = latest(self.session, ArticleDraft, item.id)
+        if current is None or current.id != draft.id:
+            raise EditorialError("DRAFT_STALE")
+        dto = ArticleDraftV1.model_validate(draft.source_block["draft"])
+        if (
+            dto.draft_id != draft.id
+            or dto.item_id != item.id
+            or dto.title != draft.title
+            or dto.lead != draft.lead
+            or dto.body_markdown != draft.body_markdown
+            or list(dto.category_keys) != draft.category_keys
+            or list(dto.tags) != draft.tags
+            or dto.article_package_id != draft.article_package_id
+            or dto.revision != draft.revision
+            or canonical_payload_hash(dto.model_dump(mode="json")) != draft.source_block["hash"]
+        ):
+            raise EditorialError("DRAFT_HASH_MISMATCH")
+        eligible(self.session, item)
+        package_row, _ = self.package(item)
+        if (
+            require_pending and item.status != ItemStatus.REVIEW_PENDING
+        ) or draft.article_package_id != package_row.id:
+            raise EditorialError("REVIEW_STATE_INVALID")
+        if self.settings.review_require_four_eyes and draft.source_block.get("actor_id") == str(
+            reviewer_id
+        ):
+            raise EditorialError("REVIEW_FOUR_EYES_REQUIRED")
+        verification = self.session.scalars(
+            select(VerificationRun)
+            .where(VerificationRun.draft_id == draft.id)
+            .order_by(VerificationRun.verified_at.desc(), VerificationRun.id.desc())
+        ).first()
+        if verification is None or verification.overall_result != "pass":
+            raise EditorialError("LATEST_VERIFICATION_REQUIRED")
+        meta = verification.comparison_checks_json[0]
+        current_hash = canonical_payload_hash(
+            ArticleDraftV1.model_validate(draft.source_block["draft"]).model_dump(mode="json")
+        )
+        if (
+            verification.policy_version != VERIFICATION_POLICY
+            or meta.get("require_distinct_models") != self.settings.ai_require_distinct_models
+            or meta["verifier_fingerprint"] != self.runner.profile("verifier").fingerprint
+            or meta["draft_hash"] != current_hash
+            or meta["package_hash"] != package_row.payload_hash
+        ):
+            raise EditorialError("VERIFICATION_STALE")
+
     def review(self, item_id: UUID, request: ReviewRequestV1, reviewer_id: UUID) -> Review:
         item = item_for_update(self.session, item_id, request.expected_version)
         draft = latest(self.session, ArticleDraft, item_id)
@@ -747,36 +872,7 @@ class EditorialService:
             raise EditorialError("DRAFT_STALE")
         validate_checklist(request)
         if request.decision == "approve":
-            eligible(self.session, item)
-            package_row, _ = self.package(item)
-            if (
-                item.status != ItemStatus.REVIEW_PENDING
-                or draft.article_package_id != package_row.id
-            ):
-                raise EditorialError("REVIEW_STATE_INVALID")
-            if self.settings.review_require_four_eyes and draft.source_block.get("actor_id") == str(
-                reviewer_id
-            ):
-                raise EditorialError("REVIEW_FOUR_EYES_REQUIRED")
-            verification = self.session.scalars(
-                select(VerificationRun)
-                .where(VerificationRun.draft_id == draft.id)
-                .order_by(VerificationRun.verified_at.desc(), VerificationRun.id.desc())
-            ).first()
-            if verification is None or verification.overall_result != "pass":
-                raise EditorialError("LATEST_VERIFICATION_REQUIRED")
-            meta = verification.comparison_checks_json[0]
-            current_hash = canonical_payload_hash(
-                ArticleDraftV1.model_validate(draft.source_block["draft"]).model_dump(mode="json")
-            )
-            if (
-                verification.policy_version != VERIFICATION_POLICY
-                or meta.get("require_distinct_models") != self.settings.ai_require_distinct_models
-                or meta["verifier_fingerprint"] != self.runner.profile("verifier").fingerprint
-                or meta["draft_hash"] != current_hash
-                or meta["package_hash"] != package_row.payload_hash
-            ):
-                raise EditorialError("VERIFICATION_STALE")
+            self.validate_for_approval(item, draft, reviewer_id)
         result = Review(
             item_id=item.id,
             draft_id=draft.id,
@@ -876,6 +972,13 @@ def process_editorial_outbox(
                 ):
                     service.select(item.id)
             elif consumer == "comparison":
+                from app.orchestration.research import has_active_comparison_job
+
+                if has_active_comparison_job(session, item.id):
+                    record.available_at = datetime.now(UTC) + timedelta(
+                        seconds=settings.research_retry_seconds
+                    )
+                    continue
                 decision = CandidateDecisionV1.model_validate(record.payload_json)
                 evidence = latest(session, EvidencePackage, item.id)
                 if (
@@ -883,8 +986,50 @@ def process_editorial_outbox(
                     and evidence.id == decision.evidence_package_id
                     and evidence.item_version == item.version
                 ):
-                    service.comparison(item.id)
+                    # Do not replace an already prepared manual/automatic comparison package.
+                    existing_package = latest(session, ArticlePackage, item.id)
+                    try:
+                        if existing_package is not None:
+                            service.package(item)
+                            prepared_package = True
+                        else:
+                            prepared_package = False
+                    except EditorialError:
+                        prepared_package = False
+                    if not prepared_package:
+                        from app.orchestration.research import prepare_comparison, record_package
+
+                        if service.runner.provider is None and settings.comparison_auto_research:
+                            service.comparison(item.id)
+                            record.status, record.processed_at = "processed", datetime.now(UTC)
+                            continue
+                        prepared = prepare_comparison(service, item.id)
+                        if prepared.pending:
+                            record.available_at = datetime.now(UTC) + timedelta(
+                                seconds=settings.research_retry_seconds
+                            )
+                            continue
+                        package = service.comparison(
+                            item.id,
+                            prepared.previous_ids,
+                            prepared.competitor_ids,
+                            request_missing=not settings.comparison_auto_research,
+                        )
+                        record_package(service, prepared.request_ids, package.id)
             elif consumer == "writing":
+                if settings.comparison_auto_research:
+                    active_research = session.scalar(
+                        select(ModuleMessage.message_id)
+                        .where(
+                            ModuleMessage.consumer == "acquisition_research",
+                            ModuleMessage.status == "pending",
+                            ModuleMessage.payload_json["item_id"].as_string() == str(item.id),
+                            ModuleMessage.payload_json["item_version"].as_integer() == item.version,
+                        )
+                        .limit(1)
+                    )
+                    if active_research is not None:
+                        continue
                 ArticlePackageV1.model_validate(record.payload_json)
                 latest_package = latest(session, ArticlePackage, item.id)
                 draft = latest(session, ArticleDraft, item.id)

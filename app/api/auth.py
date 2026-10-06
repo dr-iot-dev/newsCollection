@@ -11,7 +11,7 @@ from app.core.editorial import EditorialError
 from app.infrastructure.db.models import ApiUser
 from app.infrastructure.db.session import get_db
 
-Role = Literal["viewer", "editor", "reviewer"]
+Role = Literal["viewer", "editor", "reviewer", "publisher"]
 bearer = HTTPBearer(auto_error=False)
 
 
@@ -20,7 +20,7 @@ def create_user(session: Session, name: str, roles: list[str]) -> tuple[ApiUser,
         not name.strip()
         or len(name) > 100
         or not roles
-        or not set(roles) <= {"viewer", "editor", "reviewer"}
+        or not set(roles) <= {"viewer", "editor", "reviewer", "publisher"}
     ):
         raise EditorialError("USER_CONFIGURATION_INVALID", 422)
     if session.scalar(select(ApiUser).where(ApiUser.name == name)):

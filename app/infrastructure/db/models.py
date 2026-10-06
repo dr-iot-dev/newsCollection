@@ -1,6 +1,6 @@
 import enum
 import uuid
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -237,6 +237,7 @@ class AiRun(Base):
     request_id: Mapped[str | None] = mapped_column(String(255))
     output_json: Mapped[dict[str, Any] | None] = mapped_column(JSON_STORAGE)
     validation_status: Mapped[str] = mapped_column(String(30), nullable=False)
+    validation_errors_json: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON_STORAGE)
     token_in: Mapped[int | None] = mapped_column(Integer)
     token_out: Mapped[int | None] = mapped_column(Integer)
     cost_estimate: Mapped[Decimal | None] = mapped_column(Numeric(12, 6))
@@ -355,7 +356,10 @@ class Review(Base):
     checklist_json: Mapped[dict[str, bool]] = mapped_column(JSON_STORAGE, nullable=False)
     comment: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        server_default=func.now(),
+        nullable=False,
     )
 
 
@@ -374,6 +378,29 @@ class Publication(CreatedUpdatedMixin, Base):
     payload_hash: Mapped[str] = mapped_column(String(71), nullable=False)
     last_error: Mapped[str | None] = mapped_column(Text)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    package_json: Mapped[dict[str, Any] | None] = mapped_column(JSON_STORAGE)
+    payload_json: Mapped[dict[str, Any] | None] = mapped_column(JSON_STORAGE)
+    remote_hash: Mapped[str | None] = mapped_column(String(71))
+    state: Mapped[str] = mapped_column(
+        String(30), default="prepared", server_default="legacy", nullable=False
+    )
+
+
+class PublishApproval(Base):
+    __tablename__ = "publish_approvals"
+    __table_args__ = (UniqueConstraint("publication_id"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    publication_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("publications.id"), nullable=False)
+    review_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("reviews.id"), nullable=False)
+    publisher_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("api_users.id"), nullable=False)
+    item_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    payload_hash: Mapped[str] = mapped_column(String(71), nullable=False)
+    remote_hash: Mapped[str] = mapped_column(String(71), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
 
 class JobRun(Base):
@@ -414,6 +441,7 @@ class ModuleMessage(Base):
     available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     error_json: Mapped[dict[str, Any] | None] = mapped_column(JSON_STORAGE)
+    result_json: Mapped[dict[str, Any] | None] = mapped_column(JSON_STORAGE)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

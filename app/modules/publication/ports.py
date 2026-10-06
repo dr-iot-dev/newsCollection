@@ -1,8 +1,13 @@
-from typing import Protocol
+from typing import Any, Protocol
 
-from app.contracts.envelope import ContractEnvelope
-from app.contracts.publication_v1 import PublicationPackageV1
+from app.contracts.wordpress_v1 import WordPressPayloadV1
 
 
 class PublicationPort(Protocol):
-    def create_draft(self, package: ContractEnvelope[PublicationPackageV1]) -> str: ...
+    def find(self, slug: str) -> dict[str, Any] | None: ...
+
+    def get(self, post_id: str) -> dict[str, Any]: ...
+
+    def create_draft(self, payload: WordPressPayloadV1) -> dict[str, Any]: ...
+
+    def publish(self, post_id: str) -> dict[str, Any]: ...

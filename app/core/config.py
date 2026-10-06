@@ -1,6 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, PostgresDsn, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -34,7 +34,24 @@ class Settings(BaseSettings):
     ai_max_output_tokens: int = Field(default=4000, ge=100, le=16000)
     ai_input_cost_per_million: float | None = Field(default=None, ge=0)
     ai_output_cost_per_million: float | None = Field(default=None, ge=0)
+    comparison_auto_research: bool = True
+    research_refresh_sources: bool = True
+    research_max_candidates: int = Field(default=100, ge=1, le=500)
+    research_max_fact_checks: int = Field(default=6, ge=1, le=20)
+    research_max_sources_per_attempt: int = Field(default=6, ge=1, le=20)
+    research_max_attempts: int = Field(default=3, ge=1, le=5)
+    research_retry_seconds: int = Field(default=60, ge=10, le=3600)
     review_require_four_eyes: bool = True
+    wordpress_enabled: bool = False
+    wordpress_base_url: str = ""
+    wordpress_username: str = ""
+    wordpress_application_password: SecretStr | None = Field(default=None, repr=False)
+    wordpress_category_map: dict[str, Annotated[int, Field(ge=1, strict=True)]] = Field(
+        default_factory=dict
+    )
+    wordpress_tag_map: dict[str, Annotated[int, Field(ge=1, strict=True)]] = Field(
+        default_factory=dict
+    )
 
     @model_validator(mode="after")
     def validate_ai(self) -> "Settings":

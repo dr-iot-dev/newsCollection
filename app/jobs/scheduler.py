@@ -7,12 +7,14 @@ from sqlalchemy import or_, select
 
 from app.core.config import get_settings
 from app.core.logging import configure_logging
-from app.infrastructure.db.models import LegalStatus, Source
+from app.infrastructure.db.models import LegalStatus, Publication, Source
 from app.infrastructure.db.session import SessionLocal
 from app.modules.acquisition.service import collect_source
 from app.orchestration.editorial import process_editorial_outbox, process_facts_outbox
 from app.orchestration.editorial_jobs import process_editorial_jobs
 from app.orchestration.phase2 import process_phase2
+from app.orchestration.publication import PublicationService
+from app.orchestration.research import process_comparison_research
 
 logger = structlog.get_logger()
 
@@ -60,7 +62,12 @@ def poll_sources() -> None:
             fact_count = process_facts_outbox(session, settings)
         with SessionLocal.begin() as session:
             job_count = process_editorial_jobs(session, settings)
-        for consumer in ("selection", "comparison", "writing", "verification"):
+        for consumer in ("selection", "comparison"):
+            with SessionLocal.begin() as session:
+                process_editorial_outbox(session, settings, consumer)
+        with SessionLocal.begin() as session:
+            process_comparison_research(session, settings)
+        for consumer in ("writing", "verification"):
             with SessionLocal.begin() as session:
                 process_editorial_outbox(session, settings, consumer)
         if fact_count or job_count:
@@ -69,6 +76,31 @@ def poll_sources() -> None:
             logger.info("phase2_processed", **counts)
     except Exception:
         logger.error("phase2_processing_error", error_code="PROCESSING_ERROR")
+
+
+def reconcile_wordpress() -> None:
+    settings = get_settings()
+    if not settings.wordpress_enabled:
+        return
+    with SessionLocal() as session:
+        ids = list(
+            session.scalars(
+                select(Publication.id)
+                .where(Publication.state != "legacy")
+                .order_by(Publication.updated_at)
+                .limit(100)
+            )
+        )
+    for publication_id in ids:
+        try:
+            with SessionLocal() as session:
+                PublicationService(session, settings).reconcile(publication_id)
+        except Exception:
+            logger.error(
+                "wordpress_reconcile_error",
+                publication_id=str(publication_id),
+                error_code="RECONCILE_FAILED",
+            )
 
 
 def main() -> None:
@@ -80,6 +112,15 @@ def main() -> None:
         trigger="interval",
         seconds=60,
         id="collect-due-sources",
+        max_instances=1,
+        coalesce=True,
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        reconcile_wordpress,
+        trigger="interval",
+        minutes=30,
+        id="reconcile-wordpress",
         max_instances=1,
         coalesce=True,
         replace_existing=True,

@@ -2,6 +2,7 @@ from datetime import date
 from uuid import UUID
 
 from app.contracts.base import ContractModel
+from app.contracts.comparison_analysis_v1 import ComparisonAnalysisV1
 
 
 class ComparisonValueV1(ContractModel):
@@ -22,3 +23,4 @@ class ComparisonDatasetV1(ContractModel):
     announced_product: tuple[ComparisonValueV1, ...]
     previous_products: tuple[ComparisonValueV1, ...]
     competitor_products: tuple[ComparisonValueV1, ...]
+    analysis: ComparisonAnalysisV1 | None = None

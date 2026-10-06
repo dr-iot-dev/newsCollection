@@ -3,9 +3,10 @@ from decimal import Decimal
 
 
 class EditorialError(Exception):
-    def __init__(self, code: str, status: int = 409) -> None:
+    def __init__(self, code: str, status: int = 409, *, path: tuple[str | int, ...] = ()) -> None:
         self.code = code
         self.status = status
+        self.path = path
         super().__init__(code)
 
 
@@ -38,3 +39,20 @@ def numbers(text: str) -> set[str]:
 
 def personal_data(text: str) -> bool:
     return bool(EMAIL.search(text) or PHONE.search(text))
+
+
+def entities_supported(text: str, evidence: str, organizations: tuple[str, ...]) -> bool:
+    # A known Japanese legal name may be followed immediately by a grammatical particle.
+    # Mask only its exact, bounded spelling; independently inspect all other names.
+    for organization in sorted(set(organizations), key=len, reverse=True):
+        if organization and organization in evidence:
+            text = re.sub(
+                re.escape(organization)
+                + r"(?=[\s、。:\uff1a「」『』\uff08\uff09()]|は|が|を|に|の|と|で|から|より|$)",
+                lambda match: " " * len(match[0]),
+                text,
+            )
+    latin = re.compile(r"(?<![A-Za-z0-9_-])[A-Z][A-Za-z0-9_-]{2,}(?![A-Za-z0-9_-])")
+    return all(
+        match[0] in evidence for pattern in (NAME, latin) for match in pattern.finditer(text)
+    )

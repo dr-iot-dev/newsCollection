@@ -3,8 +3,14 @@ from uuid import uuid4
 import pytest
 
 from app.contracts.facts_v1 import ExtractedFactV1, FactsOutputV1
-from app.core.editorial import EditorialError, numbers, redact_contacts
-from app.modules.extraction.facts import rule_facts, validate_facts
+from app.core.editorial import EditorialError, entities_supported, numbers, redact_contacts
+from app.modules.extraction.facts import (
+    anchor_evidence,
+    evidence_passages,
+    rule_facts,
+    supported_ai_facts,
+    validate_facts,
+)
 from app.modules.extraction.service import extract_content
 
 
@@ -124,3 +130,131 @@ def test_amount_and_spec_are_not_extracted_as_numeric_suffixes(text, expected):
 
 def test_numeric_product_identifier_is_not_a_hardware_capacity():
     assert rule_facts(content("型番: ABC1008GB")).facts == ()
+
+
+def test_unique_exact_quote_anchors_wrong_model_offsets_without_changing_values():
+    extracted = content("前置き。仕様は8GBです。価格は19,800円です。")
+    output = FactsOutputV1(facts=(fact("8GB", evidence_start=0, evidence_end=3),))
+    anchored = anchor_evidence(extracted, output)
+    validate_facts(extracted, anchored)
+    value = anchored.facts[0]
+    assert extracted.body[value.evidence_start : value.evidence_end] == "8GB"
+    assert value.value == output.facts[0].value and value.evidence_text == "8GB"
+    assert output.facts[0].evidence_start == 0
+
+
+@pytest.mark.parametrize(
+    "body,quote,code",
+    [
+        ("仕様は8GBです。", "16GB", "FACT_EVIDENCE_MISMATCH"),
+        ("8GBと8GBです。", "8GB", "FACT_EVIDENCE_AMBIGUOUS"),
+    ],
+)
+def test_anchoring_rejects_missing_or_ambiguous_quotes(body, quote, code):
+    with pytest.raises(EditorialError, match=code):
+        anchor_evidence(content(body), FactsOutputV1(facts=(fact(quote, evidence_start=1),)))
+
+
+def test_anchoring_does_not_allow_unsupported_values_or_qualifiers():
+    extracted = content("仕様は8GBです。")
+    for updates, code in [
+        ({"value": "16GB"}, "FACT_NUMBER_UNSUPPORTED"),
+        ({"conditions": "省電力"}, "FACT_QUALIFIER_UNSUPPORTED"),
+    ]:
+        anchored = anchor_evidence(extracted, FactsOutputV1(facts=(fact("8GB", **updates),)))
+        with pytest.raises(EditorialError, match=code):
+            validate_facts(extracted, anchored)
+
+
+def test_passages_keep_offsets_and_masked_contacts():
+    body = redact_contacts("前書き\n仕様は8GBです。\n連絡先 contact@example.test")
+    passages = evidence_passages(body)
+    assert all(body[p["start"] : p["end"]] == p["text"] for p in passages)
+    assert "contact@example.test" not in str(passages)
+
+
+def test_date_anchor_uses_only_supported_literal_within_exact_context():
+    body = "検証は2026年9月1日から11月30日まで実施します。"
+    output = FactsOutputV1(
+        facts=(fact(body, fact_type="release_date", value="2026-09-01", date_precision="day"),)
+    )
+    anchored = anchor_evidence(content(body), output)
+    validate_facts(content(body), anchored)
+    assert anchored.facts[0].evidence_text == "2026年9月1日"
+    assert anchored.facts[0].value == "2026-09-01"
+
+
+@pytest.mark.parametrize("value,precision", [("2026-11-30", "day"), ("2026-09-01", "month")])
+def test_date_anchor_does_not_infer_missing_year_or_change_precision(value, precision):
+    body = "検証は2026年9月1日から11月30日まで実施します。"
+    output = FactsOutputV1(
+        facts=(fact(body, fact_type="release_date", value=value, date_precision=precision),)
+    )
+    with pytest.raises(EditorialError, match="FACT_DATE_UNSUPPORTED"):
+        validate_facts(content(body), anchor_evidence(content(body), output))
+
+
+def test_partial_extraction_retains_only_fully_verified_facts_and_records_omissions():
+    extracted = content("仕様は8GBです。価格は未定です。")
+    output = FactsOutputV1(facts=(fact("8GB"), fact("16GB")))
+    retained, rejected = supported_ai_facts(extracted, output)
+    validate_facts(extracted, retained)
+    assert [f.value for f in retained.facts] == ["8GB"]
+    assert rejected[0].code == "FACT_EVIDENCE_MISMATCH"
+    assert rejected[0].path == ("facts", 1, "evidence_text")
+    assert retained.uncertainties and "FACT_EVIDENCE_MISMATCH" in retained.uncertainties[0]
+
+
+def test_partial_extraction_never_accepts_a_completely_unsupported_response():
+    with pytest.raises(EditorialError, match="FACT_EVIDENCE_MISMATCH"):
+        supported_ai_facts(content("仕様は8GBです。"), FactsOutputV1(facts=(fact("16GB"),)))
+
+
+def test_known_japanese_organization_particles_do_not_hide_unsupported_entities():
+    evidence = "株式会社アムス Caremo"
+    assert entities_supported("株式会社アムスがCaremoを発表。", evidence, ("株式会社アムス",))
+    assert not entities_supported(
+        "株式会社アムスがFakeProductを発表。", evidence, ("株式会社アムス",)
+    )
+    assert not entities_supported("株式会社アムス偽物が発表。", evidence, ("株式会社アムス",))
+    assert not entities_supported("株式会社別会社がCaremoを発表。", evidence, ("株式会社アムス",))
+
+
+def test_subsidy_price_must_keep_its_condition_in_the_price_paragraph():
+    from types import SimpleNamespace
+
+    from app.core.evidence_support import price_conditions_supported
+
+    package = SimpleNamespace(
+        facts=(
+            SimpleNamespace(
+                fact_type="price",
+                conditions=None,
+                predicate="monthly fee after subsidy",
+                value="月額89円",
+            ),
+        )
+    )
+    assert price_conditions_supported("千葉市の対象者は補助適用後、月額89円です。", package)
+    assert not price_conditions_supported("月額89円で利用できます。", package)
+    assert not price_conditions_supported(
+        "補助には条件があります。\n\n月額89円で利用できます。", package
+    )
+
+
+@pytest.mark.parametrize(
+    "claim",
+    [
+        "最先端の技術です。",
+        "最新の技術です。",
+        "ストレスフリーな見守りが可能です。",
+        "高い拡張性があります。",
+        "見守りを実現します。",
+    ],
+)
+def test_promotional_claim_requires_vendor_attribution_in_its_own_paragraph(claim):
+    from app.core.evidence_support import vendor_claims_attributed
+
+    assert not vendor_claims_attributed(claim)
+    assert vendor_claims_attributed("同社によると、" + claim)
+    assert not vendor_claims_attributed("同社によると、機器を発表しました。\n\n" + claim)
