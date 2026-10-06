@@ -12,8 +12,9 @@ from app.infrastructure.db.session import SessionLocal
 from app.modules.acquisition.service import collect_source
 from app.orchestration.editorial import process_editorial_outbox, process_facts_outbox
 from app.orchestration.editorial_jobs import process_editorial_jobs
+from app.orchestration.featured_images import process_featured_images
 from app.orchestration.phase2 import process_phase2
-from app.orchestration.publication import PublicationService
+from app.orchestration.publication import PublicationService, process_verified_publications
 from app.orchestration.research import process_comparison_research
 
 logger = structlog.get_logger()
@@ -70,12 +71,24 @@ def poll_sources() -> None:
         for consumer in ("writing", "verification"):
             with SessionLocal.begin() as session:
                 process_editorial_outbox(session, settings, consumer)
+        with SessionLocal() as session:
+            process_verified_publications(session, settings)
         if fact_count or job_count:
             logger.info("phase3_processed", facts=fact_count, jobs=job_count)
         if any(counts.values()):
             logger.info("phase2_processed", **counts)
     except Exception:
         logger.error("phase2_processing_error", error_code="PROCESSING_ERROR")
+
+
+def decorate_wordpress_drafts() -> None:
+    try:
+        with SessionLocal() as session:
+            count = process_featured_images(session, get_settings())
+        if count:
+            logger.info("featured_images_attached", count=count)
+    except Exception:
+        logger.error("featured_images_error", error_code="PROCESSING_ERROR")
 
 
 def reconcile_wordpress() -> None:
@@ -86,7 +99,7 @@ def reconcile_wordpress() -> None:
         ids = list(
             session.scalars(
                 select(Publication.id)
-                .where(Publication.state != "legacy")
+                .where(Publication.state.not_in(["legacy", "trashed"]))
                 .order_by(Publication.updated_at)
                 .limit(100)
             )
@@ -124,6 +137,10 @@ def main() -> None:
         max_instances=1,
         coalesce=True,
         replace_existing=True,
+    )
+    scheduler.add_job(
+        decorate_wordpress_drafts, trigger="interval", seconds=60,
+        id="featured-images", max_instances=1, coalesce=True, replace_existing=True,
     )
     signal.signal(signal.SIGTERM, lambda *_: scheduler.shutdown(wait=False))
     logger.info("scheduler_started")

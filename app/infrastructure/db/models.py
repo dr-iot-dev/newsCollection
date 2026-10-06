@@ -14,6 +14,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     Numeric,
     String,
     Text,
@@ -385,6 +386,38 @@ class Publication(CreatedUpdatedMixin, Base):
     state: Mapped[str] = mapped_column(
         String(30), default="prepared", server_default="legacy", nullable=False
     )
+
+
+class FeaturedImage(CreatedUpdatedMixin, Base):
+    __tablename__ = "featured_images"
+    __table_args__ = (UniqueConstraint("publication_id"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    publication_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("publications.id"), nullable=False)
+    draft_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("article_drafts.id"), nullable=False)
+    model: Mapped[str] = mapped_column(String(100), nullable=False)
+    prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    input_hash: Mapped[str] = mapped_column(String(71), nullable=False)
+    state: Mapped[str] = mapped_column(String(30), nullable=False, default="prepared")
+    image_bytes: Mapped[bytes | None] = mapped_column(LargeBinary)
+    content_hash: Mapped[str | None] = mapped_column(String(71))
+    width: Mapped[int | None] = mapped_column(Integer)
+    height: Mapped[int | None] = mapped_column(Integer)
+    remote_media_id: Mapped[str | None] = mapped_column(String(255))
+    remote_url: Mapped[str | None] = mapped_column(Text)
+    last_error: Mapped[str | None] = mapped_column(String(100))
+
+
+class SourceSetClaim(CreatedUpdatedMixin, Base):
+    __tablename__ = "source_set_claims"
+    __table_args__ = (UniqueConstraint("scope", "source_set_hash"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    scope: Mapped[str] = mapped_column(String(100), nullable=False)
+    source_set_hash: Mapped[str] = mapped_column(String(71), nullable=False)
+    item_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("items.id"), nullable=False)
+    draft_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("article_drafts.id"))
+    publication_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("publications.id"))
 
 
 class PublishApproval(Base):

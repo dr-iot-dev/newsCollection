@@ -10,9 +10,11 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
+import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.contracts.article_package_v1 import ArticlePackageV1
 from app.contracts.draft_v1 import ArticleDraftV1
 from app.contracts.editorial_v1 import ReviewChecklistV1
 from app.contracts.envelope import ContractEnvelope, canonical_payload_hash
@@ -28,11 +30,14 @@ from app.core.editorial import EditorialError
 from app.infrastructure.db.models import (
     ApiUser,
     ArticleDraft,
+    ArticlePackage,
+    FeaturedImage,
     Item,
     ItemStatus,
     Publication,
     PublishApproval,
     Review,
+    VerificationRun,
 )
 from app.infrastructure.wordpress import WordPressClient, validate_base_url
 from app.modules.publication.ports import PublicationPort
@@ -42,7 +47,14 @@ from app.modules.publication.service import (
     matches_payload,
     remote_hash,
 )
-from app.orchestration.editorial import EditorialService, item_for_update, latest, touch
+from app.orchestration.editorial import (
+    EditorialService,
+    checked_payload,
+    item_for_update,
+    latest,
+    touch,
+)
+from app.orchestration.source_sets import claim_source_set, package_source_set
 
 
 class PublicationService:
@@ -78,7 +90,9 @@ class PublicationService:
         self,
         item: Item,
         draft_id: UUID,
-    ) -> tuple[ArticleDraft, Review, WordPressPayloadV1]:
+        *,
+        require_human: bool = False,
+    ) -> tuple[ArticleDraft, Review | VerificationRun, WordPressPayloadV1]:
         draft = latest(self.session, ArticleDraft, item.id)
         if draft is None or draft.id != draft_id:
             raise EditorialError("DRAFT_STALE")
@@ -87,13 +101,24 @@ class PublicationService:
             .where(Review.item_id == item.id)
             .order_by(Review.created_at.desc(), Review.id.desc())
         ).first()
-        if review is None or review.draft_id != draft.id or review.decision != "approve":
-            raise EditorialError("HUMAN_APPROVAL_REQUIRED")
-        checklist = ReviewChecklistV1.model_validate(review.checklist_json)
-        if not all(v is True for v in checklist.model_dump().values()):
-            raise EditorialError("REVIEW_CHECKLIST_INCOMPLETE")
-        self.actor(review.reviewer_id, "reviewer")
-        self.editorial.validate_for_approval(item, draft, review.reviewer_id, require_pending=False)
+        approval: Review | VerificationRun
+        if self.settings.review_required or require_human:
+            if review is None or review.draft_id != draft.id or review.decision != "approve":
+                raise EditorialError("HUMAN_APPROVAL_REQUIRED")
+            checklist = ReviewChecklistV1.model_validate(review.checklist_json)
+            if not all(v is True for v in checklist.model_dump().values()):
+                raise EditorialError("REVIEW_CHECKLIST_INCOMPLETE")
+            self.actor(review.reviewer_id, "reviewer")
+            self.editorial.validate_for_approval(
+                item, draft, review.reviewer_id, require_pending=False
+            )
+            approval = review
+        else:
+            if review is not None and review.draft_id == draft.id and review.decision != "approve":
+                raise EditorialError("HUMAN_REVIEW_BLOCKED")
+            approval = self.editorial.validate_for_approval(
+                item, draft, None, require_pending=False
+            )
         _, package = self.editorial.package(item)
         payload = build_payload(
             ArticleDraftV1.model_validate(draft.source_block["draft"]),
@@ -102,7 +127,7 @@ class PublicationService:
             self.settings.wordpress_category_map,
             self.settings.wordpress_tag_map,
         )
-        return draft, review, payload
+        return draft, approval, payload
 
     def publication(self, item: Item, publication_id: UUID) -> Publication:
         row = self.session.get(Publication, publication_id, populate_existing=True)
@@ -114,16 +139,31 @@ class PublicationService:
         self,
         item: Item,
         row: Publication,
-    ) -> tuple[Review, WordPressPayloadV1]:
-        _, review, payload = self.approved(item, row.draft_id)
+    ) -> tuple[Review | VerificationRun, WordPressPayloadV1]:
         if row.package_json is None or row.payload_json is None:
             raise EditorialError("PUBLICATION_LEGACY_REVIEW_REQUIRED")
         envelope = ContractEnvelope[PublicationPackageV1].model_validate(row.package_json)
+        draft, review, payload = self.approved(
+            item, row.draft_id, require_human=envelope.producer != "verification"
+        )
+        image = self.session.scalar(select(FeaturedImage).where(
+            FeaturedImage.publication_id == row.id, FeaturedImage.state == "attached",
+        ))
+        if image is not None:
+            if image.draft_id != row.draft_id or not image.remote_media_id:
+                raise EditorialError("FEATURED_IMAGE_STALE")
+            payload = payload.model_copy(update={"featured_media": int(image.remote_media_id)})
+        approval_id = review.id
+        if envelope.producer == "verification" and isinstance(review, Review):
+            # A later switch to human review must not change the original AI provenance.
+            approval_id = self.editorial.validate_for_approval(
+                item, draft, None, require_pending=False
+            ).id
         package = envelope.payload
         if (
             package.item_id != item.id
             or package.draft_id != row.draft_id
-            or package.approval_id != review.id
+            or package.approval_id != approval_id
             or package.target != self.target
             or package.sanitized_content_hash
             != canonical_payload_hash({"content": payload.content})
@@ -186,11 +226,17 @@ class PublicationService:
         self,
         item_id: UUID,
         request: WordPressRequestV1,
-        actor_id: UUID,
+        actor_id: UUID | None = None,
     ) -> Publication:
-        self.actor(actor_id, "editor")
+        if actor_id is not None:
+            self.actor(actor_id, "editor")
+        elif self.settings.review_required:
+            raise EditorialError("HUMAN_APPROVAL_REQUIRED")
         item = item_for_update(self.session, item_id, request.expected_version)
-        if item.status not in {ItemStatus.APPROVED, ItemStatus.WP_DRAFTED}:
+        allowed = {ItemStatus.APPROVED, ItemStatus.WP_DRAFTED}
+        if not self.settings.review_required:
+            allowed.update({ItemStatus.VERIFIED, ItemStatus.REVIEW_PENDING})
+        if item.status not in allowed:
             raise EditorialError("WORDPRESS_DRAFT_STATE_INVALID")
         draft, review, payload = self.approved(item, request.draft_id)
         key = idempotency_key(self.target, item.id, draft.revision)
@@ -199,6 +245,12 @@ class PublicationService:
                 Publication.target == self.target, Publication.idempotency_key == key
             )
         )
+        _, article_package = self.editorial.package(item)
+        claim = claim_source_set(self.session, self.target, article_package, item.id)
+        if claim.publication_id is not None and (row is None or claim.publication_id != row.id):
+            raise EditorialError("WORDPRESS_SOURCE_SET_DUPLICATE")
+        if row is not None and row.state in {"trashing", "trashed"}:
+            raise EditorialError("WORDPRESS_DRAFT_TRASHED")
         if row is None:
             package = PublicationPackageV1(
                 item_id=item.id,
@@ -221,13 +273,14 @@ class PublicationService:
                 .build(
                     package,
                     contract_type="PublicationPackageV1",
-                    producer="review",
+                    producer="review" if isinstance(review, Review) else "verification",
                     producer_version="0.4.0",
                 )
                 .model_dump(mode="json"),
             )
             self.session.add(row)
             self.session.flush()
+        claim.publication_id, claim.draft_id = row.id, row.draft_id
         self.validate_package(item, row)
         try:
             if row.remote_post_id:
@@ -255,7 +308,8 @@ class PublicationService:
             # Commit intent BEFORE POST. No subsequent request may repeat this create.
             self.session.commit()
             item = item_for_update(self.session, item_id, expected)
-            self.actor(actor_id, "editor")
+            if actor_id is not None:
+                self.actor(actor_id, "editor")
             row = self.publication(item, row_id)
             self.validate_package(item, row)
             if row.state != "creating" or row.remote_post_id:
@@ -283,7 +337,9 @@ class PublicationService:
         row = self.publication(item, request.publication_id)
         if row.draft_id != request.draft_id:
             raise EditorialError("DRAFT_STALE")
-        review, _ = self.validate_package(item, row)
+        self.validate_package(item, row)
+        _, review, _ = self.approved(item, row.draft_id, require_human=True)
+        assert isinstance(review, Review)
         draft = self.session.get(ArticleDraft, row.draft_id)
         assert draft is not None
         if self.settings.review_require_four_eyes and draft.source_block.get("actor_id") == str(
@@ -327,7 +383,9 @@ class PublicationService:
         row: Publication,
         approval: PublishApproval,
     ) -> None:
-        review, _ = self.validate_package(item, row)
+        self.validate_package(item, row)
+        _, review, _ = self.approved(item, row.draft_id, require_human=True)
+        assert isinstance(review, Review)
         self.actor(approval.publisher_id, "publisher")
         if (
             approval.publication_id != row.id
@@ -426,6 +484,67 @@ class PublicationService:
             self.fail(item, row, exc, actor_id)
             raise
 
+    def accept_trashed(
+        self, item: Item, row: Publication, post: dict[str, Any]
+    ) -> None:
+        if str(post["id"]) != row.remote_post_id or post["status"] != "trash":
+            raise EditorialError("WORDPRESS_REMOTE_STATUS_CONFLICT")
+        row.remote_status, row.state = "trash", "trashed"
+        row.remote_hash, row.last_error = remote_hash(post), None
+        touch(self.session, item, "wordpress.duplicate_trashed", publication_id=str(row.id))
+
+    def trash_duplicate(self, publication_id: UUID, keep_id: UUID) -> Publication:
+        """Explicit cleanup of an unmodified duplicate draft, with recoverable deletion."""
+        row = self.session.get(Publication, publication_id)
+        keep = self.session.get(Publication, keep_id)
+        if row is None or keep is None or row.target != self.target or keep.target != self.target:
+            raise EditorialError("PUBLICATION_NOT_FOUND", 404)
+        if row.id == keep.id:
+            raise EditorialError("WORDPRESS_DUPLICATE_REQUIRED")
+        item = item_for_update(self.session, row.item_id)
+        row = self.publication(item, row.id)
+        if row.state == "trashed":
+            self.session.commit()
+            return row
+        if row.state != "drafted" or keep.state not in {"drafted", "published"}:
+            raise EditorialError("WORDPRESS_DRAFT_STATE_INVALID")
+
+        def sources(publication: Publication) -> str:
+            draft = self.session.get(ArticleDraft, publication.draft_id)
+            if draft is None:
+                raise EditorialError("DRAFT_NOT_FOUND")
+            package = self.session.get(ArticlePackage, draft.article_package_id)
+            if package is None:
+                raise EditorialError("ARTICLE_PACKAGE_REQUIRED")
+            return package_source_set(checked_payload(package, ArticlePackageV1))
+
+        if sources(row) != sources(keep):
+            raise EditorialError("WORDPRESS_DUPLICATE_REQUIRED")
+        # Stop if an editor changed either post; never delete a published post.
+        self.checked_remote(row)
+        retained = self.port.get(keep.remote_post_id or "")
+        if keep.payload_json is None or not matches_payload(
+            retained, keep.payload_json, keep.remote_status or "draft"
+        ):
+            raise EditorialError("WORDPRESS_REMOTE_CONFLICT")
+        row.state = "trashing"
+        touch(
+            self.session, item, "wordpress.duplicate_trash_intent",
+            publication_id=str(row.id), retained_publication_id=str(keep.id),
+        )
+        expected, row_id = item.workflow_version, row.id
+        self.session.commit()
+        item = item_for_update(self.session, item.id, expected)
+        row = self.publication(item, row_id)
+        try:
+            self.checked_remote(row)
+            self.accept_trashed(item, row, self.port.trash(row.remote_post_id or ""))
+            self.session.commit()
+            return row
+        except EditorialError as exc:
+            self.fail(item, row, exc, None)
+            raise
+
     def reconcile(self, publication_id: UUID, actor_id: UUID | None = None) -> Publication:
         row = self.session.get(Publication, publication_id)
         if row is None or row.target != self.target:
@@ -434,6 +553,16 @@ class PublicationService:
         row = self.publication(item, row.id)
         post: dict[str, Any] | None
         try:
+            if row.state == "trashed":
+                self.session.commit()
+                return row
+            if row.state == "trashing":
+                post = self.port.get(row.remote_post_id or "")
+                if post["status"] != "trash":
+                    raise EditorialError("WORDPRESS_RECONCILIATION_PENDING")
+                self.accept_trashed(item, row, post)
+                self.session.commit()
+                return row
             if row.state == "published":
                 post = self.port.get(row.remote_post_id or "")
                 if (
@@ -454,7 +583,10 @@ class PublicationService:
             if post is None:
                 raise EditorialError("WORDPRESS_RECONCILIATION_PENDING")
             if row.state in {"prepared", "creating"}:
-                if item.status != ItemStatus.APPROVED:
+                allowed = {ItemStatus.APPROVED}
+                if not self.settings.review_required:
+                    allowed.update({ItemStatus.VERIFIED, ItemStatus.REVIEW_PENDING})
+                if item.status not in allowed:
                     raise EditorialError("WORDPRESS_DRAFT_STATE_INVALID")
                 self.accept_draft(item, row, post, actor_id)
             elif row.state == "publishing" and post["status"] == "publish":
@@ -476,3 +608,57 @@ class PublicationService:
         except EditorialError as exc:
             self.fail(item, row, exc, actor_id)
             raise
+
+
+def process_verified_publications(
+    session: Session,
+    settings: Settings,
+    limit: int = 10,
+    port: PublicationPort | None = None,
+) -> int:
+    """Send AI-verified drafts using a plain Session; create_draft owns its commits."""
+    if not settings.wordpress_enabled or settings.review_required:
+        return 0
+    service = PublicationService(session, settings, port)
+    item_ids = list(
+        session.scalars(
+            select(Item.id)
+            .where(
+                Item.status.in_([ItemStatus.VERIFIED, ItemStatus.REVIEW_PENDING]),
+                select(VerificationRun.id)
+                .where(
+                    VerificationRun.item_id == Item.id,
+                    VerificationRun.overall_result == "pass",
+                )
+                .exists(),
+            )
+            .order_by(Item.created_at, Item.id)
+            .limit(limit)
+        )
+    )
+    sent = 0
+    for item_id in item_ids:
+        try:
+            item = item_for_update(session, item_id)
+            draft = latest(session, ArticleDraft, item.id)
+            if draft is None:
+                session.rollback()
+                continue
+            service.create_draft(
+                item.id,
+                WordPressRequestV1(expected_version=item.workflow_version, draft_id=draft.id),
+            )
+            sent += 1
+        except EditorialError as exc:
+            session.rollback()
+            if exc.code == "WORDPRESS_SOURCE_SET_DUPLICATE":
+                item = item_for_update(session, item_id)
+                touch(
+                    session, item, "wordpress.source_set_duplicate",
+                    status=ItemStatus.NEEDS_CHANGES, reason=exc.code,
+                )
+                session.commit()
+            structlog.get_logger().warning(
+                "wordpress_auto_draft_blocked", item_id=str(item_id), error_code=exc.code
+            )
+    return sent

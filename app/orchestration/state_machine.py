@@ -19,7 +19,7 @@ ALLOWED_TRANSITIONS: dict[ItemStatus, frozenset[ItemStatus]] = {
         {ItemStatus.VERIFIED, ItemStatus.VERIFICATION_FAILED}
     ),
     ItemStatus.VERIFICATION_FAILED: frozenset({ItemStatus.NEEDS_CHANGES}),
-    ItemStatus.VERIFIED: frozenset({ItemStatus.REVIEW_PENDING}),
+    ItemStatus.VERIFIED: frozenset({ItemStatus.REVIEW_PENDING, ItemStatus.WP_DRAFTED}),
     ItemStatus.REVIEW_PENDING: frozenset(
         {
             ItemStatus.APPROVED,

@@ -33,6 +33,7 @@ from app.contracts.verification_v1 import (
     VerificationReportV1,
 )
 from app.core.config import Settings
+from app.core.content import normalize_url
 from app.core.editorial import INJECTION, EditorialError, numbers, redact_contacts
 from app.core.evidence_support import supported_text
 from app.infrastructure.db.models import (
@@ -72,6 +73,7 @@ from app.modules.verification.service import REQUIRED_CRITERIA, rule_criteria
 from app.modules.writing.service import POLICY_VERSION as WRITING_POLICY
 from app.modules.writing.service import render_comparison, validate_writing
 from app.orchestration.phase2 import lock_item
+from app.orchestration.source_sets import claim_source_set
 
 
 def checked_payload(row: Any, model: type[Any]) -> Any:
@@ -599,15 +601,30 @@ class EditorialService:
                 raise EditorialError("COMPARISON_FACTS_STALE")
         return row, package
 
+    def validate_source_count(self, package: ArticlePackageV1) -> None:
+        verified = set(package.verified_fact_ids)
+        urls = {
+            normalize_url(str(ref.url))
+            for ref in package.source_references
+            if ref.url is not None and set(ref.fact_ids) & verified
+        }
+        if len(urls) < self.settings.comparison_min_sources:
+            raise EditorialError("COMPARISON_MIN_SOURCES_REQUIRED")
+
     def draft(self, item_id: UUID, manual: WritingOutputV1 | None = None) -> ArticleDraft | None:
         item = item_for_update(self.session, item_id)
         eligible(self.session, item)
         if item.status in {ItemStatus.REJECTED, ItemStatus.BLOCKED_RIGHTS, ItemStatus.PUBLISHED}:
             raise EditorialError("ITEM_REJECTED")
         row, package = self.package(item)
-        output: WritingOutputV1 | None
+        self.validate_source_count(package)
         if manual is not None:
             validate_writing(manual, package)
+        claim = claim_source_set(self.session, "writing", package, item.id)
+        if claim.item_id != item.id or (manual is None and claim.draft_id is not None):
+            raise EditorialError("DRAFT_SOURCE_SET_DUPLICATE")
+        output: WritingOutputV1 | None
+        if manual is not None:
             output, run_id = manual, None
         else:
             supported = supported_text(package)
@@ -619,15 +636,23 @@ class EditorialService:
                     | {f.value for f in package.facts if f.fact_type in {"organization", "product"}}
                 ),
             }
-            output, run_id = self.runner.run(
-                "writer",
-                item.id,
-                data,
-                WritingOutputV1,
-                validate=lambda value: validate_writing(value, package),
-                repair=True,
-            )
+            try:
+                output, run_id = self.runner.run(
+                    "writer",
+                    item.id,
+                    data,
+                    WritingOutputV1,
+                    validate=lambda value: validate_writing(value, package),
+                    repair=True,
+                )
+            except Exception:
+                if claim.draft_id is None:
+                    self.session.delete(claim)
+                    self.session.flush()
+                raise
         if output is None:
+            if claim.draft_id is None:
+                self.session.delete(claim)
             touch(self.session, item, "draft.invalid", self.actor_id, ItemStatus.NEEDS_CHANGES)
             return None
         prior = latest(self.session, ArticleDraft, item.id)
@@ -676,6 +701,7 @@ class EditorialService:
         )
         self.session.add(result)
         self.session.flush()
+        claim.draft_id = result.id
         touch(
             self.session,
             item,
@@ -700,6 +726,7 @@ class EditorialService:
         row, package = self.package(item)
         if draft.article_package_id != row.id:
             raise EditorialError("DRAFT_PACKAGE_STALE")
+        self.validate_source_count(package)
         dto = ArticleDraftV1.model_validate(draft.source_block["draft"])
         draft_hash = canonical_payload_hash(dto.model_dump(mode="json"))
         if draft_hash != draft.source_block["hash"]:
@@ -808,15 +835,22 @@ class EditorialService:
             item,
             "draft.verified",
             self.actor_id,
-            ItemStatus.REVIEW_PENDING if overall == "pass" else ItemStatus.VERIFICATION_FAILED,
+            (ItemStatus.REVIEW_PENDING if self.settings.review_required else ItemStatus.VERIFIED)
+            if overall == "pass"
+            else ItemStatus.VERIFICATION_FAILED,
             verification_id=str(result.id),
             result=overall,
         )
         return result
 
     def validate_for_approval(
-        self, item: Item, draft: ArticleDraft, reviewer_id: UUID, *, require_pending: bool = True
-    ) -> None:
+        self,
+        item: Item,
+        draft: ArticleDraft,
+        reviewer_id: UUID | None,
+        *,
+        require_pending: bool = True,
+    ) -> VerificationRun:
         """Recheck revision, rights, independent verification and four-eyes at every send."""
         current = latest(self.session, ArticleDraft, item.id)
         if current is None or current.id != draft.id:
@@ -836,13 +870,19 @@ class EditorialService:
         ):
             raise EditorialError("DRAFT_HASH_MISMATCH")
         eligible(self.session, item)
-        package_row, _ = self.package(item)
+        package_row, package = self.package(item)
+        self.validate_source_count(package)
         if (
-            require_pending and item.status != ItemStatus.REVIEW_PENDING
+            require_pending
+            and item.status not in {
+                ItemStatus.REVIEW_PENDING, ItemStatus.VERIFIED, ItemStatus.WP_DRAFTED
+            }
         ) or draft.article_package_id != package_row.id:
             raise EditorialError("REVIEW_STATE_INVALID")
-        if self.settings.review_require_four_eyes and draft.source_block.get("actor_id") == str(
-            reviewer_id
+        if (
+            reviewer_id is not None
+            and self.settings.review_require_four_eyes
+            and draft.source_block.get("actor_id") == str(reviewer_id)
         ):
             raise EditorialError("REVIEW_FOUR_EYES_REQUIRED")
         verification = self.session.scalars(
@@ -864,6 +904,7 @@ class EditorialService:
             or meta["package_hash"] != package_row.payload_hash
         ):
             raise EditorialError("VERIFICATION_STALE")
+        return verification
 
     def review(self, item_id: UUID, request: ReviewRequestV1, reviewer_id: UUID) -> Review:
         item = item_for_update(self.session, item_id, request.expected_version)
@@ -884,7 +925,9 @@ class EditorialService:
         self.session.add(result)
         self.session.flush()
         status = {
-            "approve": ItemStatus.APPROVED,
+            "approve": ItemStatus.WP_DRAFTED
+            if item.status == ItemStatus.WP_DRAFTED
+            else ItemStatus.APPROVED,
             "needs_changes": ItemStatus.NEEDS_CHANGES,
             "reject": ItemStatus.REJECTED,
         }[request.decision]

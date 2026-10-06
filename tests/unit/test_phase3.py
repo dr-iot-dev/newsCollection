@@ -63,6 +63,8 @@ def seed(session):
 
 def settings():
     return Settings(
+        comparison_min_sources=1,
+        review_required=True,
         ai_model_facts="facts-test",
         ai_writer_model="writer-test",
         ai_verifier_model="verifier-test",
@@ -276,7 +278,7 @@ def test_new_draft_profile_or_source_version_invalidates_approval(acquisition_se
     altered = EditorialService(session, changed, AIRunner(session, changed, Provider()))
     with pytest.raises(EditorialError, match="VERIFICATION_STALE"):
         altered.review(item.id, review_request(item, draft), uuid4())
-    newer = svc.draft(item.id)
+    newer = svc.draft(item.id, manual=writing(svc.package(item)[1].model_dump(mode="json")))
     assert newer.revision == 2
     with pytest.raises(EditorialError, match="DRAFT_STALE"):
         svc.review(item.id, review_request(item, draft), uuid4())

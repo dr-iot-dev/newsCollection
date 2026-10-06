@@ -5,7 +5,7 @@ import json
 import socket
 import time
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlsplit, urlunsplit
 
 import httpx
@@ -100,7 +100,10 @@ class WordPressClient:
         self.username, self.password = username, password
         self.transport, self.sleep = transport, sleep
 
-    def request(self, method: str, path: str, **kwargs: Any) -> Any:
+    def request(
+        self, method: str, path: str, *, resource: Literal["posts", "media"] = "posts",
+        **kwargs: Any,
+    ) -> Any:
         # Writes are never automatically replayed: a 5xx can occur after remote commit.
         attempts = 3 if method == "GET" else 1
         for attempt in range(attempts):
@@ -115,7 +118,7 @@ class WordPressClient:
                         timeout=20,
                     ) as client,
                     client.stream(
-                        method, self.base_url + "/wp-json/wp/v2/posts" + path, **kwargs
+                        method, self.base_url + "/wp-json/wp/v2/" + resource + path, **kwargs
                     ) as response,
                 ):
                     if response.status_code in {429, 500, 502, 503, 504}:
@@ -154,7 +157,8 @@ class WordPressClient:
         ):
             raise EditorialError("WORDPRESS_RESPONSE_INVALID", 502)
         if (
-            result.get("status") not in {"draft", "pending", "private", "publish", "future"}
+            result.get("status")
+            not in {"draft", "pending", "private", "publish", "future", "trash"}
             or not isinstance(result.get("slug"), str)
             or not isinstance(result.get("modified_gmt"), str)
             or any(
@@ -207,3 +211,65 @@ class WordPressClient:
         if not post_id.isdecimal() or int(post_id) <= 0:
             raise EditorialError("WORDPRESS_POST_ID_INVALID")
         return self.checked_post(self.request("POST", "/" + post_id, json={"status": "publish"}))
+
+    def trash(self, post_id: str) -> dict[str, Any]:
+        if not post_id.isdecimal() or int(post_id) <= 0:
+            raise EditorialError("WORDPRESS_POST_ID_INVALID")
+        return self.checked_post(
+            self.request("DELETE", "/" + post_id, params={"force": "false", "context": "edit"})
+        )
+
+    def checked_media(self, value: Any) -> dict[str, Any]:
+        if (
+            not isinstance(value, dict) or type(value.get("id")) is not int
+            or value["id"] <= 0 or value.get("media_type") != "image"
+            or value.get("mime_type") != "image/jpeg"
+            or not isinstance(value.get("slug"), str)
+            or not isinstance(value.get("source_url"), str)
+            or not isinstance(value.get("media_details"), dict)
+        ):
+            raise EditorialError("WORDPRESS_MEDIA_RESPONSE_INVALID", 502)
+        try:
+            url = urlsplit(value["source_url"])
+            if url.scheme != "https" or not url.hostname or url.username or url.password:
+                raise ValueError
+        except ValueError:
+            raise EditorialError("WORDPRESS_MEDIA_RESPONSE_INVALID", 502) from None
+        return value
+
+    def find_media(self, slug: str) -> dict[str, Any] | None:
+        result = self.request("GET", "", resource="media", params={
+            "slug": slug, "context": "edit", "per_page": 100,
+        })
+        if not isinstance(result, list) or len(result) > 1:
+            raise EditorialError("WORDPRESS_MEDIA_RECONCILE_CONFLICT")
+        return self.checked_media(result[0]) if result else None
+
+    def get_media(self, media_id: str) -> dict[str, Any]:
+        if not media_id.isdecimal() or int(media_id) <= 0:
+            raise EditorialError("WORDPRESS_MEDIA_ID_INVALID")
+        return self.checked_media(self.request(
+            "GET", "/" + media_id, resource="media", params={"context": "edit"},
+        ))
+
+    def upload_image(
+        self, image: bytes, *, filename: str, slug: str, title: str,
+        alt_text: str, caption: str, post_id: str,
+    ) -> dict[str, Any]:
+        if not post_id.isdecimal() or int(post_id) <= 0:
+            raise EditorialError("WORDPRESS_POST_ID_INVALID")
+        return self.checked_media(self.request(
+            "POST", "", resource="media",
+            files={"file": (filename, image, "image/jpeg")},
+            data={"slug": slug, "title": title, "alt_text": alt_text,
+                  "caption": caption, "post": post_id},
+        ))
+
+    def set_featured_media(self, post_id: str, media_id: str) -> dict[str, Any]:
+        if not post_id.isdecimal() or int(post_id) <= 0:
+            raise EditorialError("WORDPRESS_POST_ID_INVALID")
+        if not media_id.isdecimal() or int(media_id) <= 0:
+            raise EditorialError("WORDPRESS_MEDIA_ID_INVALID")
+        return self.checked_post(self.request(
+            "POST", "/" + post_id, json={"featured_media": int(media_id)},
+        ))

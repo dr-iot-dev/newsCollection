@@ -31,3 +31,4 @@ class WordPressPayloadV1(ContractModel):
     status: Literal["draft"] = "draft"
     categories: tuple[Annotated[int, Field(ge=1, strict=True)], ...] = Field(min_length=1)
     tags: tuple[Annotated[int, Field(ge=1, strict=True)], ...] = ()
+    featured_media: int = Field(default=0, ge=0, strict=True, exclude_if=lambda value: value == 0)

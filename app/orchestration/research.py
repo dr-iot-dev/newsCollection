@@ -15,6 +15,7 @@ from app.contracts.content_v1 import NormalizedContentV1
 from app.contracts.editorial_v1 import ResearchRequestV1
 from app.contracts.envelope import canonical_payload_hash
 from app.core.config import Settings
+from app.core.content import normalize_url
 from app.core.editorial import EditorialError
 from app.infrastructure.db.models import (
     ArticleDraft,
@@ -158,6 +159,7 @@ def search_catalog(
     ranked.sort(key=lambda value: (-value[0], str(value[1].id)))
     checked = dict(result.get("checked_item_versions", {}))
     selected = []
+    selected_urls = {normalize_url(str(target_evidence.canonical_url))}
     for rank, (score, item) in enumerate(ranked, start=1):
         revision_key = str(item.id) + ":" + str(item.version)
         try:
@@ -199,7 +201,11 @@ def search_catalog(
         if assessment.decision != "eligible":
             rejected.append({"item_id": str(item.id), "code": assessment.reason_codes[0]})
             continue
-        selected = [
+        url = normalize_url(str(evidence.canonical_url))
+        if url in selected_urls:
+            continue
+        selected_urls.add(url)
+        selected.append(
             {
                 "item_id": str(item.id),
                 "item_version": item.version,
@@ -209,8 +215,9 @@ def search_catalog(
                 "retrieval_score": score,
                 "retrieval_rank": rank,
             }
-        ]
-        break
+        )
+        if len(selected) >= request.max_articles:
+            break
     analysis = ComparisonAnalysisV1(
         item_id=target.id,
         item_version=target.version,
@@ -302,7 +309,7 @@ def fulfill_search(
     ids = search_catalog(service, request, result)
     checks = dict(result.get("source_checks", {}))
     if (
-        not ids
+        len(ids) < request.max_articles
         and service.settings.research_refresh_sources
         and service.runner.provider is not None
     ):
@@ -411,6 +418,7 @@ def prepare_comparison(
             expected_workflow_version=item.workflow_version,
             job_id=service.research_job_id,
             policy_version=POLICY_VERSION,
+            max_articles=max(1, service.settings.comparison_min_sources - 1),
         )
         request_id = service.research_port.request_search(request)
         request_ids.append(request_id)

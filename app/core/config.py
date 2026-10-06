@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     ai_input_cost_per_million: float | None = Field(default=None, ge=0)
     ai_output_cost_per_million: float | None = Field(default=None, ge=0)
     comparison_auto_research: bool = True
+    comparison_min_sources: int = Field(default=3, ge=1, le=21)
     research_refresh_sources: bool = True
     research_max_candidates: int = Field(default=100, ge=1, le=500)
     research_max_fact_checks: int = Field(default=6, ge=1, le=20)
@@ -42,6 +43,11 @@ class Settings(BaseSettings):
     research_max_attempts: int = Field(default=3, ge=1, le=5)
     research_retry_seconds: int = Field(default=60, ge=10, le=3600)
     review_require_four_eyes: bool = True
+    review_required: bool = False
+    featured_images_enabled: bool = True
+    ai_image_model: str = "gpt-image-1.5"
+    ai_image_quality: Literal["low", "medium", "high"] = "medium"
+    ai_image_size: Literal["1536x1024", "1024x1024", "1024x1536"] = "1536x1024"
     wordpress_enabled: bool = False
     wordpress_base_url: str = ""
     wordpress_username: str = ""

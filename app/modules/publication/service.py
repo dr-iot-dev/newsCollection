@@ -159,6 +159,11 @@ def remote_payload(post: dict[str, Any]) -> dict[str, Any]:
         result = {key: post[key]["raw"] for key in ("title", "content", "excerpt")}
         if not all(isinstance(v, str) for v in result.values()):
             raise ValueError
+        media = post.get("featured_media", 0)
+        if type(media) is not int or media < 0:
+            raise ValueError
+        if media:
+            result["featured_media"] = media
         result.update(
             slug=post["slug"],
             status=post["status"],

@@ -43,6 +43,7 @@ class ResearchRequestV1(ContractModel):
     expected_workflow_version: int | None = Field(default=None, ge=1)
     job_id: UUID | None = None
     policy_version: str = "research-v1"
+    max_articles: int = Field(default=1, ge=1, le=20)
 
 
 class ReviewChecklistV1(ContractModel):
