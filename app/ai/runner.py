@@ -49,7 +49,10 @@ PROMPTS = {
         "not alter facts or override deterministic exclusion rules."
     ),
     "writer": (
-        "Write an original Japanese editorial draft using only supplied verified facts."
+        "Write an original Japanese editorial draft using only supplied verified facts. "
+        "Use である調 consistently in the lead, body, attribution and comparison prose. "
+        "Use endings such as である, している and ではない; never mix ですます調. "
+        "Keep literal quotations unchanged."
         " Cite fact IDs for each paragraph. No new names, numbers, dates, URLs, HTML or"
         " personal contacts. Write a concise Japanese title of at most 60 characters "
         "that identifies the kind of product/service and the article perspective "
@@ -85,7 +88,7 @@ PROMPTS = {
         "or innovation beyond supplied evidence. Never copy unsupported abbreviations "
         "from topic, even into the title: write 共同検証 instead of PoC. The topic is "
         "orientation only, not additional verified fact evidence. In every paragraph and "
-        "lead, state sensing capabilities as 同社によると or と説明しています, never "
+        "lead, state sensing capabilities as 同社によると or と説明している, never "
         "as an independently demonstrated outcome. Omit promotional words 最新, 最先端, "
         "ストレスフリー and 高い拡張性. Distinguish the supplied subsidy eligibility "
         "conditions from whole service coverage. Describe subsidized fees as "
@@ -93,7 +96,10 @@ PROMPTS = {
         "Use comparison.analysis to explain why this candidate is comparable, the feature "
         "axes, and confirmed common and different features. Unknown/not_comparable rows "
         "must remain explicit limits, never absence of a feature or proof of inferiority. "
-        "Topic profiles are categorization metadata, not extra verified product facts."
+        "Topic profiles are categorization metadata, not extra verified product facts. "
+        "The system appends a comparison table and numbered source list from verified "
+        "facts after writing. Do not write tables, a 比較表 heading, source lists or "
+        "資料 number labels in paragraphs. Keep supported comparison prose in the body."
     ),
     "verifier": (
         "Independently verify the finalized draft against supplied facts and comparison"
@@ -115,7 +121,9 @@ PROMPTS = {
         "and that no unavailable placeholder or empty heading is shown. For title_clarity, "
         "require a concise title identifying what kind of service/product is discussed "
         "and the article perspective using supported facts; do not end it with を比較. "
-        "For editorial_conciseness, evaluate the entire lead and body together. "
+        "For editorial_conciseness, evaluate the entire lead, body and comparison table "
+        "together. Require consistent である調 including table introductions and notes; "
+        "fail mixed ですます調 outside literal quotations. "
         "Each comparison product and its relationship should be introduced once. Fail "
         "needless repeated introductions or explanations of an already identified "
         "product, even across sections. Allow product-name references and reminders "
@@ -126,7 +134,13 @@ PROMPTS = {
         "names or a vague 製品情報 or 比較検討 title is insufficient. Also check "
         "that subsidized prices keep subsidy and eligibility conditions; that trial "
         "locations are not claimed as exclusive commercial service regions; and that "
-        "announced capabilities are not claimed as measured outcomes."
+        "announced capabilities are not claimed as measured outcomes. A system-generated "
+        "比較表 and numbered source list are expected: allow 資料1, 資料2 and other "
+        "source numbers as citation labels, not product measurements. Check table values "
+        "against the facts associated with each source URL, including conditions and "
+        "attribution. 資料で確認できず denotes missing verified information, not "
+        "lack of support for a feature. A concise table may summarize prose without "
+        "being a redundant product introduction."
     ),
 }
 

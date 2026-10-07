@@ -104,7 +104,7 @@ def idempotency_key(target: str, item_id: object, revision: int) -> str:
 
 def normalize_source_section(value: str, urls: list[str]) -> str:
     """Replace draft source sections with one canonical, linked source list."""
-    urls = sorted(set(urls))
+    urls = list(dict.fromkeys(urls))
     if not urls or any(not safe_link(url) for url in urls):
         raise EditorialError("WORDPRESS_SOURCE_LINK_REQUIRED", 422)
     soup = BeautifulSoup(value, "html.parser")
@@ -121,7 +121,10 @@ def normalize_source_section(value: str, urls: list[str]) -> str:
             sibling = following
     sources = (
         "<h2>出典</h2><ul>"
-        + "".join(f'<li><a href="{escape(url, quote=True)}">{escape(url)}</a></li>' for url in urls)
+        + "".join(
+            f'<li>資料{i}: <a href="{escape(url, quote=True)}">{escape(url)}</a></li>'
+            for i, url in enumerate(urls, 1)
+        )
         + "</ul>"
     )
     return sanitize_html(str(soup).rstrip() + "\n" + sources)

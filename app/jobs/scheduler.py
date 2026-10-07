@@ -9,6 +9,7 @@ from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.infrastructure.db.models import LegalStatus, Publication, Source
 from app.infrastructure.db.session import SessionLocal
+from app.infrastructure.wordpress import wordpress_target
 from app.modules.acquisition.service import collect_source
 from app.orchestration.editorial import process_editorial_outbox, process_facts_outbox
 from app.orchestration.editorial_jobs import process_editorial_jobs
@@ -95,11 +96,17 @@ def reconcile_wordpress() -> None:
     settings = get_settings()
     if not settings.wordpress_enabled:
         return
+    target = wordpress_target(
+        settings.wordpress_base_url, settings.wordpress_post_type, settings.wordpress_rest_base,
+    )
     with SessionLocal() as session:
         ids = list(
             session.scalars(
                 select(Publication.id)
-                .where(Publication.state.not_in(["legacy", "trashed"]))
+                .where(
+                    Publication.target == target,
+                    Publication.state.not_in(["legacy", "trashed"]),
+                )
                 .order_by(Publication.updated_at)
                 .limit(100)
             )

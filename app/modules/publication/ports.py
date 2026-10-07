@@ -19,8 +19,21 @@ class PublicationPort(Protocol):
     def get_media(self, media_id: str) -> dict[str, Any]: ...
 
     def upload_image(
-        self, image: bytes, *, filename: str, slug: str, title: str,
-        alt_text: str, caption: str, post_id: str,
+        self,
+        image: bytes,
+        *,
+        filename: str,
+        slug: str,
+        title: str,
+        alt_text: str,
+        caption: str,
+        post_id: str,
     ) -> dict[str, Any]: ...
 
-    def set_featured_media(self, post_id: str, media_id: str) -> dict[str, Any]: ...
+    def set_featured_media(
+        self,
+        post_id: str,
+        media_id: str,
+        *,
+        content: str | None = None,
+    ) -> dict[str, Any]: ...

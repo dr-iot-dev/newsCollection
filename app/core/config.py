@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     ai_image_size: Literal["1536x1024", "1024x1024", "1024x1536"] = "1536x1024"
     wordpress_enabled: bool = False
     wordpress_base_url: str = ""
+    wordpress_post_type: str = Field(default="post", pattern=r"^[a-z0-9_-]{1,20}$")
+    wordpress_rest_base: str | None = Field(
+        default=None, pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$"
+    )
     wordpress_username: str = ""
     wordpress_application_password: SecretStr | None = Field(default=None, repr=False)
     wordpress_category_map: dict[str, Annotated[int, Field(ge=1, strict=True)]] = Field(

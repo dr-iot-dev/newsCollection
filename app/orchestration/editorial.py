@@ -32,6 +32,7 @@ from app.contracts.verification_v1 import (
     VerificationCriterionV1,
     VerificationReportV1,
 )
+from app.core.article_tables import comparison_prose, render_comparison_table, render_source_list
 from app.core.config import Settings
 from app.core.content import normalize_url
 from app.core.editorial import INJECTION, EditorialError, numbers, redact_contacts
@@ -71,7 +72,7 @@ from app.modules.selection.service import rule_selection
 from app.modules.verification.service import POLICY_VERSION as VERIFICATION_POLICY
 from app.modules.verification.service import REQUIRED_CRITERIA, rule_criteria
 from app.modules.writing.service import POLICY_VERSION as WRITING_POLICY
-from app.modules.writing.service import render_comparison, validate_writing
+from app.modules.writing.service import normalize_writing_style, render_comparison, validate_writing
 from app.orchestration.phase2 import lock_item
 from app.orchestration.source_sets import claim_source_set
 
@@ -211,6 +212,7 @@ class EditorialService:
             and item.status != ItemStatus.DEDUPED
         ):
             raise EditorialError("DEDUPLICATION_REQUIRED")
+        run_id = None
         if mode == "ai":
             omitted: tuple[EditorialError, ...] = ()
             normalize_attempt = 0
@@ -339,6 +341,8 @@ class EditorialService:
             self.actor_id,
             ItemStatus.FACTS_READY if verified else ItemStatus.REVIEW_PENDING,
             facts=len(verified),
+            evidence_package_id=str(record.id),
+            ai_run_id=str(run_id) if run_id else None,
         )
         if verified:
             self.enqueue(payload, "EvidencePackage", "selection", "extraction")
@@ -619,6 +623,7 @@ class EditorialService:
         row, package = self.package(item)
         self.validate_source_count(package)
         if manual is not None:
+            manual = normalize_writing_style(manual)
             validate_writing(manual, package)
         claim = claim_source_set(self.session, "writing", package, item.id)
         if claim.item_id != item.id or (manual is None and claim.draft_id is not None):
@@ -642,6 +647,7 @@ class EditorialService:
                     item.id,
                     data,
                     WritingOutputV1,
+                    normalize=normalize_writing_style,
                     validate=lambda value: validate_writing(value, package),
                     repair=True,
                 )
@@ -657,9 +663,10 @@ class EditorialService:
             return None
         prior = latest(self.session, ArticleDraft, item.id)
         revision = (prior.revision if prior else 0) + 1
-        sources = "\n".join("- " + str(ref.url) for ref in package.source_references)
+        sources = render_source_list(package)
         body = "\n\n".join(p.text for p in output.paragraphs)
         body += render_comparison(output, package)
+        body += render_comparison_table(package)
         body += "\n\n## 出典\n\n" + sources
         draft_id = uuid4()
         payload = ArticleDraftV1(
@@ -739,7 +746,9 @@ class EditorialService:
         )
         assert original is not None
         body = checked_payload(original, NormalizedContentV1).body
-        text = dto.title + "\n" + dto.lead + "\n" + dto.body_markdown
+        # Verified table cells reproduce factual values; check originality of the prose.
+        _, prose = comparison_prose(dto.body_markdown, package)
+        text = dto.title + "\n" + dto.lead + "\n" + prose
         copied = (
             difflib.SequenceMatcher(None, body, text, autojunk=False).find_longest_match().size
             >= 80
@@ -874,9 +883,8 @@ class EditorialService:
         self.validate_source_count(package)
         if (
             require_pending
-            and item.status not in {
-                ItemStatus.REVIEW_PENDING, ItemStatus.VERIFIED, ItemStatus.WP_DRAFTED
-            }
+            and item.status
+            not in {ItemStatus.REVIEW_PENDING, ItemStatus.VERIFIED, ItemStatus.WP_DRAFTED}
         ) or draft.article_package_id != package_row.id:
             raise EditorialError("REVIEW_STATE_INVALID")
         if (

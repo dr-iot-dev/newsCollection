@@ -317,3 +317,34 @@ def test_radar_and_body_motion_sensor_methods_are_recorded_as_different():
     assert rows["sensing_method"].result == "different"
     assert rows["sensing_method"].candidate.fact_ids == (right.fact_id,)
     assert rows["observed_signals"].result == "common"
+
+
+def test_edge_ai_topics_require_explicit_processing_and_keep_source_offsets():
+    sources = (
+        content("エッジAIコンピュータ", "Jetson AGX OrinによるAI処理をエッジ環境で行う。"),
+        content("組込みエッジAIボード", "RZ/V2Hを用いたAI推論を行う。"),
+    )
+    topics = [classify_topic(source, "fixture") for source in sources]
+    assert not topic_reasons(topic_checks(*topics))
+    for source, topic in zip(sources, topics, strict=True):
+        for facet in topic.facets:
+            for evidence in facet.evidence:
+                assert (
+                    getattr(source, evidence.field)[evidence.start : evidence.end] == evidence.quote
+                )
+    vague = classify_topic(content("AI関連イベント", "新技術を紹介する。"), "vague")
+    assert "TOPIC_FUNCTION_UNCONFIRMED" in topic_reasons(topic_checks(topics[0], vague))
+    cloud = classify_topic(content("言語モデル", "クラウドでLLMを提供する。"), "cloud")
+    assert "TOPIC_ENVIRONMENT_UNCONFIRMED" in topic_reasons(topic_checks(topics[0], cloud))
+
+
+def test_ai_chip_axis_compares_recorded_families_without_ranking_performance():
+    left, right = fact("NVIDIA Jetson AGX Orin"), fact("RZ/V2H")
+    row = next(r for r in compare_features((left,), (right,)) if r.axis == "ai_processor")
+    assert row.result == "different"
+    assert row.target.fact_ids == (left.fact_id,)
+    assert row.candidate.evidence_ids == (right.evidence_id,)
+    unknown = next(
+        r for r in compare_features((left,), (fact("高性能AI処理"),)) if r.axis == "ai_processor"
+    )
+    assert unknown.result == "unknown"

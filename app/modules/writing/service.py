@@ -1,6 +1,6 @@
 from app.contracts.article_package_v1 import ArticlePackageV1
 from app.contracts.editorial_v1 import WritingOutputV1
-from app.core.draft_style import title_has_comparison_suffix
+from app.core.draft_style import plain_style, title_has_comparison_suffix
 from app.core.editorial import EditorialError, entities_supported, numbers, personal_data
 from app.core.evidence_support import (
     COMPARISON_HEADINGS,
@@ -11,7 +11,7 @@ from app.core.evidence_support import (
     vendor_claims_attributed,
 )
 
-POLICY_VERSION = "writing-v4"
+POLICY_VERSION = "writing-v6"
 
 
 def validate_writing(output: WritingOutputV1, package: ArticlePackageV1) -> None:
@@ -37,7 +37,7 @@ def validate_writing(output: WritingOutputV1, package: ArticlePackageV1) -> None
         ]
     )
     evidence = supported_text(package)
-    if any(heading in text for heading in COMPARISON_HEADINGS):
+    if any(heading in text for heading in (*COMPARISON_HEADINGS, "## 比較表", "## 出典")):
         raise EditorialError("DRAFT_COMPARISON_SECTION_FORBIDDEN")
     body = "\n\n".join(
         [
@@ -79,3 +79,16 @@ def render_comparison(output: WritingOutputV1, package: ArticlePackageV1) -> str
         if comparison_available(values):
             blocks.append(text)
     return "\n\n" + "\n\n".join(blocks) if blocks else ""
+
+
+def normalize_writing_style(output: WritingOutputV1) -> WritingOutputV1:
+    return output.model_copy(
+        update={
+            "lead": plain_style(output.lead),
+            "paragraphs": tuple(
+                p.model_copy(update={"text": plain_style(p.text)}) for p in output.paragraphs
+            ),
+            "previous_comparison": plain_style(output.previous_comparison),
+            "competitor_comparison": plain_style(output.competitor_comparison),
+        }
+    )

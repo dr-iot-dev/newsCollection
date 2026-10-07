@@ -36,7 +36,8 @@ from tests.unit.test_phase3 import prepared, review_request, settings
 
 
 class CMS:
-    def __init__(self):
+    def __init__(self, post_type="post", rest_base="posts"):
+        self.post_type, self.rest_base = post_type, rest_base
         self.posts = {}
         self.requests = []
         self.create_fault = None
@@ -47,18 +48,18 @@ class CMS:
         data = json.loads(request.content) if request.content else None
         post_id = request.url.path.rsplit("/", 1)[-1]
         if request.method == "GET":
-            if post_id == "posts":
+            if post_id == self.rest_base:
                 found = [p for p in self.posts.values() if p["slug"] == request.url.params["slug"]]
                 return httpx.Response(200, json=found)
             return httpx.Response(200, json=self.posts[int(post_id)])
-        if post_id == "posts":
+        if post_id == self.rest_base:
             if self.create_fault == "before":
                 raise httpx.ReadTimeout("fixture-secret", request=request)
             remote_id = len(self.posts) + 1
             post = {
                 **data,
                 "id": remote_id,
-                "type": "post",
+                "type": self.post_type,
                 "link": f"https://cms.example/?p={remote_id}",
                 "modified_gmt": "2026-10-01T01:00:00",
                 **{k: {"raw": data[k]} for k in ("title", "content", "excerpt")},
@@ -70,7 +71,12 @@ class CMS:
         if self.publish_fault == "before":
             return httpx.Response(503, json={"secret": "never-logged"})
         post = self.posts[int(post_id)]
-        post.update(data)
+        post.update(
+            {
+                key: {"raw": value} if key in {"title", "content", "excerpt"} else value
+                for key, value in data.items()
+            }
+        )
         post["modified_gmt"] = "2026-10-01T01:01:00"
         if self.publish_fault == "after":
             raise httpx.ReadTimeout("fixture-secret", request=request)
@@ -81,6 +87,8 @@ class CMS:
             "https://cms.example",
             "dedicated-user",
             "fixture-password",
+            post_type=self.post_type,
+            rest_base=self.rest_base,
             transport=httpx.MockTransport(self.handler),
             sleep=lambda _: None,
         )

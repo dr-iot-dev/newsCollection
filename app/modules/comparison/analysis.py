@@ -7,6 +7,11 @@ from app.contracts.facts_v1 import VerifiedFactV1
 
 FEATURES = (
     (
+        "ai_processor",
+        "AI処理チップ",
+        ("Jetson AGX Orin", "Jetson Orin NX", "Jetson Orin Nano", "RZ/V2H", "Hailo-8L"),
+    ),
+    (
         "sensing_method",
         "検知方式",
         (

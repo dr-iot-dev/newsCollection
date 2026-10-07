@@ -1,7 +1,8 @@
 from app.contracts.article_package_v1 import ArticlePackageV1
 from app.contracts.draft_v1 import ArticleDraftV1
 from app.contracts.verification_v1 import CriterionResult, VerificationCriterionV1
-from app.core.draft_style import title_has_comparison_suffix
+from app.core.article_tables import comparison_prose, render_comparison_table, render_source_list
+from app.core.draft_style import has_polite_ending, title_has_comparison_suffix
 from app.core.editorial import entities_supported, numbers, personal_data
 from app.core.evidence_support import (
     COMPARISON_HEADINGS,
@@ -12,7 +13,7 @@ from app.core.evidence_support import (
     vendor_claims_attributed,
 )
 
-POLICY_VERSION = "verification-v6"
+POLICY_VERSION = "verification-v8"
 REQUIRED_CRITERIA = frozenset(
     {
         "fact_support",
@@ -21,6 +22,7 @@ REQUIRED_CRITERIA = frozenset(
         "previous_comparison",
         "competitor_comparison",
         "comparison_conditions",
+        "comparison_table",
         "claim_attribution",
         "source_links",
         "rights",
@@ -34,7 +36,10 @@ def rule_criteria(
     draft: ArticleDraftV1,
     package: ArticlePackageV1,
 ) -> tuple[VerificationCriterionV1, ...]:
-    text = "\n\n".join([draft.title, draft.lead, draft.body_markdown.split("\n## 出典\n")[0]])
+    body = draft.body_markdown.split("\n## 出典\n", 1)[0]
+    table = render_comparison_table(package)
+    table_valid, prose = comparison_prose(body, package)
+    text = "\n\n".join([draft.title, draft.lead, prose])
     allowed = supported_text(package)
     comparison = package.comparison
     support = numbers(text) <= numbers(allowed) and entities_supported(
@@ -43,10 +48,11 @@ def rule_criteria(
     fact_ids = set(package.verified_fact_ids)
     support = support and all(set(p.fact_ids) <= fact_ids for p in draft.paragraph_facts)
     results = {
-        "fact_support": support,
+        "fact_support": support and table_valid,
+        "comparison_table": table_valid,
         "title_clarity": 0 < len(draft.title) <= 60
         and not title_has_comparison_suffix(draft.title),
-        "editorial_conciseness": True,
+        "editorial_conciseness": not has_polite_ending(text + table),
         "previous_comparison": True,
         "competitor_comparison": True,
         "comparison_conditions": comparison is not None
@@ -62,10 +68,13 @@ def rule_criteria(
             for f in package.facts
             if f.fact_type in {"performance_claim", "security_claim"}
         ),
-        "source_links": all(str(s.url) in draft.body_markdown for s in package.source_references),
+        "source_links": draft.body_markdown.count("\n## 出典\n") == 1
+        and draft.body_markdown.split("\n## 出典\n", 1)[-1].strip() == render_source_list(package),
         "rights": True,
         "original_expression": True,
-        "personal_data": not personal_data(text) and "<" not in text,
+        "personal_data": not personal_data(text)
+        and "<" not in text
+        and (not table or not personal_data(table)),
     }
     results["comparison_conditions"] = results[
         "comparison_conditions"
@@ -81,12 +90,11 @@ def rule_criteria(
             if v.unavailable_reason
         )
     )
-    body = draft.body_markdown.split("\n## 出典\n", 1)[0]
     for group, key in (
         (previous, "previous_comparison"),
         (competitor, "competitor_comparison"),
     ):
-        content = body if comparison_available(group) else ""
+        content = prose if comparison_available(group) else ""
         results[key] = layout_valid and comparison_section_supported(content, group)
     return tuple(
         VerificationCriterionV1(

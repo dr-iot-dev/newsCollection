@@ -258,3 +258,13 @@ def test_promotional_claim_requires_vendor_attribution_in_its_own_paragraph(clai
     assert not vendor_claims_attributed(claim)
     assert vendor_claims_attributed("同社によると、" + claim)
     assert not vendor_claims_attributed("同社によると、機器を発表しました。\n\n" + claim)
+
+
+def test_numeric_evidence_preserves_multi_component_software_versions():
+    assert numbers("Jetson Linux 36.4.3、Kernel 5.15、1,200円、50\uff05") == {
+        "36.4.3",
+        "5.15",
+        "1200",
+        "50%",
+    }
+    assert not numbers("Jetson Linux 36.4.4") <= numbers("Jetson Linux 36.4.3")

@@ -1,7 +1,9 @@
 """Fixed-origin, bounded WordPress REST adapter using Application Passwords."""
 
+import hashlib
 import ipaddress
 import json
+import re
 import socket
 import time
 from collections.abc import Callable
@@ -43,6 +45,35 @@ def validate_base_url(value: str) -> str:
         return urlunsplit(("https", host, url.path.rstrip("/"), "", ""))
     except ValueError:
         raise EditorialError("WORDPRESS_HTTPS_URL_REQUIRED", 422) from None
+
+
+def post_resource(post_type: str, rest_base: str | None = None) -> str:
+    """Accept one route segment, never an arbitrary REST path."""
+    resource = (
+        rest_base if rest_base is not None else ("posts" if post_type == "post" else post_type)
+    )
+    if (
+        re.fullmatch(r"[a-z0-9_-]{1,20}", post_type) is None
+        or re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", resource) is None
+    ):
+        raise EditorialError("WORDPRESS_POST_RESOURCE_INVALID", 422)
+    return resource
+
+
+def wordpress_target(
+    base_url: str,
+    post_type: str = "post",
+    rest_base: str | None = None,
+) -> str:
+    """Keep legacy post identities; isolate every other type/route combination."""
+    base_url = validate_base_url(base_url)
+    resource = post_resource(post_type, rest_base)
+    identity = (
+        base_url
+        if (post_type, resource) == ("post", "posts")
+        else json.dumps([base_url, post_type, resource], separators=(",", ":"))
+    )
+    return "wordpress:" + hashlib.sha256(identity.encode()).hexdigest()
 
 
 class WordPressTransport(httpx.BaseTransport):
@@ -91,20 +122,29 @@ class WordPressClient:
         username: str,
         password: str,
         *,
+        post_type: str = "post",
+        rest_base: str | None = None,
         transport: httpx.BaseTransport | None = None,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         self.base_url = validate_base_url(base_url)
+        self.post_type = post_type
+        self.rest_base = post_resource(post_type, rest_base)
         if not username.strip() or not password.strip() or ":" in username:
             raise EditorialError("WORDPRESS_CREDENTIALS_REQUIRED", 422)
         self.username, self.password = username, password
         self.transport, self.sleep = transport, sleep
 
     def request(
-        self, method: str, path: str, *, resource: Literal["posts", "media"] = "posts",
+        self,
+        method: str,
+        path: str,
+        *,
+        resource: Literal["posts", "media"] = "posts",
         **kwargs: Any,
     ) -> Any:
         # Writes are never automatically replayed: a 5xx can occur after remote commit.
+        route = self.rest_base if resource == "posts" else "media"
         attempts = 3 if method == "GET" else 1
         for attempt in range(attempts):
             transport = self.transport or WordPressTransport(urlsplit(self.base_url).hostname or "")
@@ -118,7 +158,7 @@ class WordPressClient:
                         timeout=20,
                     ) as client,
                     client.stream(
-                        method, self.base_url + "/wp-json/wp/v2/" + resource + path, **kwargs
+                        method, self.base_url + "/wp-json/wp/v2/" + route + path, **kwargs
                     ) as response,
                 ):
                     if response.status_code in {429, 500, 502, 503, 504}:
@@ -152,7 +192,7 @@ class WordPressClient:
             not isinstance(result, dict)
             or type(result.get("id")) is not int
             or result["id"] <= 0
-            or result.get("type") != "post"
+            or result.get("type") != self.post_type
             or not isinstance(result.get("link"), str)
         ):
             raise EditorialError("WORDPRESS_RESPONSE_INVALID", 502)
@@ -221,8 +261,10 @@ class WordPressClient:
 
     def checked_media(self, value: Any) -> dict[str, Any]:
         if (
-            not isinstance(value, dict) or type(value.get("id")) is not int
-            or value["id"] <= 0 or value.get("media_type") != "image"
+            not isinstance(value, dict)
+            or type(value.get("id")) is not int
+            or value["id"] <= 0
+            or value.get("media_type") != "image"
             or value.get("mime_type") != "image/jpeg"
             or not isinstance(value.get("slug"), str)
             or not isinstance(value.get("source_url"), str)
@@ -238,9 +280,16 @@ class WordPressClient:
         return value
 
     def find_media(self, slug: str) -> dict[str, Any] | None:
-        result = self.request("GET", "", resource="media", params={
-            "slug": slug, "context": "edit", "per_page": 100,
-        })
+        result = self.request(
+            "GET",
+            "",
+            resource="media",
+            params={
+                "slug": slug,
+                "context": "edit",
+                "per_page": 100,
+            },
+        )
         if not isinstance(result, list) or len(result) > 1:
             raise EditorialError("WORDPRESS_MEDIA_RECONCILE_CONFLICT")
         return self.checked_media(result[0]) if result else None
@@ -248,28 +297,62 @@ class WordPressClient:
     def get_media(self, media_id: str) -> dict[str, Any]:
         if not media_id.isdecimal() or int(media_id) <= 0:
             raise EditorialError("WORDPRESS_MEDIA_ID_INVALID")
-        return self.checked_media(self.request(
-            "GET", "/" + media_id, resource="media", params={"context": "edit"},
-        ))
+        return self.checked_media(
+            self.request(
+                "GET",
+                "/" + media_id,
+                resource="media",
+                params={"context": "edit"},
+            )
+        )
 
     def upload_image(
-        self, image: bytes, *, filename: str, slug: str, title: str,
-        alt_text: str, caption: str, post_id: str,
+        self,
+        image: bytes,
+        *,
+        filename: str,
+        slug: str,
+        title: str,
+        alt_text: str,
+        caption: str,
+        post_id: str,
     ) -> dict[str, Any]:
         if not post_id.isdecimal() or int(post_id) <= 0:
             raise EditorialError("WORDPRESS_POST_ID_INVALID")
-        return self.checked_media(self.request(
-            "POST", "", resource="media",
-            files={"file": (filename, image, "image/jpeg")},
-            data={"slug": slug, "title": title, "alt_text": alt_text,
-                  "caption": caption, "post": post_id},
-        ))
+        return self.checked_media(
+            self.request(
+                "POST",
+                "",
+                resource="media",
+                files={"file": (filename, image, "image/jpeg")},
+                data={
+                    "slug": slug,
+                    "title": title,
+                    "alt_text": alt_text,
+                    "caption": caption,
+                    "post": post_id,
+                },
+            )
+        )
 
-    def set_featured_media(self, post_id: str, media_id: str) -> dict[str, Any]:
+    def set_featured_media(
+        self,
+        post_id: str,
+        media_id: str,
+        *,
+        content: str | None = None,
+    ) -> dict[str, Any]:
         if not post_id.isdecimal() or int(post_id) <= 0:
             raise EditorialError("WORDPRESS_POST_ID_INVALID")
         if not media_id.isdecimal() or int(media_id) <= 0:
             raise EditorialError("WORDPRESS_MEDIA_ID_INVALID")
-        return self.checked_post(self.request(
-            "POST", "/" + post_id, json={"featured_media": int(media_id)},
-        ))
+        decoration: dict[str, Any] = {"featured_media": int(media_id)}
+        if content is not None:
+            decoration["content"] = content
+        return self.checked_post(
+            self.request(
+                "POST",
+                "/" + post_id,
+                json=decoration,
+            )
+        )

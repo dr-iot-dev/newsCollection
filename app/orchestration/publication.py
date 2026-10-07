@@ -5,7 +5,6 @@ An ambiguous create is only reconciled, never replayed, because WordPress has no
 idempotency-key API. Crashes in the commit/send gap intentionally require operator recovery.
 """
 
-import hashlib
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -39,7 +38,8 @@ from app.infrastructure.db.models import (
     Review,
     VerificationRun,
 )
-from app.infrastructure.wordpress import WordPressClient, validate_base_url
+from app.infrastructure.wordpress import WordPressClient, validate_base_url, wordpress_target
+from app.modules.publication.model_disclosure import append_model_disclosure, with_image_model
 from app.modules.publication.ports import PublicationPort
 from app.modules.publication.service import (
     build_payload,
@@ -54,6 +54,7 @@ from app.orchestration.editorial import (
     latest,
     touch,
 )
+from app.orchestration.model_disclosure import article_model_stages
 from app.orchestration.source_sets import claim_source_set, package_source_set
 
 
@@ -68,7 +69,11 @@ class PublicationService:
         if not settings.wordpress_enabled:
             raise EditorialError("WORDPRESS_DISABLED", 503)
         self.base_url = validate_base_url(settings.wordpress_base_url)
-        self.target = "wordpress:" + hashlib.sha256(self.base_url.encode()).hexdigest()
+        self.target = wordpress_target(
+            self.base_url,
+            settings.wordpress_post_type,
+            settings.wordpress_rest_base,
+        )
         if port is None:
             if settings.wordpress_application_password is None:
                 raise EditorialError("WORDPRESS_CREDENTIALS_REQUIRED", 503)
@@ -76,6 +81,8 @@ class PublicationService:
                 self.base_url,
                 settings.wordpress_username,
                 settings.wordpress_application_password.get_secret_value(),
+                post_type=settings.wordpress_post_type,
+                rest_base=settings.wordpress_rest_base,
             )
         self.port = port
         self.editorial = EditorialService(session, settings)
@@ -109,16 +116,17 @@ class PublicationService:
             if not all(v is True for v in checklist.model_dump().values()):
                 raise EditorialError("REVIEW_CHECKLIST_INCOMPLETE")
             self.actor(review.reviewer_id, "reviewer")
-            self.editorial.validate_for_approval(
+            verification = self.editorial.validate_for_approval(
                 item, draft, review.reviewer_id, require_pending=False
             )
             approval = review
         else:
             if review is not None and review.draft_id == draft.id and review.decision != "approve":
                 raise EditorialError("HUMAN_REVIEW_BLOCKED")
-            approval = self.editorial.validate_for_approval(
+            verification = self.editorial.validate_for_approval(
                 item, draft, None, require_pending=False
             )
+            approval = verification
         _, package = self.editorial.package(item)
         payload = build_payload(
             ArticleDraftV1.model_validate(draft.source_block["draft"]),
@@ -126,6 +134,14 @@ class PublicationService:
             self.target,
             self.settings.wordpress_category_map,
             self.settings.wordpress_tag_map,
+        )
+        payload = payload.model_copy(
+            update={
+                "content": append_model_disclosure(
+                    payload.content,
+                    article_model_stages(self.session, draft, verification, package),
+                )
+            }
         )
         return draft, approval, payload
 
@@ -146,13 +162,21 @@ class PublicationService:
         draft, review, payload = self.approved(
             item, row.draft_id, require_human=envelope.producer != "verification"
         )
-        image = self.session.scalar(select(FeaturedImage).where(
-            FeaturedImage.publication_id == row.id, FeaturedImage.state == "attached",
-        ))
+        image = self.session.scalar(
+            select(FeaturedImage).where(
+                FeaturedImage.publication_id == row.id,
+                FeaturedImage.state == "attached",
+            )
+        )
         if image is not None:
             if image.draft_id != row.draft_id or not image.remote_media_id:
                 raise EditorialError("FEATURED_IMAGE_STALE")
-            payload = payload.model_copy(update={"featured_media": int(image.remote_media_id)})
+            payload = payload.model_copy(
+                update={
+                    "featured_media": int(image.remote_media_id),
+                    "content": with_image_model(payload.content, image.model),
+                }
+            )
         approval_id = review.id
         if envelope.producer == "verification" and isinstance(review, Review):
             # A later switch to human review must not change the original AI provenance.
@@ -484,9 +508,7 @@ class PublicationService:
             self.fail(item, row, exc, actor_id)
             raise
 
-    def accept_trashed(
-        self, item: Item, row: Publication, post: dict[str, Any]
-    ) -> None:
+    def accept_trashed(self, item: Item, row: Publication, post: dict[str, Any]) -> None:
         if str(post["id"]) != row.remote_post_id or post["status"] != "trash":
             raise EditorialError("WORDPRESS_REMOTE_STATUS_CONFLICT")
         row.remote_status, row.state = "trash", "trashed"
@@ -529,8 +551,11 @@ class PublicationService:
             raise EditorialError("WORDPRESS_REMOTE_CONFLICT")
         row.state = "trashing"
         touch(
-            self.session, item, "wordpress.duplicate_trash_intent",
-            publication_id=str(row.id), retained_publication_id=str(keep.id),
+            self.session,
+            item,
+            "wordpress.duplicate_trash_intent",
+            publication_id=str(row.id),
+            retained_publication_id=str(keep.id),
         )
         expected, row_id = item.workflow_version, row.id
         self.session.commit()
@@ -654,8 +679,11 @@ def process_verified_publications(
             if exc.code == "WORDPRESS_SOURCE_SET_DUPLICATE":
                 item = item_for_update(session, item_id)
                 touch(
-                    session, item, "wordpress.source_set_duplicate",
-                    status=ItemStatus.NEEDS_CHANGES, reason=exc.code,
+                    session,
+                    item,
+                    "wordpress.source_set_duplicate",
+                    status=ItemStatus.NEEDS_CHANGES,
+                    reason=exc.code,
                 )
                 session.commit()
             structlog.get_logger().warning(

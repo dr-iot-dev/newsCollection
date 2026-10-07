@@ -11,8 +11,21 @@ from app.contracts.content_v1 import NormalizedContentV1
 from app.contracts.envelope import canonical_payload_hash
 from app.core.editorial import personal_data
 
-POLICY_VERSION = "topics-v2"
+POLICY_VERSION = "topics-v3"
 TAXONOMY = (
+    ("purpose", "edge_ai", "エッジAI処理", ("エッジAI", "エッジ AI", "edge AI")),
+    (
+        "environment",
+        "edge_device",
+        "エッジ・組込み機器",
+        ("エッジ環境", "エッジで", "エッジAI", "エッジ AI", "組込み", "組み込み", "edge AI"),
+    ),
+    (
+        "function",
+        "ai_inference",
+        "AI推論・処理",
+        ("AI推論", "AI処理", "AI演算", "推論性能", "AI inference"),
+    ),
     (
         "purpose",
         "care_monitoring",

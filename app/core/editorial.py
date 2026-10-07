@@ -32,6 +32,10 @@ def numbers(text: str) -> set[str]:
     result = set()
     for match in NUMBER.finditer(text):
         value = match[0].replace(",", "").replace("\uff05", "%")
+        # Preserve multi-component software versions as exact evidence tokens.
+        if value.count(".") > 1:
+            result.add(value)
+            continue
         suffix = "%" if value.endswith("%") else ""
         result.add(format(Decimal(value.rstrip("%")).normalize(), "f") + suffix)
     return result
