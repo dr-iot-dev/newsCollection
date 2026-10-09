@@ -135,6 +135,22 @@ class PublicationService:
             self.settings.wordpress_category_map,
             self.settings.wordpress_tag_map,
         )
+        # A route migration changes the target/key, but existing CMS URLs must stay stable.
+        existing_key = idempotency_key(self.target, item.id, draft.revision)
+        existing = self.session.scalar(
+            select(Publication).where(
+                Publication.target == self.target,
+                Publication.idempotency_key == existing_key,
+            )
+        )
+        if existing is not None and existing.payload_json is not None:
+            if (
+                existing.draft_id != draft.id
+                or canonical_payload_hash(existing.payload_json) != existing.payload_hash
+            ):
+                raise EditorialError("PUBLICATION_PACKAGE_STALE")
+            stored = WordPressPayloadV1.model_validate(existing.payload_json)
+            payload = payload.model_copy(update={"slug": stored.slug})
         payload = payload.model_copy(
             update={
                 "content": append_model_disclosure(

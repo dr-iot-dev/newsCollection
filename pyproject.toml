@@ -3,9 +3,9 @@ requires = ["hatchling==1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ai-iot-news"
+name = "news-weave"
 version = "0.4.0"
-description = "Auditable AI/IoT primary-source news collection pipeline"
+description = "News Weave: auditable AI/IoT primary-source news pipeline"
 readme = "README.md"
 requires-python = ">=3.13,<3.15"
 dependencies = [
@@ -32,6 +32,8 @@ dependencies = [
 dev = ["mypy==1.18.2", "pytest==8.4.2", "pytest-cov==7.0.0", "ruff==0.13.3"]
 
 [project.scripts]
+news-weave = "app.cli:app"
+# Compatibility alias for existing scripts.
 ai-iot-news = "app.cli:app"
 
 [tool.hatch.build.targets.wheel]

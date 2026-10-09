@@ -1,1 +1,1 @@
-"""AI/IoT news collection application."""
+"""News Weave application."""

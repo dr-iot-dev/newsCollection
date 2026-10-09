@@ -1,10 +1,10 @@
-# AI・IoT一次情報 自動収集・編集・公開システム 詳細設計書
+# News Weave（ニュースを編む） AI・IoT一次情報 自動収集・編集・公開システム 詳細設計書
 
 ## 0. 文書情報
 
 | 項目 | 内容 |
 |---|---|
-| 文書名 | AI・IoT一次情報 自動収集・編集・公開システム 詳細設計書 |
+| 文書名 | News Weave（ニュースを編む） AI・IoT一次情報 自動収集・編集・公開システム 詳細設計書 |
 | 想定読者 | プロダクト責任者、編集者、開発者、運用担当者、法務確認担当者 |
 | 対象 | メーカー公式RSS/Atom、GitHub Releases、公式プレスリリースページ |
 | MVP技術 | Python / FastAPI / PostgreSQL / SQLAlchemy / APScheduler / Docker Compose |
@@ -370,7 +370,7 @@ DBへのアクセスもモジュール別repository interfaceに限定する。�
 ## 7. ディレクトリ構成
 
 ```text
-ai-iot-news/
+news-weave/
 ├─ app/
 │  ├─ main.py
 │  ├─ api/

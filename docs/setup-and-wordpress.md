@@ -11,9 +11,10 @@
 | 内部API | `http://127.0.0.1:8000`、OpenAPI画面 `/docs` |
 | DB | ComposeのPostgreSQL、volume `postgres-data` |
 | WordPress | `https://airlabs.jp` |
-| 投稿タイプ内部名 / REST名 | `nc_news` / `nc-news` |
+| 投稿用ユーザー / 表示名 | `news-weaver`（ID 3） / News Weaver（2026-10-09切り替え済み） |
+| 投稿タイプ内部名 / REST名 | `news_weave` / `news-weave`（2026-10-09移行済み） |
 | 個別記事 | `/collected-news/{slug}/` |
-| 一覧固定ページ | 「収集ニュース」、page ID 63、`https://airlabs.jp/news/` |
+| 一覧固定ページ | 「ニュースを編む」（2026-10-09反映済み）、page ID 63、`https://airlabs.jp/news/` |
 | 稼働サービス | `db`, `migrate`, `api`, `scheduler` |
 | 補助サービス | `collect`（tools profile）、`test`（test profile） |
 
@@ -68,8 +69,8 @@ AI_IMAGE_SIZE=1536x1024
 
 WORDPRESS_ENABLED=true
 WORDPRESS_BASE_URL=https://airlabs.jp
-WORDPRESS_POST_TYPE=nc_news
-WORDPRESS_REST_BASE=nc-news
+WORDPRESS_POST_TYPE=news_weave
+WORDPRESS_REST_BASE=news-weave
 WORDPRESS_USERNAME=REPLACE_WITH_INTEGRATION_USERNAME
 WORDPRESS_APPLICATION_PASSWORD=REPLACE_WITH_PRIVATE_APPLICATION_PASSWORD
 WORDPRESS_CATEGORY_MAP={"generative_ai":2,"edge_ai":3,"iot_platform":4,"security":5,"standards":6}
@@ -99,12 +100,12 @@ APIとschedulerは同じ設定を使う。`restart` だけでは変更後の環�
 3. 検証・dry-run同期で内容を確認してから、DBへ同期する。schedulerはDBへ同期した設定を使う。
 
 ```powershell
-docker compose --project-directory $projectRoot run --rm collect ai-iot-news sources validate config/sources.yaml
-docker compose --project-directory $projectRoot run --rm collect ai-iot-news sources sync --dry-run config/sources.yaml
-docker compose --project-directory $projectRoot run --rm collect ai-iot-news sources sync config/sources.yaml
-docker compose --project-directory $projectRoot run --rm collect ai-iot-news collect run --source prtimes-iot --dry-run --force
-docker compose --project-directory $projectRoot run --rm collect ai-iot-news collect run --source prtimes-iot --force
-docker compose --project-directory $projectRoot run --rm collect ai-iot-news collect run --source prtimes-electronics --force
+docker compose --project-directory $projectRoot run --rm collect news-weave sources validate config/sources.yaml
+docker compose --project-directory $projectRoot run --rm collect news-weave sources sync --dry-run config/sources.yaml
+docker compose --project-directory $projectRoot run --rm collect news-weave sources sync config/sources.yaml
+docker compose --project-directory $projectRoot run --rm collect news-weave collect run --source prtimes-iot --dry-run --force
+docker compose --project-directory $projectRoot run --rm collect news-weave collect run --source prtimes-iot --force
+docker compose --project-directory $projectRoot run --rm collect news-weave collect run --source prtimes-electronics --force
 ```
 
 収集のdry-runでも実際のGETは行う。`--force` は通常の収集予定を無視するが、rate limit、robots、権利条件は無視しない。PR TIMESの設定は2時間間隔、5秒以上の待機、1回6ページ上限である。承認から180日経過や利用条件・robotsの変更を検知した場合は再確認する。
@@ -113,37 +114,45 @@ Webの画像、ログイン領域、禁止URLを取得しない。登録外の�
 
 ## 4. WordPressの投稿タイプ
 
-リポジトリの `wordpress/news-collection/news-collection.php` を使う。新規導入では次のいずれかで配置する。
+2026-10-09に名称をNews Weaveへ変更した。以下は新規導入の名前である。
+airlabs.jpも2026-10-09に `news_weave / news-weave` へ移行済みである。
+既存の `/collected-news/` URLはサイト側の移行設定で維持している。
+旧投稿タイプから記事と送信履歴を移す場合は [名称変更手順](rename-to-news-weave.md) を使う。
+現行サイトの表示名・固定ページ本文は、リポジトリの更新だけでは変更されない。
 
-- `wordpress/news-collection` フォルダーをサーバーの `wp-content/plugins/` へコピーする。
+リポジトリの `wordpress/news-weave/news-weave.php` を使う。新規導入では次のいずれかで配置する。
+
+- `wordpress/news-weave` フォルダーをサーバーの `wp-content/plugins/` へコピーする。
 - PowerShellで配布用ZIPを作り、管理画面のプラグイン追加画面からアップロードする。
 
 ```powershell
 New-Item -ItemType Directory -Path (Join-Path $projectRoot '.local') -Force | Out-Null
-Compress-Archive -Path (Join-Path $projectRoot 'wordpress\news-collection') `
-    -DestinationPath (Join-Path $projectRoot '.local\news-collection.zip') -Force
+Compress-Archive -Path (Join-Path $projectRoot 'wordpress\news-weave') `
+    -DestinationPath (Join-Path $projectRoot '.local\news-weave.zip') -Force
 ```
 
-管理画面で **News Collection Articles** を有効化する。プラグインは以下を登録する。
+管理画面で **News Weave** を有効化する。プラグインは以下を登録する。
 
 | 設定 | 値 |
 | --- | --- |
-| 内部名 | `nc_news` |
-| 管理画面表示 | 収集ニュース |
-| REST | `show_in_rest=true`, `rest_base=nc-news` |
-| 閲覧 | `public=true`、個別URLは `collected-news` |
+| 内部名 | `news_weave` |
+| 管理画面表示 | ニュースを編む |
+| REST | `show_in_rest=true`, `rest_base=news-weave` |
+| 閲覧 | `public=true`、個別URLは `news-weave` |
 | 対応要素 | title/editor/excerpt/thumbnail/author/revisions |
 | taxonomy | 標準 `category` / `post_tag` |
 | 専用アーカイブ | `has_archive=false`（一覧は固定ページで作る） |
 
-`https://サイト/wp-json/wp/v2/nc-news` がJSONを返すことを確認する。未公開記事しかなければ匿名アクセスで空配列になる。個別ページが404なら「設定 → パーマリンク」を保存し、rewriteを更新する。
+`https://サイト/wp-json/wp/v2/news-weave` がJSONを返すことを確認する。未公開記事しかなければ匿名アクセスで空配列になる。個別ページが404なら「設定 → パーマリンク」を保存し、rewriteを更新する。
 
 既存の別投稿タイプを使う場合は、対応要素・REST・標準taxonomyを揃え、`.env` の内部名とREST名を変更する。REST名にはスラッシュのない1つの名前を指定する。独自taxonomyのみの構成は現行payloadと互換ではない。[WordPress公式のカスタム投稿タイプREST対応](https://developer.wordpress.org/rest-api/extending-the-rest-api/adding-rest-api-support-for-custom-content-types/)も参照する。
 
 ## 5. 専用ユーザーとApplication Password
 
+airlabs.jpでは2026-10-09に新しい編集者ユーザー `news-weaver`（ID 3）へ送信設定を切り替えた。ニックネーム・表示名は `News Weaver` である。新アカウントによる認証と下書き送信を確認済み。既存7記事の投稿者ID 2は変更していない。APIとschedulerは新設定で再作成済みだが、もともとの停止状態を維持している。
+
 1. WordPressに連携専用ユーザーを用意する。このプラグインは標準投稿の権限を使う。下書きの作成・編集、画像のアップロード、必要なら公開を行える権限を割り当てる。所有者や権限に応じた既存記事の読み取りも確認する。
-2. 「ユーザー → プロフィール」または対象ユーザーの編集画面で、News Collection用の **アプリケーションパスワード** を発行する。通常ログインのパスワードと区別する。
+2. 「ユーザー → プロフィール」または対象ユーザーの編集画面で、News Weave用の **アプリケーションパスワード** を発行する。通常ログインのパスワードと区別する。
 3. 専用ユーザー名とApplication Passwordを `.env` の2項目へ保存する。ユーザー名は秘密文書に写す必要はなく、パスワードはGitへ含めない。
 4. HTTPS経由のREST認証が動くことを確認する。401ならパスワード・ユーザー名・認証ヘッダー、403なら権限やセキュリティプラグインの制限を確認する。
 
@@ -163,20 +172,20 @@ WordPressでカテゴリを作成し、各IDを管理画面または `/wp-json/w
 
 IDを `WORDPRESS_CATEGORY_MAP` のJSON objectに設定する。タグを使用する場合はWordPress側で先に作成し、`WORDPRESS_TAG_MAP` へ対応IDを設定する。未対応keyがあると送信前に停止し、システムが勝手にカテゴリ・タグを作成することはない。
 
-`WORDPRESS_BASE_URL` はWordPressの設置URLであり、`/wp-json/wp/v2/nc-news` を含めない。サブディレクトリ設置なら設置先まで含める。現行の接続はHTTPS・公開DNS・証明書検証を必要とし、localhostやprivate IP、redirect先への接続は拒否する。
+`WORDPRESS_BASE_URL` はWordPressの設置URLであり、`/wp-json/wp/v2/news-weave` などのRESTパスを含めない。サブディレクトリ設置なら設置先まで含める。現行の接続はHTTPS・公開DNS・証明書検証を必要とし、localhostやprivate IP、redirect先への接続は拒否する。
 
 ## 7. 固定ページとフロントページのリンク
 
-1. 固定ページ「収集ニュース」を作成し、スラッグを `news` とする。既存の同名ページ63を更新する場合は新規ページを重複作成しない。
-2. ブロックエディターのコードエディターで `wordpress/collected-news-page.html` の内容を貼り付け、ビジュアル表示で確認する。説明文は一般のカスタムHTMLブロック内へ丸ごと貼るのではなく、ブロック原稿として貼り付ける。
+1. 固定ページ「ニュースを編む」を作成し、スラッグを `news` とする。既存の旧名「収集ニュース」のページ63を更新する場合は新規ページを重複作成しない。
+2. 互換モードでは原稿内の `"postType":"news_weave"` を `"postType":"nc_news"` に変更する。ブロックエディターのコードエディターで `wordpress/news-weave-page.html` の内容を貼り付け、ビジュアル表示で確認する。説明文は一般のカスタムHTMLブロック内へ丸ごと貼るのではなく、ブロック原稿として貼り付ける。
 3. 冒頭に作成方法、比較記事・比較表であること、資料番号、著作権・正確性・個人情報への配慮を表示する。
-4. 後半のクエリーループは `postType=nc_news`、`inherit=false`、新しい順、6件/ページである。アイキャッチ、リンク付きタイトル、日付、抜粋、「記事を読む」、ページ送りを表示する。
-5. 固定ページのみ公開する。収集ニュースの下書きは一般向け一覧に出ず、個別記事を公開した後で自動表示される。WordPress標準の公開記事抽出を使い、認証付き下書き一覧を公開ページへ埋め込まない。
+4. 後半のクエリーループは `postType=news_weave`（互換モードなら `nc_news`）、`inherit=false`、新しい順、6件/ページである。アイキャッチ、リンク付きタイトル、日付、抜粋、「記事を読む」、ページ送りを表示する。
+5. 固定ページのみ公開する。ニュースを編むの下書きは一般向け一覧に出ず、個別記事を公開した後で自動表示される。WordPress標準の公開記事抽出を使い、認証付き下書き一覧を公開ページへ埋め込まない。
 6. 本文も一覧ページ内で表示したい場合は、投稿テンプレートに「投稿コンテンツ」ブロックを追加する。現行の一覧原稿は抜粋と個別記事へのリンクである。
 
 クエリーループの操作は [WordPress公式ドキュメント](https://wordpress.org/documentation/article/query-loop-block/) を参照する。テーマの機能に応じて、アイキャッチの表示やスマートフォンの表の横スクロールをプレビューで確認する。
 
-フロントページにリンクを表示するには、固定フロントページを編集して「収集ニュースを見る」のボタンやリンクを `/news/` へ追加する。サイト全体のナビゲーションへ追加する場合、ブロックテーマはサイトエディターのナビゲーション、対応する従来テーマはメニュー設定で固定ページを選ぶ。実際に使うテーマでプレビューし、保存する。この文書化の作業ではフロントページへのリンク配置は変更していない。
+フロントページにリンクを表示するには、固定フロントページを編集して「ニュースを編むを見る」のボタンやリンクを `/news/` へ追加する。サイト全体のナビゲーションへ追加する場合、ブロックテーマはサイトエディターのナビゲーション、対応する従来テーマはメニュー設定で固定ページを選ぶ。実際に使うテーマでプレビューし、保存する。この文書化の作業ではフロントページへのリンク配置は変更していない。
 
 ## 8. 記事を1件生成し下書きで確認する
 
@@ -185,7 +194,7 @@ APIで操作する方法を基本とする。自動schedulerが動いている�
 初回のみ、内部APIのeditorアカウントを作る。トークンは一度だけ表示されるため安全に保存する。既存アカウントがあれば再発行を目的に重複作成しない。
 
 ```powershell
-docker compose --project-directory $projectRoot run --rm --build collect ai-iot-news auth create-user --name editor --role editor
+docker compose --project-directory $projectRoot run --rm --build collect news-weave auth create-user --name editor --role editor
 ```
 
 `http://127.0.0.1:8000/docs` のAuthorizeにBearer tokenを入力する。WordPressのApplication Passwordとは別の認証である。
@@ -204,14 +213,14 @@ docker compose --project-directory $projectRoot run --rm --build collect ai-iot-
 3. 202応答の `job_id` を使い、`GET /api/v1/jobs/{job_id}` を確認する。`waiting_research` / `research_pending` なら同じjobの調査待ちである。`job.status=success` は処理終了を意味し、独立検証の合格は `result.status=pass` を確認する。
 4. `GET /api/v1/items/{item_id}` のdrafts、verifications、research_requests、ai_runsで、本文、比較表、出典、検証結果と診断を確認する。
 5. 最低3資料と別モデル検証の合格後、現行の `REVIEW_REQUIRED=false` ではschedulerがWordPressへ下書き送信する。送信履歴は `GET /api/v1/items/{item_id}/publications` で確認する。
-6. WordPressの「収集ニュース」で、statusが下書き、出典番号と比較表、末尾の使用モデル、アイキャッチを確認する。画像は別ジョブで添付されるため、本文保存より後になる場合がある。
+6. WordPressの「ニュースを編む」で、statusが下書き、出典番号と比較表、末尾の使用モデル、アイキャッチを確認する。画像は別ジョブで添付されるため、本文保存より後になる場合がある。
 
 手動で比較対象を指定する場合は、reprocessに `previous_item_ids` / `competitor_item_ids` の配列を追加する。手動だけで進めるなら `auto_research=false` とする。参照記事にも最新の検証済みfactsが必要で、最低資料数と適合条件は変わらない。
 
 CLIを使う場合の補助コマンド:
 
 ```powershell
-docker compose --project-directory $projectRoot run --rm collect ai-iot-news editorial run --item ARTICLE_UUID --stage pipeline --mode ai
+docker compose --project-directory $projectRoot run --rm collect news-weave editorial run --item ARTICLE_UUID --stage pipeline --mode ai
 ```
 
 CLIの `expected_version` は内部で1を使うため、最新版を指定する操作や比較対象の指定はAPIを基本とする。CLIのpipelineも待機や保留を返し得る。検証合格とWordPressへの送信確認を省略しない。

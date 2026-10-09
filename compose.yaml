@@ -1,3 +1,4 @@
+# Keep the deployed project identity so the existing PostgreSQL volume is reused.
 name: ai-iot-news
 
 x-app: &app
@@ -112,7 +113,7 @@ services:
   collect:
     <<: *app
     profiles: [tools]
-    command: ["ai-iot-news", "collect", "run"]
+    command: ["news-weave", "collect", "run"]
     networks: [backend, collection]
     environment:
       <<: *app-environment

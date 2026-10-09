@@ -15,7 +15,7 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    app_name: str = "AI/IoT News Collection"
+    app_name: str = "News Weave"
     app_env: Literal["development", "test", "staging", "production"] = "development"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     database_url: PostgresDsn = Field(

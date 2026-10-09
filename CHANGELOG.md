@@ -2,6 +2,37 @@
 
 基準日: 2026-10-07（日本時間）。Gitの既存コミットと、このセッションでの実装・運用作業を区別して記録する。細かな作業日時を確認できない変更には推測の日付を付けない。実装条件は [記事生成仕様](docs/article-generation-requirements.md)、再現手順は [環境構築・WordPress運用](docs/setup-and-wordpress.md) を参照する。
 
+## 投稿タイプ・REST名の実サイト移行（2026-10-09）
+
+- airlabs.jpの投稿タイプを `nc_news → news_weave`、REST名を `nc-news → news-weave` へ移行した。News Weave 1.2.0の管理者専用移行機能を使い、既存7記事とゴミ箱の検証記事1件、一覧ページ63のクエリーを更新した。
+- 記事ID、本文、タイトル、抜粋、投稿者、公開状態、カテゴリ・タグ、画像、作成・更新日時を保持した。公開4記事の従来URLと一覧ページの表示を確認した。URLベース `collected-news` は維持する。
+- アプリ側の送信履歴7件と重複防止予約7件を新送信先へトランザクションで移した。保存済みの記事スラッグ、画像と承認情報を保持し、移行後の再送でも同じ記事を参照する処理を追加した。
+- `.env` の投稿タイプ・REST名を更新し、API・scheduler・collectの新コードをbuildした。APIとschedulerは新設定で再作成して停止状態を維持した。
+- 新REST名へユーザー `news-weaver`（ID 3）から下書き90を送信し、投稿タイプと投稿者を照合した。検証後はゴミ箱へ移し、既存記事は公開・非公開の状態を維持した。
+- バックアップと照合結果はGit対象外の `.local/news-weave-route-wordpress-before.json`、`.local/news-weave-routes-db-backup.dump`、`.local/news-weave-route-history-plan.json`、`.local/news-weave-route-history-applied.json`、`.local/news-weave-route-verification.json` に保存した。
+- 検証: ruff・mypy成功（103ファイル）、pytest 588件成功・3件skip。PHPの構文、新規・互換・移行後の登録、記事と一覧の移行、復旧、失敗時のロールバックを確認した。
+
+## 実サイトへの表示名・投稿者変更反映（2026-10-09、投稿タイプ移行前）
+
+- 新しい投稿用ユーザー `news-weaver`（ID 3、編集者）を作成し、ニックネームと表示名を `News Weaver` に設定した。ユーザーが発行した認証情報を `.env` に設定し、API・schedulerを停止状態のまま再作成して新しい送信設定を反映した。
+- 新アカウントの認証と、既存アプリのWordPressClientによる実際の下書き送信を確認した。検証用下書き87の投稿者IDは3、状態はdraftだった。確認後はゴミ箱へ移し、既存7記事の内容・状態・URLに変更がないことを照合した。検証記録はGit対象外の `.local/news-weaver-verification.json` に保存した。
+- 投稿用ユーザー（ID 2）のニックネームと表示名を `news-weaver` に更新した。既存7記事の投稿者欄に反映された。標準管理画面で変更できないログイン名 `news-integration` と既存の認証設定は維持した。
+- airlabs.jpの公開一覧固定ページ63のタイトルを「ニュースを編む」、冒頭文を新名称に変更した。公開ページとトップページのリンク表示を確認した。
+- URL `/news/` と既存のクエリーループ、7記事のID・投稿タイプ・状態・スラッグ・画像ID・更新日時を維持した。新規記事の公開は行っていない。
+- 変更前ページと更新計画・照合結果をGit対象外の `.local` に保存した。
+- 管理者のChromeタブから互換モードのNews Weave 1.1.0をインストールし、旧News Collection Articlesを無効化して新プラグインを有効化した。実ファイルを `news-weave/news-weave.php`、投稿表示名を「ニュースを編む」に変更した。旧プラグインは復旧用に無効のまま残した。
+- 切り替え前後の7記事の本文・タイトル・抜粋・カテゴリー・タグを含む照合が一致し、公開一覧と公開4記事のURLのHTTP 200を確認した。`nc_news / nc-news / collected-news` と送信先識別は維持した。投稿者の認証設定は上記の新アカウントへ切り替えた。
+- `tools/build_wordpress_plugin.py` に通常ZIPと既存サイト用ZIP（`--legacy`）の作成を追加した。既存サイト用ZIPの構文・互換モード・設定上書きを検証した。
+
+## 名称変更（2026-10-09）
+
+- 表示名を **News Weave / ニュースを編む**、Python配布パッケージとCLIを `news-weave` に変更した。旧CLI `ai-iot-news` は互換コマンドとして維持する。
+- WordPressプラグインを `wordpress/news-weave/news-weave.php`、固定ページ原稿を `wordpress/news-weave-page.html` に変更した。新規導入の投稿タイプは `news_weave`、REST名と個別記事URLのベースは `news-weave` とした。
+- 既存サイト用に `NEWS_WEAVE_LEGACY_ROUTES` を追加した。互換モードでは `nc_news / nc-news / collected-news` を維持し、表示名を変更する。
+- 設計書・README・運用手順の名称と参照を更新し、[名称変更と導入手順](docs/rename-to-news-weave.md) を追加した。下の過去の記録は当時の名称を維持する。
+- 稼働用 `.env`、Dockerプロジェクト名とDB、作業フォルダーとGitHubリポジトリ名、取得元確認に使うUser-Agentは変更していない。WordPressサイトへの反映や投稿データの移行は行っていない。
+- 検証: ruff・mypy成功、pytestは580件成功・3件skip。PHP構文、新旧の投稿タイプ登録・有効化処理、新旧CLI、API表示名、配布ZIPとソースの一致を確認した。
+
 ## 今回の記録整備（2026-10-07）
 
 - 記事生成の要求、入力・出力契約、根拠・比較・文体・権利・検証・モデル表示・画像の条件を整理した。

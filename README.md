@@ -1,4 +1,4 @@
-# AI/IoT News Collection
+# News Weave（ニュースを編む）
 
 公式の一次情報を監査可能な形で収集・編集・公開するためのモジュラーモノリスです。
 設計書の Phase 0〜4（基盤・収集・本文抽出・編集レビュー・WordPress連携）を実装しています。
@@ -8,6 +8,7 @@
 - [記事生成の要求仕様・モデル引き継ぎ条件](docs/article-generation-requirements.md): 本文・比較表・根拠・文体・モデル表示・カテゴリ配色と別モデルの対応範囲。
 - [環境構築・モデル変更・WordPress運用手順](docs/setup-and-wordpress.md): `.env`、Docker、収集ソース、投稿タイプ、認証、固定ページ、生成・公開・復旧の手順。
 - [実装から抽出したプロンプトとJSON Schema](docs/model-contracts.json): 別モデルへ渡す工程別の契約。更新用スクリプトは `tools/export_model_contracts.py`。
+- [News Weaveへの名称変更・既存サイトの互換手順](docs/rename-to-news-weave.md): 新名称、プラグイン導入、既存記事・URL・送信履歴を維持する手順。
 - [変更履歴](CHANGELOG.md): Gitの既存コミットと、このセッションで実施した実装・WordPress運用の記録。
 
 仕様書のモデル名は稼働環境の既定値と記事ごとの実行記録を区別しています。秘密設定・運用DB・生成画像はGitに含めません。
@@ -31,11 +32,11 @@ DBに同期されていない設定はschedulerから読み込まれません。
 以下ではイメージに同梱される例を使っています。独自設定は `collect` にread-onlyでマウントできます。
 
 ```console
-docker compose run --rm collect ai-iot-news sources validate config/sources.example.yaml
-docker compose run --rm collect ai-iot-news sources sync --dry-run config/sources.example.yaml
-docker compose run --rm collect ai-iot-news sources sync config/sources.example.yaml
-docker compose run --rm collect ai-iot-news collect run --source github-esphome --dry-run --force
-docker compose run --rm collect ai-iot-news collect run --source github-esphome --force
+docker compose run --rm collect news-weave sources validate config/sources.example.yaml
+docker compose run --rm collect news-weave sources sync --dry-run config/sources.example.yaml
+docker compose run --rm collect news-weave sources sync config/sources.example.yaml
+docker compose run --rm collect news-weave collect run --source github-esphome --dry-run --force
+docker compose run --rm collect news-weave collect run --source github-esphome --force
 ```
 
 収集のdry-runは実際にGETして追加・更新件数を表示します。DBのsource、item、version、snapshot、
@@ -84,7 +85,7 @@ schedulerも定期的に未処理メッセージを進めます。各段階を�
 過去の未処理データや残ったbatchを処理するには次のコマンドを使います。
 
 ```console
-docker compose run --rm collect ai-iot-news pipeline run --limit 100
+docker compose run --rm collect news-weave pipeline run --limit 100
 ```
 
 本文抽出は [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) を使い、
@@ -142,7 +143,7 @@ PostgreSQL試験をskipし、SQLiteとHTTP fixtureの試験を実行します。
 - DB変更はAlembic経由で行います。Phase 2は `20260930_0002` で抽出・重複判定テーブルを追加します。
 - 初期migrationのモデルを固定し、新規作成・既存DB更新・downgrade/re-upgradeで同じschemaになることを検証します。
 
-詳細は [ai_iot_news_collection_system_design.md](ai_iot_news_collection_system_design.md) を参照してください。
+詳細は [ai_iot_news_weave_system_design.md](ai_iot_news_weave_system_design.md) を参照してください。
 
 ## 指定された収集先（2026-10-01）
 
@@ -160,10 +161,10 @@ PostgreSQL試験をskipし、SQLiteとHTTP fixtureの試験を実行します。
 未検証です。取得権限と許諾のある経路を確認した後に有効化してください。
 
 ```console
-docker compose run --rm collect ai-iot-news sources validate config/sources.yaml
-docker compose run --rm collect ai-iot-news sources sync config/sources.yaml
-docker compose run --rm collect ai-iot-news collect run --source prtimes-iot --force
-docker compose run --rm collect ai-iot-news collect run --source prtimes-electronics --force
+docker compose run --rm collect news-weave sources validate config/sources.yaml
+docker compose run --rm collect news-weave sources sync config/sources.yaml
+docker compose run --rm collect news-weave collect run --source prtimes-iot --force
+docker compose run --rm collect news-weave collect run --source prtimes-electronics --force
 ```
 
 ## Phase 3: facts・AI・内部レビュー API
@@ -178,7 +179,7 @@ APIはこのPCの `http://127.0.0.1:8000`、開発用OpenAPI画面は `/docs` �
 通常の起動では閲覧用アカウントも自動で作成しません。CLIで次のように作成できます。
 
 ```console
-docker compose run --rm collect ai-iot-news auth create-user --name reader --role viewer
+docker compose run --rm collect news-weave auth create-user --name reader --role viewer
 ```
 
 表示されたtokenを `/docs` の **Authorize** に入力します。tokenはDBにハッシュだけを保存します。
@@ -202,9 +203,9 @@ rulesは明示的な企業名・製品名ラベル、仕様、円価格、発売
 必要情報が足りない記事は候補を保留し、製品・企業・日付・比較値を推定しません。
 
 ```console
-docker compose run --rm collect ai-iot-news editorial run --item ARTICLE_UUID --stage facts --mode rules
-docker compose run --rm collect ai-iot-news editorial run --item ARTICLE_UUID --stage facts --mode ai
-docker compose run --rm collect ai-iot-news editorial run --item ARTICLE_UUID --stage pipeline --mode ai
+docker compose run --rm collect news-weave editorial run --item ARTICLE_UUID --stage facts --mode rules
+docker compose run --rm collect news-weave editorial run --item ARTICLE_UUID --stage facts --mode ai
+docker compose run --rm collect news-weave editorial run --item ARTICLE_UUID --stage pipeline --mode ai
 ```
 
 APIでは `/items/{id}/facts`、`/select`、`/comparison-package`、`/ai-draft`、`/reprocess`、
@@ -279,7 +280,7 @@ DBの追加revisionは `20261001_0004` です。更新を反映する際は
 `invalid role` として拒否されます。
 
 ```console
-docker compose run --rm --build collect ai-iot-news auth create-user --name publisher --role publisher
+docker compose run --rm --build collect news-weave auth create-user --name publisher --role publisher
 ```
 
 人間レビューを有効にした場合は承認後、次のAPIを順に実行します。自動送信済み下書きも、公開前に人間レビューを行います。各操作では、直前の応答または記事詳細から得た
@@ -490,25 +491,25 @@ WordPressへ下書きを自動送信します。WordPressの有効化、認証�
 `WORDPRESS_REST_BASE` が空なら通常投稿は `posts`、それ以外は内部名を使います。
 投稿先は `/wp-json/wp/v2/{REST API名}` です。サイトURLにこのパスを追加しないでください。
 
-### WordPress側の準備（nc_news / nc-news）
+### WordPress側の準備（news_weave / news-weave）
 
-1. このリポジトリの `wordpress/news-collection` フォルダーをWordPressサーバーの
+1. このリポジトリの `wordpress/news-weave` フォルダーをWordPressサーバーの
    `wp-content/plugins/` にコピーします。管理画面のプラグイン一覧で
-   **News Collection Articles** を有効化します。パーマリンクは有効化時に更新します。
-   この作業で用意した `.local/news-collection.zip` を使う場合は、管理画面の
+   **News Weave** を有効化します。パーマリンクは有効化時に更新します。
+   この作業で用意した `.local/news-weave.zip` を使う場合は、管理画面の
    「プラグイン → 新規プラグインを追加 → プラグインのアップロード」からインストールできます。
-2. 管理画面に「収集ニュース」が追加され、サイトの
-   `/wp-json/wp/v2/nc-news` がJSONを返すことを確認します（未投稿なら `[]`）。
+2. 管理画面に「ニュースを編む」が追加され、サイトの
+   `/wp-json/wp/v2/news-weave` がJSONを返すことを確認します（未投稿なら `[]`）。
 3. 既存のWordPress接続情報・カテゴリID・タグIDの設定を保持し、次の2項目を `.env` に追加します。
 
 ```dotenv
-WORDPRESS_POST_TYPE=nc_news
-WORDPRESS_REST_BASE=nc-news
+WORDPRESS_POST_TYPE=news_weave
+WORDPRESS_REST_BASE=news-weave
 ```
 
 4. `docker compose up --build -d --wait` でAPIとschedulerに反映します。
    CLIも使う場合は `docker compose build collect` で更新します。
-5. 検証済みの新しい記事を下書き送信し、「収集ニュース」に保存されたことを確認します。
+5. 検証済みの新しい記事を下書き送信し、「ニュースを編む」に保存されたことを確認します。
    下書きは一覧に表示されません。公開には既存の人間レビュー・公開承認・公開APIを使います。
 
 既存の投稿タイプを使う場合はプラグインのコピーは不要です。
@@ -524,19 +525,26 @@ REST API名にはスラッシュのない1つの名前を指定します。
 通常投稿の既存識別子は変えず、DB migrationも不要です。
 **設定変更による既存投稿の移動は行いません。** 切り替え前の下書きや送信履歴を
 システムから処理する場合は、元の投稿タイプ・REST API名に戻してください。
-既存記事の移行や再送は別作業です。
+既存記事と送信履歴を移行する場合は、[名称変更手順](docs/rename-to-news-weave.md) の専用移行処理を使います。
+airlabs.jpは2026-10-09に `news_weave / news-weave` へ移行済みです。既存記事のURLを維持し、送信履歴・重複予約も移しました。
+
+### 既存サイトの表示名だけを更新する場合
+
+既存の `nc_news / nc-news` を使うサイトでは、[名称変更手順](docs/rename-to-news-weave.md) に従い、
+新プラグインを互換モードで導入します。既存記事・URL・送信履歴を保ったまま表示名を変更できます。
+稼働用 `.env` の投稿タイプとREST名は維持してください。
 
 ### 固定ページへの表示
 
-1. WordPressで固定ページ「ニュース一覧」を作成し、スラッグを `news` にします。
+1. WordPressで固定ページ「ニュースを編む」を作成し、スラッグを `news` にします。
 2. 「クエリーループ」ブロックを追加し、クエリーの種類を「カスタム」にします
-   （継承設定がある場合は無効化）。投稿タイプは「収集ニュース」、順序は新しい順にします。
+   （継承設定がある場合は無効化）。投稿タイプは「ニュースを編む」、順序は新しい順にします。
 3. 投稿テンプレート内にアイキャッチ・タイトル・日付・抜粋を配置し、
    タイトルのリンクを有効にします。必要ならページ送りを追加します。
 4. 固定ページを公開します。本文もページ内に表示する場合は、投稿テンプレートに
    「投稿コンテンツ」ブロックを配置します。
 
-公開した記事は自動で一覧に表示されます。個別記事は `/collected-news/{slug}/` を使うため、
+公開した記事は自動で一覧に表示されます。個別記事は `/news-weave/{slug}/` を使うため、
 固定ページの `/news/` と競合しません。画像表示にはテーマ側のアイキャッチ対応も必要です。
 
 ## 同じ出典群からの記事重複防止
@@ -614,4 +622,4 @@ WordPressへ下書き保存する際、出典欄の後に「使用したAIモデ
 
 アイキャッチを添付する際は、画像生成に実際に使ったモデルも同じ欄に追記します。画像とモデル欄は同じWordPress更新で保存し、投稿payload・内容hash・remote hashを更新します。公開前の承認と改変検査は引き続き必要です。モデル表示はAIによる検証結果や権利上の安全性を保証するものではありません。
 
-固定ページのブロック原稿は `wordpress/collected-news-page.html` に保存しています。比較記事としての作成方針と、記事末尾にモデル情報を表示する方針を説明します。
+固定ページのブロック原稿は `wordpress/news-weave-page.html` に保存しています。比較記事としての作成方針と、記事末尾にモデル情報を表示する方針を説明します。
