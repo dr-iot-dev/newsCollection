@@ -18,8 +18,13 @@ from app.ai.discovery_prompts import (
     PROFILE_PROMPT,
     REVIEW_PROMPT,
 )
+from app.ai.dynamic_axes_prompts import DISCOVER, EXTRACT
+from app.ai.dynamic_axes_prompts import REPAIR as AXIS_REPAIR
+from app.ai.dynamic_axes_prompts import REVIEW as AXIS_REVIEW
+from app.ai.dynamic_axes_prompts import SELECT as AXIS_SELECT
 from app.ai.pair_discovery_prompts import CATEGORY, CELLS, KEYWORDS, PLAN, REVIEW
 from app.ai.provider import AIProvider, ResponsesProvider
+from app.ai.search_vocabulary_prompts import DISCOVER as VOCABULARY_DISCOVER
 from app.contracts.base import ContractModel
 from app.contracts.envelope import canonical_payload_hash
 from app.core.config import Settings
@@ -301,12 +306,20 @@ PROMPTS = {
 }
 
 
+PROMPTS["discovery_vocabulary"] = VOCABULARY_DISCOVER
 PROMPTS["discovery_plan"] = PLAN_PROMPT
 PROMPTS["discovery_groups"] = GROUP_PROMPT
 PROMPTS["discovery_profiles"] = PROFILE_PROMPT
 PROMPTS["discovery_inventory"] = INVENTORY_PROMPT
 PROMPTS["discovery_assess"] = ASSESS_PREFIX + PROMPTS["comparison_assess"]
 PROMPTS["discovery_review"] = REVIEW_PROMPT
+PROMPTS.update(
+    axis_discover=DISCOVER,
+    axis_extract=EXTRACT,
+    axis_repair=AXIS_REPAIR,
+    axis_select=AXIS_SELECT,
+    axis_review=AXIS_REVIEW,
+)
 PROMPTS.update(
     pair_keywords=KEYWORDS,
     pair_category=CATEGORY,
@@ -338,7 +351,8 @@ class Profile:
                 "version": self.prompt_version,
                 **(
                     {"repair_context_policy": "typed_discovery_candidate-v1"}
-                    if self.role in {"discovery_plan", "discovery_inventory"}
+                    if self.role
+                    in {"discovery_plan", "discovery_inventory", "axis_discover", "axis_extract"}
                     else {}
                 ),
             }
@@ -357,9 +371,16 @@ class AIRunner:
     def profile(self, role: str) -> Profile:
         model = {
             "facts": self.settings.ai_model_facts,
+            "discovery_vocabulary": self.settings.ai_discovery_vocabulary_model
+            or self.settings.ai_comparison_planner_model,
             "comparison_plan": self.settings.ai_comparison_planner_model,
             "comparison_assess": self.settings.ai_comparison_assessor_model,
             "comparison_verify": self.settings.ai_comparison_verifier_model,
+            "axis_discover": self.settings.ai_comparison_planner_model,
+            "axis_extract": self.settings.ai_comparison_assessor_model,
+            "axis_repair": self.settings.ai_comparison_assessor_model,
+            "axis_select": self.settings.ai_comparison_planner_model,
+            "axis_review": self.settings.ai_comparison_verifier_model,
             "pair_keywords": self.settings.ai_comparison_planner_model,
             "pair_category": self.settings.ai_comparison_planner_model,
             "pair_plan": self.settings.ai_comparison_planner_model,
@@ -379,7 +400,7 @@ class AIRunner:
             "v3"
             if role in {"pair_keywords", "pair_category"}
             else "v2"
-            if role in {"discovery_review", "pair_plan", "pair_cells"}
+            if role in {"discovery_review", "pair_plan", "pair_cells", "discovery_vocabulary"}
             else "v1"
         )
         return Profile(role, model, self.settings.ai_provider, role + "-" + version)
@@ -387,7 +408,7 @@ class AIRunner:
     def run(
         self,
         role: str,
-        item_id: UUID,
+        item_id: UUID | None,
         data: dict[str, Any],
         model_type: type[T],
         *,
@@ -400,13 +421,18 @@ class AIRunner:
         if self.provider is None or not profile.model:
             raise EditorialError("AI_NOT_CONFIGURED", 503)
         keyword_role = role in {"pair_keywords", "pair_category"}
+        vocabulary_role = role == "discovery_vocabulary"
         input_limit = (
-            self.settings.ai_pair_keyword_max_input_chars
+            self.settings.ai_discovery_vocabulary_max_input_chars
+            if vocabulary_role
+            else self.settings.ai_pair_keyword_max_input_chars
             if keyword_role
             else self.settings.ai_max_input_chars
         )
         output_limit = (
-            self.settings.ai_pair_keyword_max_output_tokens
+            self.settings.ai_discovery_vocabulary_max_output_tokens
+            if vocabulary_role
+            else self.settings.ai_pair_keyword_max_output_tokens
             if keyword_role
             else self.settings.ai_max_output_tokens
         )
@@ -436,6 +462,42 @@ class AIRunner:
             schema["$defs"]["GroundedJudgmentRefV1"]["properties"]["fact_ids"]["items"]["enum"] = (
                 allowed
             )
+        if role in {"axis_discover", "axis_extract", "axis_repair"}:
+            sources = data["sources"] if role == "axis_discover" else [data["source"]]
+            ref = schema["$defs"]["PassageRef"]["properties"]
+            ref["item_id"]["enum"] = [source["item_id"] for source in sources]
+            passage_ids = sorted(
+                {p["passage_id"] for source in sources for p in source["evidence_passages"]}
+            )
+            if passage_ids:
+                ref["passage_id"]["enum"] = passage_ids
+            if role in {"axis_extract", "axis_repair"}:
+                schema["$defs"]["AxisProductRef"]["properties"]["item_id"]["enum"] = [
+                    data["source"]["item_id"]
+                ]
+                schema["$defs"]["AxisCellRef"]["properties"]["axis_id"]["enum"] = [
+                    a["axis_id"] for a in data["axes"]
+                ]
+        if role == "axis_repair":
+            identity = schema["$defs"]["AxisProductRef"]["properties"]
+            for field in ("name", "organization"):
+                identity[field]["enum"] = [data["previous_values"]["product"][field]]
+        if role in {"axis_extract", "axis_repair", "axis_select", "axis_review"}:
+            axis_ids = [a["axis_id"] for a in data["axes"]]
+            field, definition = {
+                "axis_extract": ("cells", "AxisCellRef"),
+                "axis_repair": ("cells", "AxisCellRef"),
+                "axis_select": ("assessments", "AxisAssessment"),
+                "axis_review": ("checks", "AxisReviewCheck"),
+            }[role]
+            schema["properties"][field].update(minItems=len(axis_ids), maxItems=len(axis_ids))
+            schema["$defs"][definition]["properties"]["axis_id"]["enum"] = axis_ids
+            if role == "axis_select":
+                eligible = data["eligible_axis_ids"]
+                if eligible:
+                    schema["properties"]["selected_axis_ids"]["items"]["enum"] = eligible
+                else:
+                    schema["properties"]["selected_axis_ids"]["maxItems"] = 0
         if role == "verifier":
             for field in (
                 "verification_id",
@@ -507,7 +569,13 @@ class AIRunner:
                 result = model_type.model_validate(response.output)
                 if normalize:
                     result = normalize(result)
-                if role in {"discovery_plan", "discovery_inventory"}:
+                if role in {
+                    "discovery_plan",
+                    "discovery_inventory",
+                    "axis_discover",
+                    "axis_extract",
+                    "axis_repair",
+                }:
                     typed_candidate = result.model_dump(mode="json")
                 if validate:
                     validate(result)

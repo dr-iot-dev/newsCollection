@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     ready_check_database: bool = True
     ai_provider: Literal["disabled", "openai"] = "disabled"
     ai_api_key: SecretStr | None = Field(default=None, repr=False)
+    ai_discovery_vocabulary_model: str = ""
+    ai_discovery_vocabulary_max_input_chars: int = Field(default=200000, ge=1000, le=200000)
+    ai_discovery_vocabulary_max_output_tokens: int = Field(default=16000, ge=100, le=16000)
     ai_model_facts: str = ""
     ai_selector_model: str = ""
     ai_writer_model: str = ""

@@ -7,6 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import get_settings
+from app.discovery_vocabulary_cli import vocabulary_app
+from app.dynamic_axes_cli import axes_app
 from app.infrastructure.db.models import Source
 from app.infrastructure.db.session import SessionLocal
 from app.modules.acquisition.service import collect_source
@@ -14,6 +16,7 @@ from app.orchestration.phase2 import process_phase2
 from app.pair_cli import pair_app
 from app.sources.config import load_sources
 from app.sources.service import sync_sources
+from app.term_extraction_cli import extraction_app
 
 app = typer.Typer(no_args_is_help=True, pretty_exceptions_show_locals=False)
 sources_app = typer.Typer(no_args_is_help=True, pretty_exceptions_show_locals=False)
@@ -22,6 +25,9 @@ collect_app = typer.Typer(no_args_is_help=True, pretty_exceptions_show_locals=Fa
 app.add_typer(collect_app, name="collect")
 
 app.add_typer(pair_app, name="comparison-pair")
+app.add_typer(axes_app, name="comparison-axes")
+app.add_typer(vocabulary_app, name="discovery-vocabulary")
+app.add_typer(extraction_app, name="extraction")
 
 
 @sources_app.command("validate")

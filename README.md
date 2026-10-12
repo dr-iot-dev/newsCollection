@@ -7,10 +7,13 @@
 
 ## 引き継ぎ資料（2026-10-07）
 
+- [候補語のDB検索・記事別カウント仕様](docs/extraction-word-count-spec-20261012.md): AI・IoT記事に限定し、指定103語をタイトルに含む記事と分野外の記事を読込み・検索から除外する。対象200件以上をDBへ保存して候補語のカウントと一致語を表にする。
+- [検索語彙Discovery](docs/discovery-search-vocabulary-implementation-20261012.md): 3〜5種資料から4層の基本概念・同義語を生成する単独CLI、通常の語句検索、履歴と候補一覧。
 - [記事生成の要求仕様・モデル引き継ぎ条件](docs/article-generation-requirements.md): 本文・比較表・根拠・文体・モデル表示・カテゴリ配色と別モデルの対応範囲。
 - [環境構築・モデル変更・WordPress運用手順](docs/setup-and-wordpress.md): `.env`、Docker、収集ソース、投稿タイプ、認証、固定ページ、生成・公開・復旧の手順。
 - [実装から抽出したプロンプトとJSON Schema](docs/model-contracts.json): 別モデルへ渡す工程別の契約。更新用スクリプトは `tools/export_model_contracts.py`。
 - [News Weaveへの名称変更・既存サイトの互換手順](docs/rename-to-news-weave.md): 新名称、プラグイン導入、既存記事・URL・送信履歴を維持する手順。
+- [比較項目の動的抽出・IoT評価](docs/comparison-dynamic-axis-implementation-20261012.md): 3〜5資料の項目発見・値抽出・過半数選定・1巡修正・独立検証を行うshadow CLI。
 - [PR TIMESカテゴリ・ペア探索](docs/comparison-pair-discovery-implementation-20261011.md): 初期10資料、最大100資料、全ペア距離、10ペア終了条件、監査・再開CLI。
 - [資料選択の並行評価](docs/comparison-selection-shadow.md): 根拠付き比較計画、採否記録、送信しない評価コマンドと後続工程。
 - [既存3記事の再評価](docs/comparison-selection-evaluation-20261010.md): 比較用途・候補の役割・不足情報の評価基準。

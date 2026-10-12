@@ -9,6 +9,24 @@ from app.contracts.base import ContractModel
 from app.core.editorial import EditorialBatchError, EditorialError
 
 MESSAGES = {
+    "AXIS_PRODUCT_CHANGED": "元の製品名と提供元を変更しないでください。",
+    "AXIS_PASSAGE_INVALID": "指定記事のevidence_passagesにあるpassage_idを選んでください。",
+    "AXIS_DUPLICATE_QUESTION": "項目ID・名称・質問を重複させないでください。",
+    "AXIS_SEARCH_NOT_SHARED": "2記事以上で検索できる共通項目にまとめてください。",
+    "AXIS_LABEL_NOT_SEARCHABLE": "軸名は24文字以内の短い一般名詞とし、括弧や例示を外してください。",
+    "AXIS_SEARCH_TERMS_INVALID": (
+        "検索語は2文字以上とし、重複・括弧・検索式・広すぎる語を外してください。"
+    ),
+    "AXIS_SEARCH_TERM_UNGROUNDED": "各検索語が出現する原文の段落をevidenceに指定してください。",
+    "AXIS_CELL_SET_INVALID": "固定した全候補項目に一つずつ回答してください。",
+    "AXIS_UNKNOWN_WITH_VALUE": "unknownのanswer、conditions、evidenceを空にしてください。",
+    "AXIS_CELL_UNGROUNDED": "回答と限定条件を原文引用で裏付けてください。",
+    "AXIS_ASSESSMENT_SET_INVALID": "全候補項目の評価を一つずつ返してください。",
+    "AXIS_SELECTION_SET_INVALID": "候補内の項目IDだけを重複なく選んでください。",
+    "AXIS_SELECTION_UNSUPPORTED": (
+        "過半数の根拠と質問適合・有用性・非重複の評価を満たす項目だけを選んでください。"
+    ),
+    "AXIS_REVIEW_SET_INVALID": "選定された項目だけを一つずつ検証してください。",
     "PAIR_GROUNDING_INVALID": "引用を指定資料の原文と一致させてください。",
     "PAIR_GROUNDING_AMBIGUOUS": "引用が複数箇所にあり、位置を確定できません。",
     "PAIR_TERM_NOT_GROUNDED": "labelかaliasを引用原文の語句と一致させてください。",

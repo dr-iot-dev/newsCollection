@@ -24,6 +24,13 @@ from app.contracts.comparison_discovery_v2 import (
     DiscoveryReviewV2,
     DiscoverySemanticProfilesV2,
 )
+from app.contracts.comparison_dynamic_axes_v1 import POLICY as DYNAMIC_AXES_POLICY
+from app.contracts.comparison_dynamic_axes_v1 import (
+    AxisCandidatesRef,
+    AxisReview,
+    AxisSelection,
+    AxisValuesRef,
+)
 from app.contracts.comparison_pair_discovery_v3 import (
     ACQUISITION_POLICY,
     KEYWORD_POLICY,
@@ -48,6 +55,12 @@ from app.contracts.comparison_selection_v1 import (
 from app.contracts.comparison_selection_v1 import (
     ComparisonSuitabilityOutputV1,
 )
+from app.contracts.discovery_search_vocabulary_v2 import (
+    POLICY_VERSION as VOCABULARY_POLICY,
+)
+from app.contracts.discovery_search_vocabulary_v2 import (
+    DiscoverySearchVocabularyV2,
+)
 from app.contracts.draft_v1 import ArticleDraftV1
 from app.contracts.editorial_v1 import SelectionOutputV1, WritingOutputV1
 from app.contracts.evidence_v1 import EvidencePackageV1
@@ -66,6 +79,12 @@ def main() -> None:
     args = parser.parse_args()
     models: dict[str, type[ContractModel]] = {
         "facts": FactsOutputV1,
+        "discovery_vocabulary": DiscoverySearchVocabularyV2,
+        "axis_discover": AxisCandidatesRef,
+        "axis_extract": AxisValuesRef,
+        "axis_repair": AxisValuesRef,
+        "axis_select": AxisSelection,
+        "axis_review": AxisReview,
         "pair_keywords": CategoryKeywords,
         "pair_category": CategoryKeywords,
         "pair_plan": PairPlan,
@@ -88,6 +107,8 @@ def main() -> None:
         "format_version": 1,
         "description": "Public instructions and schema snapshot; no secrets or article data.",
         "policies": {
+            "discovery_search_vocabulary": VOCABULARY_POLICY,
+            "comparison_dynamic_axes": DYNAMIC_AXES_POLICY,
             "comparison_selection": COMPARISON_SELECTION_POLICY,
             "comparison_pair_discovery": PAIR_DISCOVERY_POLICY,
             "comparison_pair_keywords": KEYWORD_POLICY,
@@ -102,6 +123,23 @@ def main() -> None:
         },
         "required_verification_criteria": sorted(REQUIRED_CRITERIA),
         "runtime_binding_required": {
+            "discovery_vocabulary": (
+                "Validate unique IDs and labels, origin/source references, "
+                "basic labels and aliases. "
+                "Do not require frequency, literal quotes or shared-source coverage. "
+                "Keep domain terms separate; "
+                "search label/alias OR matches with NFKC, case folding "
+                "and Latin boundaries, without AI. "
+                "Record prompt, model, schema and policy versions; never reuse DynamicAxis caches."
+            ),
+            "dynamic_axes": (
+                "Shadow analysis of three to five supplied documents. "
+                "Discover candidate questions only; extract each source independently. "
+                "Bind passage IDs to exact original paragraphs and item IDs to supplied sources. "
+                "Bind extraction, assessment and review counts and axis IDs to the input axes. "
+                "Compute strict majority after extraction, reject duplicate products, and "
+                "require independent review before exporting selection-only comparison material."
+            ),
             "pair_discovery": (
                 "Category source selection only. "
                 f"Target {KEYWORD_TARGET} distinctive grounded keywords. "
@@ -132,6 +170,15 @@ def main() -> None:
             ),
         },
         "stage_inputs": {
+            "discovery_vocabulary": [
+                "optional domain_hint and three to five articles "
+                "with article_id, title and extracted body"
+            ],
+            "axis_discover": ["three to five source bodies; axes and related passages only"],
+            "axis_extract": ["one source and frozen candidate axes"],
+            "axis_repair": ["one source, frozen candidates, previous values and review feedback"],
+            "axis_select": ["candidate axes, extracted values and computed majority coverage"],
+            "axis_review": ["selected axes, extracted values and original sources"],
             "pair_keywords": [
                 "one registered source body with contacts masked, offsets preserved",
                 "category_context: fixed category, generic exclusions, keyword target and policy",

@@ -53,9 +53,18 @@ def strict_schema(schema: dict[str, Any]) -> dict[str, Any]:
 
 
 class ResponsesProvider:
-    def __init__(self, api_key: str, *, transport: httpx.BaseTransport | None = None) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        *,
+        transport: httpx.BaseTransport | None = None,
+        request_timeout_seconds: float = 90,
+    ) -> None:
+        if request_timeout_seconds <= 0:
+            raise ValueError("request timeout must be positive")
         self._api_key = api_key
         self._transport = transport
+        self._request_timeout_seconds = request_timeout_seconds
 
     def generate(
         self,
@@ -87,7 +96,7 @@ class ResponsesProvider:
                 transport=self._transport,
                 trust_env=False,
                 follow_redirects=False,
-                timeout=httpx.Timeout(90, connect=5),
+                timeout=httpx.Timeout(self._request_timeout_seconds, connect=5),
             ) as client:
                 with client.stream(
                     "POST",
