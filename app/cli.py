@@ -355,5 +355,109 @@ def discover_comparison(
         raise typer.Exit(1) from None
 
 
+drafts_app = typer.Typer(no_args_is_help=True, pretty_exceptions_show_locals=False)
+app.add_typer(drafts_app, name="drafts")
+
+
+@drafts_app.command("export")
+def export_draft(
+    draft_id: Annotated[str, typer.Argument()],
+    output: Annotated[Path | None, typer.Option("--output")] = None,
+    artifact_revision: Annotated[int, typer.Option("--artifact-revision", min=1)] = 1,
+) -> None:
+    from uuid import UUID
+
+    from app.core.editorial import EditorialError
+    from app.orchestration.draft_exports import DraftExporter
+    from nw_generation.protocol import atomic_write
+
+    try:
+        with SessionLocal() as session:
+            row = DraftExporter(session, get_settings()).export(
+                UUID(draft_id), artifact_revision=artifact_revision
+            )
+            if output and row.file_path:
+                atomic_write(output, Path(row.file_path).read_bytes())
+            typer.echo(f"{row.id}: {row.state} {output or row.file_path}")
+    except (EditorialError, OSError, ValueError, SQLAlchemyError) as exc:
+        typer.echo(getattr(exc, "code", "EXPORT_FAILED"), err=True)
+        raise typer.Exit(1) from None
+
+
+@drafts_app.command("export-pending")
+def export_pending(limit: Annotated[int, typer.Option(min=1, max=1000)] = 10) -> None:
+    from app.orchestration.draft_exports import process_draft_exports
+
+    with SessionLocal() as session:
+        typer.echo(f"exported: {process_draft_exports(session, get_settings(), limit)}")
+
+
+@drafts_app.command("preview")
+def preview_draft(draft_id: Annotated[str, typer.Argument()]) -> None:
+    from uuid import UUID
+
+    from app.infrastructure.db.models import ArticleDraft
+
+    with SessionLocal() as session:
+        draft = session.get(ArticleDraft, UUID(draft_id))
+        if draft is None:
+            raise typer.BadParameter("draft not found")
+        typer.echo(draft.title + "\n\n" + draft.lead + "\n\n" + draft.body_markdown)
+
+
+@drafts_app.command("approve-image")
+def approve_draft_image(
+    export_id: Annotated[str, typer.Argument()],
+    reviewer_id: Annotated[str, typer.Option("--reviewer")],
+    expected_image_hash: Annotated[str, typer.Option("--expected-image-hash")],
+) -> None:
+    from uuid import UUID
+
+    from app.orchestration.draft_exports import approve_export_image
+
+    with SessionLocal() as session:
+        row = approve_export_image(
+            session, get_settings(), UUID(export_id), UUID(reviewer_id), expected_image_hash
+        )
+        typer.echo(f"{row.id}: image approved")
+
+
+@drafts_app.command("retry-image")
+def retry_draft_image(
+    draft_id: Annotated[str, typer.Argument()],
+    confirmed_generation_stopped: Annotated[
+        bool, typer.Option("--confirmed-generation-stopped")
+    ] = False,
+) -> None:
+    from uuid import UUID
+
+    from app.infrastructure.db.models import DraftAsset
+
+    if not confirmed_generation_stopped:
+        raise typer.BadParameter("confirm previous generation has stopped before retry")
+    with SessionLocal.begin() as session:
+        asset = session.scalar(
+            select(DraftAsset).where(DraftAsset.draft_id == UUID(draft_id)).with_for_update()
+        )
+        if asset is None or asset.state not in {"uncertain", "generating"}:
+            raise typer.BadParameter("no unresolved image generation")
+        if asset.attempt >= get_settings().ai_image_max_attempts:
+            raise typer.BadParameter("image generation attempt budget exhausted")
+        asset.state, asset.last_error = "prepared", None
+    typer.echo("image retry permitted; run drafts export to continue")
+
+
+@drafts_app.command("export-history")
+def export_delivery_history(
+    target_id: Annotated[str, typer.Option("--target")],
+    output: Annotated[Path, typer.Option("--output")],
+) -> None:
+    from app.orchestration.delivery_history import export_history
+
+    with SessionLocal() as session:
+        count = export_history(session, get_settings(), target_id, output)
+        typer.echo(f"historical deliveries: {count}")
+
+
 if __name__ == "__main__":
     app()

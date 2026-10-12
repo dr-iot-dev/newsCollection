@@ -1,7 +1,8 @@
 # NewsWeave 記事生成モジュールの独立化設計・実施計画
 
 作成・更新日: 2026-10-12（日本時間）  
-状態: 設計案。今回は設計書のみを更新し、実行コードや稼働環境は変更しない。  
+状態: 独立 CLI・wheel と生成側 export adapter を実装済み。稼働環境への適用は未実施。
+実装済みの起動手順・初版の範囲は [実装手順](independent-apps-implementation.md) を参照。
 関連: [WPuploader との機能分離計画](../../WPuploader/docs/newsweave-separation-plan-20261012.md)
 
 ## 1. 設計の目的と独立の意味

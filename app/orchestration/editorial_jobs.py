@@ -18,6 +18,7 @@ class EditorialJobRequest(ContractModel):
     expected_version: int = Field(ge=1)
     mode: Literal["rules", "ai"] = "rules"
     auto_research: bool = True
+    fetch_missing_sources: bool | None = None
     previous_item_ids: tuple[UUID, ...] = Field(default=(), max_length=10)
     competitor_item_ids: tuple[UUID, ...] = Field(default=(), max_length=10)
     draft_id: UUID | None = None
@@ -63,6 +64,8 @@ def queue_job(
 def execute_job(
     service: EditorialService, operation: Operation, item_id: UUID, request: EditorialJobRequest
 ) -> dict[str, Any]:
+    if request.fetch_missing_sources is False:
+        service.settings = service.settings.model_copy(update={"fetch_missing_sources": False})
     result: dict[str, Any] = {}
     if operation in {"facts", "pipeline"}:
         evidence = service.facts(item_id, request.mode)
@@ -167,7 +170,23 @@ def process_editorial_jobs(session: Session, settings: Settings, limit: int = 10
             else:
                 job.status = "success"
         except EditorialError as exc:
-            job.status, job.error_code = "failed", exc.code
+            if not (
+                service.settings if service else settings
+            ).fetch_missing_sources and exc.code in {
+                "COMPARISON_MIN_SOURCES_REQUIRED",
+                "COMPARISON_ROW_MAJORITY_REQUIRED",
+            }:
+                job.status, job.error_code = "needs_input", "MISSING_SOURCE_FETCH_DISABLED"
+                job.stats_json = {
+                    **args,
+                    "result": {
+                        "status": "needs_input",
+                        "reason_code": "MISSING_SOURCE_FETCH_DISABLED",
+                        "missing_requirement": exc.code,
+                    },
+                }
+            else:
+                job.status, job.error_code = "failed", exc.code
             for message in session.scalars(
                 select(ModuleMessage).where(
                     ModuleMessage.consumer == "acquisition_research",

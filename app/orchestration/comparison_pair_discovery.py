@@ -710,6 +710,7 @@ class PairDiscoveryService:
                     request.source_key,
                     self.acquisition_checkpoint,
                     lambda: self.reserve(),
+                    fetch_missing_sources=self.settings.fetch_missing_sources,
                 )
             if self.embedder is None:
                 if self.settings.ai_provider != "openai" or self.settings.ai_api_key is None:
@@ -743,9 +744,20 @@ class PairDiscoveryService:
                 )
                 return self.state
             if not self.state.acquisition.get("search_complete"):
-                group = self.acquisition.search(
-                    dict(self.state.acquisition), self.state.keywords, request.maximum_documents
-                )
+                if self.settings.fetch_missing_sources:
+                    group = self.acquisition.search(
+                        dict(self.state.acquisition), self.state.keywords, request.maximum_documents
+                    )
+                else:
+                    group = tuple(
+                        doc for doc in self.state.initial
+                        if len(keyword_match(doc, self.state.keywords)) >= 3
+                    )
+                    self.acquisition_checkpoint({
+                        **self.state.acquisition, "search_complete": True,
+                        "search_candidates_three_keywords": len(group),
+                        "missing_source_collection_disabled": True,
+                    })
                 initial_source_ids = {d.source_id for d in self.state.initial}
                 ids, hashes = set(), set()
                 for doc in group:

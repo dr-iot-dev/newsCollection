@@ -179,7 +179,7 @@ def test_fact_pipeline_is_idempotent_and_writer_verifier_review_are_independent(
             select(ModuleMessage).where(ModuleMessage.consumer == "acquisition_research")
         )
     )
-    assert len(requests) == 2 and all(r.status == "pending" for r in requests)
+    assert requests == []  # Missing-source collection is default-off.
     draft = svc.draft(item.id)
     assert draft
     verification = svc.verify(draft.id)

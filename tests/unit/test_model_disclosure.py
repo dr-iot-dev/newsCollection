@@ -1,16 +1,12 @@
 from uuid import uuid4
 
-import pytest
 from bs4 import BeautifulSoup
 from sqlalchemy import select
 
-from app.contracts.envelope import canonical_payload_hash
-from app.contracts.wordpress_v1 import WordPressRequestV1
-from app.core.editorial import EditorialError
 from app.infrastructure.db.models import AiRun, AuditEvent, CandidateDecision, Fact, VerificationRun
-from app.modules.publication.model_disclosure import append_model_disclosure, with_image_model
+from app.modules.rendering.model_disclosure import append_model_disclosure, with_image_model
 from app.orchestration.model_disclosure import article_model_stages, recorded_model
-from tests.unit.test_phase4 import setup_publication
+from tests.unit.test_draft_exports import setup_publication
 
 
 def add_run(session, item_id, role, model):
@@ -52,9 +48,11 @@ def test_disclosure_is_canonical_escaped_and_preserves_sources_and_table():
     )
 
 
-def test_publication_discloses_linked_runs_and_rejects_stale_provenance(acquisition_session):
+def test_publication_discloses_linked_runs_and_rejects_stale_provenance(
+    acquisition_session, tmp_path
+):
     session = acquisition_session
-    item, draft, author, _, _, config, cms, service = setup_publication(session)
+    item, draft, _author, _, _, config, _cms, _service = setup_publication(session, tmp_path)
     writing = add_run(session, item.id, "writer", "recorded-writer")
     draft.ai_run_id = writing.id
     verification = session.scalars(
@@ -65,28 +63,21 @@ def test_publication_discloses_linked_runs_and_rejects_stale_provenance(acquisit
     # A newer unrelated run and the current profile must never overwrite article provenance.
     add_run(session, item.id, "writer", "unused-newer-writer")
     session.commit()
-    row = service.create_draft(
-        item.id,
-        WordPressRequestV1(expected_version=item.workflow_version, draft_id=draft.id),
-        author.id,
-    )
-    content = row.payload_json["content"]
+    from app.orchestration.draft_exports import DraftExporter
+    from nw_generation.protocol import read_bundle
+
+    row = DraftExporter(session, config).export(draft.id)
+    _, files = read_bundle(__import__("pathlib").Path(row.file_path), draft=True)
+    content = files["article.html"].decode()
     assert "本文作成・編集: recorded-writer" in content
     assert "原稿のAI検証: recorded-verifier" in content
     assert "unused-newer-writer" not in content and config.ai_writer_model not in content
-    assert row.payload_hash == canonical_payload_hash(row.payload_json)
-    service.validate_package(item, row)
-    verifier.model = "changed-record"
-    session.flush()
-    with pytest.raises(EditorialError, match="PUBLICATION_PACKAGE_STALE"):
-        service.validate_package(item, row)
-    assert len(cms.writes) == 1
 
 
-def test_fact_provenance_requires_exact_evidence_link(acquisition_session):
+def test_fact_provenance_requires_exact_evidence_link(acquisition_session, tmp_path):
     session = acquisition_session
-    item, draft, _, _, _, _, _, service = setup_publication(session)
-    _, package = service.editorial.package(item)
+    item, draft, _, _, _, _, _, service = setup_publication(session, tmp_path)
+    _, package = service.package(item)
     verification = session.scalars(
         select(VerificationRun).where(VerificationRun.draft_id == draft.id)
     ).one()
@@ -121,7 +112,7 @@ def test_fact_provenance_requires_exact_evidence_link(acquisition_session):
     assert recorded_model(session, fact_run.id, item.id, "writer") == "モデルの記録なし"
 
 
-def test_ai_fact_extraction_audit_links_the_actual_execution(acquisition_session):
+def test_ai_fact_extraction_audit_links_the_actual_execution(acquisition_session, tmp_path):
     from app.ai.provider import AIResponse
     from app.contracts.content_v1 import NormalizedContentV1
     from app.infrastructure.db.models import ExtractionResult
@@ -152,8 +143,10 @@ def test_ai_fact_extraction_audit_links_the_actual_execution(acquisition_session
     assert run.item_id == item.id and run.execution_role == "facts"
     assert run.model == "facts-test" and run.validation_status == "valid"
 
+
 def test_obsolete_note_is_removed_without_losing_actual_model_list():
-    from app.modules.publication.model_disclosure import OBSOLETE_NOTE, remove_obsolete_note
+    from app.modules.rendering.model_disclosure import OBSOLETE_NOTE, remove_obsolete_note
+
     original = append_model_disclosure("<p>本文</p>", [("本文作成・編集", "gpt-5.2")])
     assert OBSOLETE_NOTE not in original
     legacy = original + "<p>" + OBSOLETE_NOTE + "</p>"
@@ -162,21 +155,34 @@ def test_obsolete_note_is_removed_without_losing_actual_model_list():
     assert "gpt-5.2" in updated and "<p>本文</p>" in updated
     assert remove_obsolete_note(updated) == updated
 
-def test_opaque_image_model_uses_confirmed_host_version_for_exact_asset(acquisition_session):
+
+def test_opaque_image_model_uses_confirmed_host_version_for_exact_asset(
+    acquisition_session, tmp_path
+):
     from app.infrastructure.db.models import FeaturedImage
     from app.orchestration.editorial import touch
     from app.orchestration.model_disclosure import image_model_description
 
     session = acquisition_session
-    item, draft, author, _, _, _, _, service = setup_publication(session)
-    publication = service.create_draft(
-        item.id, WordPressRequestV1(expected_version=item.workflow_version, draft_id=draft.id),
-        author.id,
+    item, draft, _author, _, _, _, _, _service = setup_publication(session, tmp_path)
+    from app.infrastructure.db.models import Publication
+
+    publication = Publication(
+        item_id=item.id,
+        draft_id=draft.id,
+        target="historical-only",
+        idempotency_key="fixture",
+        payload_hash="sha256:" + "0" * 64,
+        state="legacy",
     )
+    session.add(publication)
+    session.flush()
     image = FeaturedImage(
-        publication_id=publication.id, draft_id=draft.id,
+        publication_id=publication.id,
+        draft_id=draft.id,
         model="gpt-image-1.5 / 色調整: imagegen (モデル名未提供)",
-        prompt="recorded prompt", input_hash="sha256:" + "1" * 64,
+        prompt="recorded prompt",
+        input_hash="sha256:" + "1" * 64,
         content_hash="sha256:" + "2" * 64,
     )
     session.add(image)
@@ -184,8 +190,14 @@ def test_opaque_image_model_uses_confirmed_host_version_for_exact_asset(acquisit
     session.flush()
     clean = "gpt-image-1.5 / 色調整: imagegen"
     assert image_model_description(session, image) == clean
-    touch(session, item, "image.tool_software_identified", content_hash=image.content_hash,
-          software_name="Codex", software_version="26.1007.21434")
+    touch(
+        session,
+        item,
+        "image.tool_software_identified",
+        content_hash=image.content_hash,
+        software_name="Codex",
+        software_version="26.1007.21434",
+    )
     session.flush()
     assert image_model_description(session, image) == (
         clean + "\uff08組み込み先: Codex 26.1007.21434\uff09"
@@ -198,13 +210,13 @@ def test_opaque_image_model_uses_confirmed_host_version_for_exact_asset(acquisit
     assert image_model_description(session, image) == "gpt-image-1.5"
 
 
-def test_manual_edits_retain_matching_prior_ai_extraction_models(acquisition_session):
+def test_manual_edits_retain_matching_prior_ai_extraction_models(acquisition_session, tmp_path):
     from app.infrastructure.db.models import EvidencePackage
     from app.orchestration.editorial import touch
 
     session = acquisition_session
-    item, draft, _, _, _, _, _, service = setup_publication(session)
-    _, package = service.editorial.package(item)
+    item, draft, _, _, _, _, _, service = setup_publication(session, tmp_path)
+    _, package = service.package(item)
     facts = list(session.scalars(select(Fact).where(Fact.id.in_(package.verified_fact_ids))))
     original = facts[0]
     evidence = session.get(EvidencePackage, original.evidence_package_id)
@@ -215,8 +227,12 @@ def test_manual_edits_retain_matching_prior_ai_extraction_models(acquisition_ses
 
     def prior(revision, model, *, changed_conditions=False, invalid=False):
         parent = EvidencePackage(
-            item_id=item.id, revision=revision, item_version=item.version,
-            input_hash="sha256:" + str(revision).zfill(64), payload_json={}, payload_hash="test",
+            item_id=item.id,
+            revision=revision,
+            item_version=item.version,
+            input_hash="sha256:" + str(revision).zfill(64),
+            payload_json={},
+            payload_hash="test",
         )
         session.add(parent)
         session.flush()
@@ -224,18 +240,31 @@ def test_manual_edits_retain_matching_prior_ai_extraction_models(acquisition_ses
         if changed_conditions:
             value["conditions"] = "different eligibility conditions"
         copied = Fact(
-            item_id=item.id, item_version=item.version, evidence_package_id=parent.id,
-            evidence_id=uuid4(), fact_type=original.fact_type, subject=original.subject,
-            predicate=original.predicate, value_json=value,
-            normalized_value=original.normalized_value, evidence_text=original.evidence_text,
-            source_url=original.source_url, confidence=original.confidence, extractor="ai",
+            item_id=item.id,
+            item_version=item.version,
+            evidence_package_id=parent.id,
+            evidence_id=uuid4(),
+            fact_type=original.fact_type,
+            subject=original.subject,
+            predicate=original.predicate,
+            value_json=value,
+            normalized_value=original.normalized_value,
+            evidence_text=original.evidence_text,
+            source_url=original.source_url,
+            confidence=original.confidence,
+            extractor="ai",
         )
         session.add(copied)
         run = add_run(session, item.id, "facts", model)
         if invalid:
             run.validation_status = "invalid"
-        touch(session, item, "facts.extracted", evidence_package_id=str(parent.id),
-              ai_run_id=str(run.id))
+        touch(
+            session,
+            item,
+            "facts.extracted",
+            evidence_package_id=str(parent.id),
+            ai_run_id=str(run.id),
+        )
         session.flush()
 
     prior(1, "initial-extractor")
@@ -252,10 +281,10 @@ def test_manual_edits_retain_matching_prior_ai_extraction_models(acquisition_ses
     assert "unused-later" not in description
 
 
-def test_manual_fact_edit_without_prior_record_does_not_claim_no_ai(acquisition_session):
+def test_manual_fact_edit_without_prior_record_does_not_claim_no_ai(acquisition_session, tmp_path):
     session = acquisition_session
-    item, draft, _, _, _, _, _, service = setup_publication(session)
-    _, package = service.editorial.package(item)
+    item, draft, _, _, _, _, _, service = setup_publication(session, tmp_path)
+    _, package = service.package(item)
     for fact in session.scalars(select(Fact).where(Fact.id.in_(package.verified_fact_ids))):
         fact.extractor = "manual"
     session.flush()

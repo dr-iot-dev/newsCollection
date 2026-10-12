@@ -10,6 +10,7 @@ RUN groupadd --system --gid 10001 app \
 WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY app ./app
+COPY nw_generation ./nw_generation
 COPY migrations ./migrations
 COPY config ./config
 COPY alembic.ini ./

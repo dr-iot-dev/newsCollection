@@ -2,6 +2,16 @@
 
 基準日: 2026-10-07（日本時間）。Gitの既存コミットと、このセッションでの実装・運用作業を区別して記録する。細かな作業日時を確認できない変更には推測の日付を付けない。実装条件は [記事生成仕様](docs/article-generation-requirements.md)、再現手順は [環境構築・WordPress運用](docs/setup-and-wordpress.md) を参照する。
 
+## 0.5.0: 生成と下書き送信の独立化（2026-10-12）
+
+- WordPress 下書き送信を WPuploader に移し、生成側の送信 API・スケジューラー・資格情報を除去した。
+- 完成原稿を immutable .nwdraft として保存し、共有完成ファイルとローカル SQLite の台帳で受け渡す。
+- 七つの生成工程を単独 wheel/CLI で配布できるようにした。親アプリ・他工程・DB なしで起動できる。
+- 不足資料の検索・追加取得・更新は FETCH_MISSING_SOURCES=false を既定とした。
+- 旧投稿タイプの互換・ルート移行機能を削除した。過去の移行記録は以下の履歴として保持する。
+- DB migration、既存送信履歴の書き出し・取り込み、送信・画像の不明結果照合を追加した。
+- 稼働サービス・既存サイトには未適用。[実装と起動手順](docs/independent-apps-implementation.md) を参照。
+
 ## 投稿タイプ・REST名の実サイト移行（2026-10-09）
 
 - airlabs.jpの投稿タイプを `nc_news → news_weave`、REST名を `nc-news → news-weave` へ移行した。News Weave 1.2.0の管理者専用移行機能を使い、既存7記事とゴミ箱の検証記事1件、一覧ページ63のクエリーを更新した。

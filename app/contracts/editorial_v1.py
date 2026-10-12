@@ -1,7 +1,7 @@
 from typing import Literal
 from uuid import UUID
 
-from pydantic import Field, StrictBool
+from pydantic import AliasChoices, Field, StrictBool
 
 from app.contracts.base import ContractModel
 
@@ -61,7 +61,9 @@ class ReviewChecklistV1(ContractModel):
     media_rights_verified_or_no_media: StrictBool
     terms_and_robots_clear: StrictBool
     personal_data_checked: StrictBool
-    wordpress_preview_checked: StrictBool
+    local_preview_checked: StrictBool = Field(
+        validation_alias=AliasChoices("local_preview_checked", "wordpress_preview_checked")
+    )
 
 
 class ReviewRequestV1(ContractModel):

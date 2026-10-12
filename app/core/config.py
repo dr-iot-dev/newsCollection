@@ -1,9 +1,16 @@
+import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Literal
 
 from pydantic import Field, PostgresDsn, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def default_artifact_directory() -> Path:
+    if os.name == "nt":
+        return Path(os.getenv("LOCALAPPDATA", str(Path.home()))) / "NewsWeave" / "artifacts"
+    return Path.home() / ".local" / "share" / "NewsWeave" / "artifacts"
 
 
 class Settings(BaseSettings):
@@ -47,7 +54,9 @@ class Settings(BaseSettings):
     comparison_max_evaluations: int = Field(default=8, ge=1, le=20)
     comparison_auto_research: bool = True
     comparison_min_sources: int = Field(default=3, ge=1, le=21)
-    research_refresh_sources: bool = True
+    fetch_missing_sources: bool = False
+    # Deprecated input: retained for migration; it cannot enable collection.
+    research_refresh_sources: bool = False
     research_max_candidates: int = Field(default=100, ge=1, le=500)
     research_max_fact_checks: int = Field(default=6, ge=1, le=20)
     research_max_sources_per_attempt: int = Field(default=6, ge=1, le=20)
@@ -57,20 +66,13 @@ class Settings(BaseSettings):
     review_required: bool = False
     featured_images_enabled: bool = True
     ai_image_model: str = "gpt-image-1.5"
+    ai_image_max_attempts: int = Field(default=2, ge=1, le=10)
     ai_image_quality: Literal["low", "medium", "high"] = "medium"
     ai_image_size: Literal["1536x1024", "1024x1024", "1024x1536"] = "1536x1024"
-    wordpress_enabled: bool = False
-    wordpress_base_url: str = ""
-    wordpress_post_type: str = Field(default="post", pattern=r"^[a-z0-9_-]{1,20}$")
-    wordpress_rest_base: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$")
-    wordpress_username: str = ""
-    wordpress_application_password: SecretStr | None = Field(default=None, repr=False)
-    wordpress_category_map: dict[str, Annotated[int, Field(ge=1, strict=True)]] = Field(
-        default_factory=dict
-    )
-    wordpress_tag_map: dict[str, Annotated[int, Field(ge=1, strict=True)]] = Field(
-        default_factory=dict
-    )
+    draft_export_enabled: bool = True
+    draft_artifact_dir: Path = Field(default_factory=default_artifact_directory)
+    draft_transfer_dir: Path | None = None
+    draft_producer_id: str = ""
 
     @model_validator(mode="after")
     def validate_ai(self) -> "Settings":

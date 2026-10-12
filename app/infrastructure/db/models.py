@@ -567,3 +567,29 @@ class ApiUser(CreatedUpdatedMixin, Base):
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     roles: Mapped[list[str]] = mapped_column(JSON_STORAGE, nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+class DraftAsset(CreatedUpdatedMixin, Base):
+    __tablename__ = "draft_assets"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    draft_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("article_drafts.id"), unique=True)
+    input_hash: Mapped[str] = mapped_column(String(71))
+    state: Mapped[str] = mapped_column(String(30), default="prepared")
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON_STORAGE, default=dict)
+    image_bytes: Mapped[bytes | None] = mapped_column(LargeBinary)
+    attempt: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str | None] = mapped_column(String(100))
+
+
+class DraftExport(CreatedUpdatedMixin, Base):
+    __tablename__ = "draft_exports"
+    __table_args__ = (UniqueConstraint("draft_id", "artifact_revision"),)
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    item_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("items.id"))
+    draft_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("article_drafts.id"))
+    artifact_revision: Mapped[int] = mapped_column(Integer, default=1)
+    producer_id: Mapped[str] = mapped_column(String(36))
+    snapshot_json: Mapped[dict[str, Any]] = mapped_column(JSON_STORAGE)
+    state: Mapped[str] = mapped_column(String(30), default="prepared")
+    file_path: Mapped[str | None] = mapped_column(Text)
+    bundle_hash: Mapped[str | None] = mapped_column(String(71))
+    last_error: Mapped[str | None] = mapped_column(String(100))

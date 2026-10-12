@@ -227,6 +227,7 @@ def prepared(session, count=6, **options):
         docs.append(d)
     session.commit()
     settings = Settings(
+        fetch_missing_sources=True,
         ai_comparison_planner_model="planner-test",
         ai_comparison_assessor_model="assessor-test",
         ai_comparison_verifier_model="independent-test",
@@ -648,6 +649,7 @@ def prtimes_acquisition(
         lambda p: checkpoints.append(dict(p)),
         lambda: None,
         results_per_keyword=results_per_keyword,
+        fetch_missing_sources=True,
     )
     return adapter, requests, checkpoints
 
@@ -1141,6 +1143,7 @@ def test_keyword_results_and_article_counts_are_exported(
     )
     initial = adapter.initial({}, 3)
     settings = Settings(
+        fetch_missing_sources=True,
         ai_comparison_planner_model="planner-test",
         ai_comparison_assessor_model="assessor-test",
         ai_comparison_verifier_model="independent-test",

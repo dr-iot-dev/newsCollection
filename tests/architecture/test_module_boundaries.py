@@ -10,7 +10,7 @@ MODULES = {
     "writing",
     "verification",
     "review",
-    "publication",
+    "rendering",
 }
 
 

@@ -7,7 +7,7 @@ from app.contracts.article_package_v1 import ArticlePackageV1, SourceReferenceV1
 from app.contracts.draft_v1 import ArticleDraftV1
 from app.contracts.facts_v1 import VerifiedFactV1
 from app.core.article_tables import comparison_prose, render_comparison_table, render_source_list
-from app.modules.publication.service import build_payload
+from app.modules.rendering.service import render_article
 from app.modules.verification.service import rule_criteria
 from tests.unit.test_comparison_research import prepared_root, seed_articles
 
@@ -110,8 +110,8 @@ def test_table_keeps_conditions_unknowns_and_reference_order_without_invented_li
         paragraph_facts=(),
         writer_profile_key="test",
     )
-    payload = build_payload(draft, package, "cms", {"iot_platform": 1}, {})
-    soup = BeautifulSoup(payload.content, "html.parser")
+    payload = render_article(draft, package)
+    soup = BeautifulSoup(payload, "html.parser")
     anchors = soup.find("table").find_all("a")
     assert [(a.get_text(), a["href"]) for a in anchors] == [
         ("資料1", "https://z.example/main"),
@@ -191,8 +191,8 @@ def test_future_draft_generates_and_verifies_table_before_wordpress(acquisition_
     else:
         assert all(value == "pass" for value in criteria.values())
         assert service.verify(draft.id).overall_result == "pass"
-        payload = build_payload(dto, package, "cms", {"edge_ai": 1}, {})
-        soup = BeautifulSoup(payload.content, "html.parser")
+        payload = render_article(dto, package)
+        soup = BeautifulSoup(payload, "html.parser")
         assert len(soup.find_all("table")) == 1
         assert [h.get_text() for h in soup.find_all("h2")] == ["比較表", "比較の考察", "出典"]
         anchors = soup.find("table").find_all("a")

@@ -5,9 +5,9 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.api.routes.draft_exports import router as draft_exports_router
 from app.api.routes.health import router as health_router
 from app.api.routes.items import router as items_router
-from app.api.routes.publications import router as publications_router
 from app.core.config import get_settings
 from app.core.editorial import EditorialError
 from app.core.logging import configure_logging
@@ -24,7 +24,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     application = FastAPI(
         title=settings.app_name,
-        version="0.4.0",
+        version="0.5.0",
         lifespan=lifespan,
         docs_url="/docs" if settings.app_env in {"development", "test"} else None,
         redoc_url=None,
@@ -41,7 +41,7 @@ def create_app() -> FastAPI:
 
     application.include_router(health_router)
     application.include_router(items_router)
-    application.include_router(publications_router)
+    application.include_router(draft_exports_router)
     return application
 
 

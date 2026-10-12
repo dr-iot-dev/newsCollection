@@ -162,8 +162,11 @@ class PRTimesPairAcquisition:
         reserve: Callable[[], None],
         *,
         results_per_keyword: int = SEARCH_RESULTS_PER_KEYWORD,
+        fetch_missing_sources: bool = False,
     ) -> None:
         self.session, self.save, self.reserve = session, save, reserve
+        self.fetch_missing_sources = fetch_missing_sources
+        self._purpose = "explicit"
         if not 1 <= results_per_keyword <= SEARCH_RESULTS_PER_KEYWORD:
             raise ValueError("Invalid per-keyword result limit")
         self.results_per_keyword = results_per_keyword
@@ -231,6 +234,8 @@ class PRTimesPairAcquisition:
             self.guard = WebGuard(self.config, self.client, robots)
 
     def fetch(self, url: str, *, listing: bool = False, search: bool = False) -> FetchResponse:
+        if self._purpose == "missing_sources" and not self.fetch_missing_sources:
+            raise CollectionError("MISSING_SOURCE_FETCH_DISABLED")
         self.setup()
         assert self.guard is not None
         # Retain source page limits per invocation; resume starts the next batch.
@@ -467,6 +472,9 @@ class PRTimesPairAcquisition:
     def search(
         self, progress: dict[str, Any], keywords: CategoryKeywords, count: int
     ) -> tuple[PairDocument, ...]:
+        self._purpose = "missing_sources"
+        if not self.fetch_missing_sources:
+            raise CollectionError("MISSING_SOURCE_FETCH_DISABLED")
         self.check_policy(progress)
         identity = canonical_payload_hash(
             {

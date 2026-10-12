@@ -102,7 +102,7 @@ def comparison_text(data, relation):
 
 
 def svc(session, config=None, provider=None, actor=None):
-    config = config or settings().model_copy(update={"research_refresh_sources": False})
+    config = config or settings().model_copy(update={"fetch_missing_sources": False})
     return EditorialService(
         session, config, AIRunner(session, config, provider or ComparisonProvider()), actor
     )
@@ -129,7 +129,7 @@ def test_pipeline_searches_both_relations_and_completes_verified_draft(
     session = acquisition_session
     target, previous, competitor = seed_articles(session)
     actor, _ = create_user(session, "writer", ["editor"])
-    config = settings().model_copy(update={"research_refresh_sources": False})
+    config = settings().model_copy(update={"fetch_missing_sources": False})
     job = queue_job(
         session,
         target.id,
@@ -154,9 +154,7 @@ def test_pipeline_searches_both_relations_and_completes_verified_draft(
     assert "ABC90" in draft.body_markdown and "XYZ200" in draft.body_markdown
     assert target.status == ItemStatus.REVIEW_PENDING
     messages = list(
-        session.scalars(
-            select(ModuleMessage).where(ModuleMessage.consumer == "acquisition_research")
-        )
+        session.scalars(select(ModuleMessage).where(ModuleMessage.consumer == "comparison_catalog"))
     )
     assert len(messages) == 2 and all(m.status == "processed" for m in messages)
     assert all(m.result_json["article_package_id"] == str(package.id) for m in messages)
@@ -218,9 +216,7 @@ def test_missing_references_complete_with_explicit_unavailable_reason(
     )
     session.commit()
     install_factory(monkeypatch)
-    process_editorial_jobs(
-        session, settings().model_copy(update={"research_refresh_sources": False})
-    )
+    process_editorial_jobs(session, settings().model_copy(update={"fetch_missing_sources": False}))
     session.commit()
     assert job.stats_json["result"]["status"] == "pass"
     draft = session.get(ArticleDraft, UUID(job.stats_json["result"]["draft_id"]))
@@ -243,7 +239,9 @@ def test_source_refresh_discovers_candidates_and_obeys_approved_scope(
 ):
     session = acquisition_session
     target = add_article(session, "target", "ExampleCorp", "ABC100", 8, "19,800", 30)
-    service = prepared_root(session, target, settings())
+    service = prepared_root(
+        session, target, settings().model_copy(update={"fetch_missing_sources": True})
+    )
     github = session.scalar(select(Source).where(Source.key == "github-esphome"))
     github.legal_status = LegalStatus.BLOCKED
     seen = []
@@ -280,7 +278,9 @@ def test_transient_research_retry_resumes_the_same_job_and_stale_edit_blocks_it(
         "app.orchestration.research.collect_source",
         lambda db, key, **kw: CollectionResult(key, "failed", error_code="HTTP_ERROR"),
     )
-    config = settings().model_copy(update={"research_max_attempts": 2})
+    config = settings().model_copy(
+        update={"research_max_attempts": 2, "fetch_missing_sources": True}
+    )
     assert process_editorial_jobs(session, config) == 1
     session.commit()
     assert job.status == "waiting_research" and job.finished_at is None
@@ -334,7 +334,9 @@ def test_retry_budget_finishes_without_inventing_comparisons(acquisition_session
     session = acquisition_session
     target = add_article(session, "target", "ExampleCorp", "ABC100", 8, "19,800", 30)
     service = prepared_root(
-        session, target, settings().model_copy(update={"research_max_attempts": 1})
+        session,
+        target,
+        settings().model_copy(update={"research_max_attempts": 1, "fetch_missing_sources": True}),
     )
     monkeypatch.setattr(
         "app.orchestration.research.collect_source",
@@ -365,11 +367,13 @@ def test_research_outbox_completes_existing_package_and_protects_manual_drafts(
 ):
     session = acquisition_session
     target, previous, competitor = seed_articles(session)
-    service = prepared_root(session, target)
+    service = prepared_root(
+        session, target, settings().model_copy(update={"fetch_missing_sources": True})
+    )
     initial = service.comparison(target.id)
     session.commit()
     monkeypatch.setattr("app.orchestration.research.EditorialService", lambda db, cfg: svc(db, cfg))
-    config = settings().model_copy(update={"research_refresh_sources": False})
+    config = settings().model_copy(update={"fetch_missing_sources": True})
     assert process_comparison_research(session, config) == 1
     session.commit()
     packages = session.scalars(
@@ -442,7 +446,7 @@ def test_failed_waiting_job_cleans_up_owned_research(acquisition_session, monkey
         "app.orchestration.research.collect_source",
         lambda db, key, **kw: CollectionResult(key, "failed", error_code="HTTP_ERROR"),
     )
-    config = settings()
+    config = settings().model_copy(update={"fetch_missing_sources": True})
     process_editorial_jobs(session, config)
     session.commit()
     assert job.status == "waiting_research"
@@ -473,7 +477,7 @@ def test_auto_research_opt_out_stays_manual_even_in_scheduler(acquisition_sessio
     )
     session.commit()
     install_factory(monkeypatch)
-    config = settings().model_copy(update={"research_refresh_sources": False})
+    config = settings().model_copy(update={"fetch_missing_sources": False})
     process_editorial_jobs(session, config)
     session.commit()
     assert job.stats_json["result"]["status"] == "pass"

@@ -7,15 +7,13 @@ from sqlalchemy import or_, select
 
 from app.core.config import get_settings
 from app.core.logging import configure_logging
-from app.infrastructure.db.models import LegalStatus, Publication, Source
+from app.infrastructure.db.models import LegalStatus, Source
 from app.infrastructure.db.session import SessionLocal
-from app.infrastructure.wordpress import wordpress_target
 from app.modules.acquisition.service import collect_source
+from app.orchestration.draft_exports import process_draft_exports
 from app.orchestration.editorial import process_editorial_outbox, process_facts_outbox
 from app.orchestration.editorial_jobs import process_editorial_jobs
-from app.orchestration.featured_images import process_featured_images
 from app.orchestration.phase2 import process_phase2
-from app.orchestration.publication import PublicationService, process_verified_publications
 from app.orchestration.research import process_comparison_research
 
 logger = structlog.get_logger()
@@ -72,8 +70,6 @@ def poll_sources() -> None:
         for consumer in ("writing", "verification"):
             with SessionLocal.begin() as session:
                 process_editorial_outbox(session, settings, consumer)
-        with SessionLocal() as session:
-            process_verified_publications(session, settings)
         if fact_count or job_count:
             logger.info("phase3_processed", facts=fact_count, jobs=job_count)
         if any(counts.values()):
@@ -82,45 +78,14 @@ def poll_sources() -> None:
         logger.error("phase2_processing_error", error_code="PROCESSING_ERROR")
 
 
-def decorate_wordpress_drafts() -> None:
+def export_completed_drafts() -> None:
     try:
         with SessionLocal() as session:
-            count = process_featured_images(session, get_settings())
+            count = process_draft_exports(session, get_settings())
         if count:
-            logger.info("featured_images_attached", count=count)
+            logger.info("draft_exports_completed", count=count)
     except Exception:
-        logger.error("featured_images_error", error_code="PROCESSING_ERROR")
-
-
-def reconcile_wordpress() -> None:
-    settings = get_settings()
-    if not settings.wordpress_enabled or settings.comparison_selection_mode == "shadow":
-        return
-    target = wordpress_target(
-        settings.wordpress_base_url, settings.wordpress_post_type, settings.wordpress_rest_base,
-    )
-    with SessionLocal() as session:
-        ids = list(
-            session.scalars(
-                select(Publication.id)
-                .where(
-                    Publication.target == target,
-                    Publication.state.not_in(["legacy", "trashed"]),
-                )
-                .order_by(Publication.updated_at)
-                .limit(100)
-            )
-        )
-    for publication_id in ids:
-        try:
-            with SessionLocal() as session:
-                PublicationService(session, settings).reconcile(publication_id)
-        except Exception:
-            logger.error(
-                "wordpress_reconcile_error",
-                publication_id=str(publication_id),
-                error_code="RECONCILE_FAILED",
-            )
+        logger.error("draft_export_error", error_code="PROCESSING_ERROR")
 
 
 def main() -> None:
@@ -137,17 +102,8 @@ def main() -> None:
         replace_existing=True,
     )
     scheduler.add_job(
-        reconcile_wordpress,
-        trigger="interval",
-        minutes=30,
-        id="reconcile-wordpress",
-        max_instances=1,
-        coalesce=True,
-        replace_existing=True,
-    )
-    scheduler.add_job(
-        decorate_wordpress_drafts, trigger="interval", seconds=60,
-        id="featured-images", max_instances=1, coalesce=True, replace_existing=True,
+        export_completed_drafts, trigger="interval", seconds=60,
+        id="draft-exports", max_instances=1, coalesce=True, replace_existing=True,
     )
     signal.signal(signal.SIGTERM, lambda *_: scheduler.shutdown(wait=False))
     logger.info("scheduler_started")

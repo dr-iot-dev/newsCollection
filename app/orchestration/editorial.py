@@ -60,7 +60,6 @@ from app.infrastructure.db.models import (
     ItemStatus,
     LegalStatus,
     ModuleMessage,
-    Publication,
     Review,
     Source,
     VerificationRun,
@@ -133,7 +132,7 @@ def eligible(session: Session, item: Item) -> Source:
         or config.legal.effective_status() != "approved"
     ):
         raise EditorialError("SOURCE_RIGHTS_BLOCKED")
-    if item.status in {ItemStatus.REJECTED, ItemStatus.BLOCKED_RIGHTS, ItemStatus.PUBLISHED}:
+    if item.status in {ItemStatus.REJECTED, ItemStatus.BLOCKED_RIGHTS}:
         raise EditorialError("ITEM_REJECTED")
     if item.duplicate_of_id:
         raise EditorialError("DUPLICATE_ITEM")
@@ -619,7 +618,7 @@ class EditorialService:
         self.session.add(result)
         self.session.flush()
         for relation, values in (("previous", previous), ("competitor", competitors)):
-            if not values and request_missing:
+            if not values and request_missing and self.settings.fetch_missing_sources:
                 approved = tuple(
                     self.session.scalars(
                         select(Source.key)
@@ -787,7 +786,7 @@ class EditorialService:
     ) -> ArticleDraft | None:
         item = item_for_update(self.session, item_id)
         eligible(self.session, item)
-        if item.status in {ItemStatus.REJECTED, ItemStatus.BLOCKED_RIGHTS, ItemStatus.PUBLISHED}:
+        if item.status in {ItemStatus.REJECTED, ItemStatus.BLOCKED_RIGHTS}:
             raise EditorialError("ITEM_REJECTED")
         row, package = self.package(item)
         self.validate_source_count(package)
@@ -801,14 +800,7 @@ class EditorialService:
         prior = latest(self.session, ArticleDraft, item.id)
         if manual is None and claim.draft_id is not None:
             if revision_reason:
-                publications = list(
-                    self.session.scalars(select(Publication).where(Publication.item_id == item.id))
-                )
-                if (
-                    prior is None
-                    or prior.id != claim.draft_id
-                    or any(p.state not in {"drafted", "superseded"} for p in publications)
-                ):
+                if prior is None or prior.id != claim.draft_id:
                     raise EditorialError("DRAFT_REVISION_NOT_ALLOWED")
                 touch(
                     self.session,
@@ -842,8 +834,6 @@ class EditorialService:
                 }
                 or failed_verification is None
                 or failed_verification.overall_result not in {"fail", "error"}
-                or self.session.scalar(select(Publication.id).where(Publication.item_id == item.id))
-                is not None
             ):
                 raise EditorialError("DRAFT_REVISION_NOT_ALLOWED")
         output: WritingOutputV1 | None

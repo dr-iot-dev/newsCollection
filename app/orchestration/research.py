@@ -230,11 +230,19 @@ def search_catalog(
     target_source = (str(target_evidence.canonical_url), target_evidence.verified_facts)
     for size in range(min(request.max_articles, len(pool)), 0, -1):
         for group in combinations(pool, size):
-            audit = coverage_for_sources([
-                target_source,
-                *((str(evidence_pool[v["item_id"]].canonical_url),
-                   evidence_pool[v["item_id"]].verified_facts) for v in group),
-            ], required_rows)
+            audit = coverage_for_sources(
+                [
+                    target_source,
+                    *(
+                        (
+                            str(evidence_pool[v["item_id"]].canonical_url),
+                            evidence_pool[v["item_id"]].verified_facts,
+                        )
+                        for v in group
+                    ),
+                ],
+                required_rows,
+            )
             if audit.valid:
                 selected = list(group)
                 break
@@ -335,7 +343,7 @@ def fulfill_search(
     checks = dict(result.get("source_checks", {}))
     if (
         len(ids) < request.max_articles
-        and service.settings.research_refresh_sources
+        and service.settings.fetch_missing_sources
         and service.runner.provider is not None
     ):
         sources = [
@@ -388,9 +396,7 @@ def fulfill_search(
         for key in request.approved_source_keys
         if checks.get(key, {}).get("status") not in {"success", "cached", "blocked"}
     ]
-    refresh_enabled = (
-        service.settings.research_refresh_sources and service.runner.provider is not None
-    )
+    refresh_enabled = service.settings.fetch_missing_sources and service.runner.provider is not None
     if refresh_enabled and remaining and message.attempt < service.settings.research_max_attempts:
         message.available_at = now + timedelta(seconds=service.settings.research_retry_seconds)
         message.error_json = {"code": "RESEARCH_RETRY_PENDING"}
@@ -401,7 +407,13 @@ def fulfill_search(
         or result.get("scanned_candidates", 0) >= service.settings.research_max_candidates
         or len(result.get("checked_item_versions", {})) >= service.settings.research_max_fact_checks
     )
-    code = "SEARCH_BUDGET_EXHAUSTED" if budget_exhausted else "NO_VERIFIED_COMPARISON_FOUND"
+    code = (
+        "MISSING_SOURCE_FETCH_DISABLED"
+        if not service.settings.fetch_missing_sources
+        else "SEARCH_BUDGET_EXHAUSTED"
+        if budget_exhausted
+        else "NO_VERIFIED_COMPARISON_FOUND"
+    )
     message.error_json = {"code": code}
     message.result_json = {**result, "unavailable_reason": code, "remaining_source_keys": remaining}
     logger.info(
@@ -415,8 +427,10 @@ def fulfill_search(
 
 
 def select_joint_sources(
-    service: EditorialService, evidence: Any,
-    selected: dict[str, tuple[UUID, ...]], requests: tuple[UUID, ...],
+    service: EditorialService,
+    evidence: Any,
+    selected: dict[str, tuple[UUID, ...]],
+    requests: tuple[UUID, ...],
     fixed: dict[str, tuple[UUID, ...]],
 ) -> dict[str, tuple[UUID, ...]]:
     """Previous and competitor searches must also pass as one final document group."""
@@ -453,21 +467,27 @@ def select_joint_sources(
             audit = coverage_for_sources(sources, required_rows)
             if audit.source_count != len(sources) or not audit.valid:
                 continue
-            score = (len({relation for relation, _ in group}),
-                     sum(pool.get(pair, {}).get("score", 0) for pair in group))
+            score = (
+                len({relation for relation, _ in group}),
+                sum(pool.get(pair, {}).get("score", 0) for pair in group),
+            )
             eligible_groups.append((score, group))
         if not eligible_groups:
             continue
         _, best = max(eligible_groups, key=lambda value: value[0])
-        chosen = {relation: tuple(key for rel, key in best if rel == relation)
-                  for relation in selected}
+        chosen = {
+            relation: tuple(key for rel, key in best if rel == relation) for relation in selected
+        }
         for request_id in requests:
             message = service.session.get(ModuleMessage, request_id)
             assert message is not None
             relation = message.payload_json["relation"]
             rows = [pool[(relation, key)] for key in chosen[relation]]
-            message.result_json = {**(message.result_json or {}), "selected": rows,
-                                   "joint_coverage_sources": len(best) + 1}
+            message.result_json = {
+                **(message.result_json or {}),
+                "selected": rows,
+                "joint_coverage_sources": len(best) + 1,
+            }
             if rows:
                 message.status, message.processed_at = "processed", datetime.now(UTC)
                 message.error_json = None
@@ -506,7 +526,12 @@ def prepare_comparison(
             policy_version=POLICY_VERSION,
             max_articles=max(1, service.settings.comparison_min_sources - 1),
         )
-        request_id = service.research_port.request_search(request)
+        if service.settings.fetch_missing_sources:
+            request_id = service.research_port.request_search(request)
+        else:
+            # Cache-only comparison: no acquisition queue or implicit source refresh.
+            local = service.enqueue(request, "ResearchRequestV1", "comparison_catalog", "research")
+            request_id = local.message_id
         request_ids.append(request_id)
         message = service.session.get(ModuleMessage, request_id)
         assert message is not None
@@ -514,7 +539,10 @@ def prepare_comparison(
         pending = pending or waiting
     if not pending and request_ids:
         selected = select_joint_sources(
-            service, evidence, selected, tuple(request_ids),
+            service,
+            evidence,
+            selected,
+            tuple(request_ids),
             {"previous": previous_ids, "competitor": competitor_ids},
         )
     return ResearchPreparation(
@@ -532,6 +560,14 @@ def record_package(
 
 
 def process_comparison_research(session: Session, settings: Settings, limit: int = 4) -> int:
+    if not settings.fetch_missing_sources:
+        session.query(ModuleMessage).filter(
+            ModuleMessage.consumer == "acquisition_research",
+            ModuleMessage.status.in_(["pending", "paused_policy"]),
+        ).update(
+            {"status": "paused_policy", "error_json": {"code": "MISSING_SOURCE_FETCH_DISABLED"}}
+        )
+        return 0
     if (
         not settings.comparison_auto_research
         or not settings.ai_writer_model
@@ -543,7 +579,7 @@ def process_comparison_research(session: Session, settings: Settings, limit: int
             select(ModuleMessage)
             .where(
                 ModuleMessage.consumer == "acquisition_research",
-                ModuleMessage.status == "pending",
+                ModuleMessage.status.in_(["pending", "paused_policy"]),
                 ModuleMessage.available_at <= datetime.now(UTC),
                 ModuleMessage.payload_json["job_id"].as_string().is_(None),
             )
@@ -554,8 +590,9 @@ def process_comparison_research(session: Session, settings: Settings, limit: int
     )
     count = 0
     for message in messages:
-        if message.status != "pending":
+        if message.status not in {"pending", "paused_policy"}:
             continue
+        message.status = "pending"
         try:
             request = ResearchRequestV1.model_validate(message.payload_json)
             if canonical_payload_hash(message.payload_json) != message.payload_hash:
