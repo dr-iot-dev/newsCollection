@@ -1,5 +1,6 @@
 from app.contracts.article_package_v1 import ArticlePackageV1
 from app.contracts.editorial_v1 import WritingOutputV1
+from app.core.article_tables import COMPARISON_PROSE_HEADING
 from app.core.draft_style import plain_style, title_has_comparison_suffix
 from app.core.editorial import EditorialError, entities_supported, numbers, personal_data
 from app.core.evidence_support import (
@@ -7,11 +8,12 @@ from app.core.evidence_support import (
     comparison_available,
     comparison_section_supported,
     price_conditions_supported,
+    supported_organizations,
     supported_text,
     vendor_claims_attributed,
 )
 
-POLICY_VERSION = "writing-v6"
+POLICY_VERSION = "writing-v7"
 
 
 def validate_writing(output: WritingOutputV1, package: ArticlePackageV1) -> None:
@@ -37,7 +39,9 @@ def validate_writing(output: WritingOutputV1, package: ArticlePackageV1) -> None
         ]
     )
     evidence = supported_text(package)
-    if any(heading in text for heading in (*COMPARISON_HEADINGS, "## 比較表", "## 出典")):
+    if any(heading in text for heading in (
+        *COMPARISON_HEADINGS, "## 比較表", COMPARISON_PROSE_HEADING, "## 出典",
+    )):
         raise EditorialError("DRAFT_COMPARISON_SECTION_FORBIDDEN")
     body = "\n\n".join(
         [
@@ -61,7 +65,7 @@ def validate_writing(output: WritingOutputV1, package: ArticlePackageV1) -> None
     if not numbers(text) <= numbers(evidence):
         raise EditorialError("DRAFT_NUMBER_UNSUPPORTED")
     if not entities_supported(
-        text, evidence, tuple(f.value for f in package.facts if f.fact_type == "organization")
+        text, evidence, supported_organizations(package)
     ):
         raise EditorialError("DRAFT_ENTITY_UNSUPPORTED")
     if personal_data(text) or "<" in text or "https://" in text or "http://" in text:

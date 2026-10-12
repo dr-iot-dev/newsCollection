@@ -1,5 +1,7 @@
 # News Weave（ニュースを編む）
 
+このチェックアウトは **kunsen.net用の独立環境** です。起動・停止・接続先は [kunsen.net環境の運用手順](docs/deployment-kunsen.md) を参照してください。APIは8001番、Composeプロジェクトは news-weave です。
+
 公式の一次情報を監査可能な形で収集・編集・公開するためのモジュラーモノリスです。
 設計書の Phase 0〜4（基盤・収集・本文抽出・編集レビュー・WordPress連携）を実装しています。
 
@@ -9,6 +11,9 @@
 - [環境構築・モデル変更・WordPress運用手順](docs/setup-and-wordpress.md): `.env`、Docker、収集ソース、投稿タイプ、認証、固定ページ、生成・公開・復旧の手順。
 - [実装から抽出したプロンプトとJSON Schema](docs/model-contracts.json): 別モデルへ渡す工程別の契約。更新用スクリプトは `tools/export_model_contracts.py`。
 - [News Weaveへの名称変更・既存サイトの互換手順](docs/rename-to-news-weave.md): 新名称、プラグイン導入、既存記事・URL・送信履歴を維持する手順。
+- [PR TIMESカテゴリ・ペア探索](docs/comparison-pair-discovery-implementation-20261011.md): 初期10資料、最大100資料、全ペア距離、10ペア終了条件、監査・再開CLI。
+- [資料選択の並行評価](docs/comparison-selection-shadow.md): 根拠付き比較計画、採否記録、送信しない評価コマンドと後続工程。
+- [既存3記事の再評価](docs/comparison-selection-evaluation-20261010.md): 比較用途・候補の役割・不足情報の評価基準。
 - [変更履歴](CHANGELOG.md): Gitの既存コミットと、このセッションで実施した実装・WordPress運用の記録。
 
 仕様書のモデル名は稼働環境の既定値と記事ごとの実行記録を区別しています。秘密設定・運用DB・生成画像はGitに含めません。
@@ -17,11 +22,11 @@
 
 1. 必要なら `.env.example` を `.env` にコピーし、`POSTGRES_PASSWORD` を変更します。
 2. `docker compose up --build -d --wait` を実行します。
-3. `http://localhost:8000/health/live` と `/health/ready` を確認します。
+3. `http://localhost:8001/health/live` と `/health/ready` を確認します。
 
 `migrate` サービスがDBを更新してからAPIとschedulerが起動します。APIとschedulerは
 非root・read-only filesystemで動作します。APIは `frontend` と内部の `backend` に接続し、
-`127.0.0.1:8000` にだけ公開します。DBとmigrateは `backend` のみに接続します。
+`127.0.0.1:8001` にだけ公開します。DBとmigrateは `backend` のみに接続します。
 schedulerと手動収集用 `collect` は、取得のため `backend` と `collection` に接続します。
 
 ## Phase 1: ソース登録と収集
@@ -174,7 +179,7 @@ docker compose run --rm collect news-weave collect run --source prtimes-electron
 
 ### 記事を読む
 
-APIはこのPCの `http://127.0.0.1:8000`、開発用OpenAPI画面は `/docs` です。
+APIはこのPCの `http://127.0.0.1:8001`、開発用OpenAPI画面は `/docs` です。
 記事本文・facts・草稿は内部情報のため、Bearer認証を必須にしています。
 通常の起動では閲覧用アカウントも自動で作成しません。CLIで次のように作成できます。
 
@@ -609,7 +614,7 @@ API仕様: [OpenAI Images API](https://developers.openai.com/api/reference/resou
 
 ### 自動生成される比較表と資料番号
 
-今後の原稿生成では、複数の製品について検証済みの資料が揃うと、本文の後・出典欄の前に比較表を自動挿入します。表の値は各資料に対応する検証済みfactsから生成し、価格の適用条件・地域・提供元の説明も残します。確認できない項目は「資料で確認できず」と表示し、非対応や優劣を推定しません。資料が不足する場合は比較表を作りません。
+今後の原稿生成では、複数の製品について検証済みの資料が揃うと、簡潔なリードの後に比較表を自動挿入し、表の注記の後に「比較の考察」見出しと比較本文を置きます。表の値は各資料に対応する検証済みfactsから生成し、価格の適用条件・地域・提供元の説明も残します。確認できない項目は「資料で確認できず」と表示し、非対応や優劣を推定しません。資料が不足する場合は比較表を作りません。
 
 比較表のリンクは「資料1」「資料2」…、原稿とWordPressの出典欄は「資料1: URL」…に統一します。資料番号は参照順で決まり、同じURLには同じ番号を使います。比較表の内容と番号の整合性も原稿検証の対象です。
 
@@ -618,7 +623,7 @@ API仕様: [OpenAI Images API](https://developers.openai.com/api/reference/resou
 
 ### 記事末尾のAIモデル表示
 
-WordPressへ下書き保存する際、出典欄の後に「使用したAIモデル」を自動追加します。事実抽出・候補選定・本文作成・原稿検証について、その記事に紐づく実行記録からモデル名を取得します。現在の環境変数や最新の無関係な実行からモデル名を推測しません。記録がない工程は記録なしと表示し、ルール処理とテスト用の模擬処理も区別します。事実抽出の実行IDは、対象のEvidencePackageとともに監査記録へ保存します。
+WordPressへ下書き保存する際、出典欄の後に「使用したAIモデル」を自動追加します。事実抽出・候補選定・本文作成・原稿検証について、その記事に紐づく実行記録からモデル名を取得します。現在の環境変数や最新の無関係な実行からモデル名を推測しません。記録がない工程は記録なしと表示し、ルール処理とテスト用の模擬処理も区別します。事実抽出の実行IDは、対象のEvidencePackageとともに監査記録へ保存します。 出典照合で編集した事実でも、同じ資料の過去の有効なAI抽出結果に、値・単位・地域・適用条件などが一致する事実が残っている場合は、その実行モデルを「編集前の抽出履歴を含む」と併記します。最後の編集が手動扱いでも「AI使用なし」とは表示しません。失敗した抽出、異なる事実、編集後の実行は引き継ぎません。画像のモデル名が不明なimagegenでは、画像ハッシュに対応する確認済みの組み込み先ソフトウェア名・バージョンを表示し、未確認ならimagegenのみを表示します。画像登録日時や「モデル名未提供」は表示しません。
 
 アイキャッチを添付する際は、画像生成に実際に使ったモデルも同じ欄に追記します。画像とモデル欄は同じWordPress更新で保存し、投稿payload・内容hash・remote hashを更新します。公開前の承認と改変検査は引き続き必要です。モデル表示はAIによる検証結果や権利上の安全性を保証するものではありません。
 

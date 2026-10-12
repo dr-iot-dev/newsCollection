@@ -369,7 +369,7 @@ def prompt_draft(categories):
     )
 
 
-def test_all_supported_categories_have_distinct_whole_image_art_directions():
+def test_all_supported_categories_have_subtle_backgrounds_and_natural_subjects():
     # Adding a supported category requires a deliberately chosen visual identity.
     assert set(CATEGORY_STYLES) == set(get_args(Category))
     assert len({style.background for style in CATEGORY_STYLES.values()}) == len(CATEGORY_STYLES)
@@ -377,8 +377,10 @@ def test_all_supported_categories_have_distinct_whole_image_art_directions():
         prompt = image_prompt(prompt_draft([category]))
         instructions, context = prompt.split("\n", 1)
         assert style.background in instructions and style.dominant in instructions
-        assert "at least 70 percent" in instructions and "thumbnail size" in instructions
-        assert "small badge, border, icon or tiny accent" in instructions
+        assert "at least 70 percent" not in instructions
+        assert "low-saturation" in instructions and "natural colors" in instructions
+        assert "neutral daylight without a color cast" in instructions
+        assert "Never apply the category tint to people" in instructions
         assert "No text" in instructions and "unbranded" in instructions
         assert json.loads(context)["primary_category"] == category
     assert "restrained blue and teal with warm accents" not in image_prompt(
@@ -427,3 +429,35 @@ def test_untrusted_category_change_cannot_control_image_generation(acquisition_s
     with pytest.raises(EditorialError, match="DRAFT_HASH_MISMATCH"):
         FeaturedImageService(session, config, port=cms.client(), provider=provider).ensure(row.id)
     assert not provider.calls and not cms.uploads
+
+
+def test_explicit_asset_replacement_preserves_old_media_and_is_idempotent(acquisition_session):
+    session = acquisition_session
+    item, _draft, _publisher, config, row, cms, provider, publication = draft_for_images(session)
+    service = FeaturedImageService(session, config, port=cms.client(), provider=provider)
+    old = service.ensure(row.id)
+    old_id, old_media = old.id, old.remote_media_id
+    out = BytesIO()
+    Image.new("RGB", (1536, 1024), "silver").save(out, format="JPEG")
+    data = out.getvalue()
+    new = service.attach_asset(row.id, data, prompt="Natural foreground and pale background",
+                               model="image_gen (model undisclosed)")
+    assert new.id != old_id and new.remote_media_id != old_media
+    assert int(old_media) in cms.media
+    assert len(cms.uploads) == 2 and len(provider.calls) == 1
+    assert service.attach_asset(row.id, data, prompt="Same edit", model=new.model).id == new.id
+    assert len(cms.uploads) == 2
+    publication.validate_package(item, row)
+
+
+def test_explicit_asset_replacement_refuses_remote_editor_changes(acquisition_session):
+    session = acquisition_session
+    _item, _draft, _publisher, config, row, cms, provider, _publication = draft_for_images(session)
+    service = FeaturedImageService(session, config, port=cms.client(), provider=provider)
+    image = service.ensure(row.id)
+    old_id = image.id
+    cms.posts[int(row.remote_post_id)]["content"]["raw"] += "<p>Editor change</p>"
+    with pytest.raises(EditorialError, match="WORDPRESS_REMOTE_CONFLICT"):
+        service.attach_asset(row.id, jpeg(), prompt="Edit", model="image_gen")
+    assert session.get(FeaturedImage, old_id) is not None
+    assert len(cms.uploads) == 1

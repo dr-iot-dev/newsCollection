@@ -11,6 +11,7 @@ from app.infrastructure.db.models import Source
 from app.infrastructure.db.session import SessionLocal
 from app.modules.acquisition.service import collect_source
 from app.orchestration.phase2 import process_phase2
+from app.pair_cli import pair_app
 from app.sources.config import load_sources
 from app.sources.service import sync_sources
 
@@ -19,6 +20,8 @@ sources_app = typer.Typer(no_args_is_help=True, pretty_exceptions_show_locals=Fa
 app.add_typer(sources_app, name="sources")
 collect_app = typer.Typer(no_args_is_help=True, pretty_exceptions_show_locals=False)
 app.add_typer(collect_app, name="collect")
+
+app.add_typer(pair_app, name="comparison-pair")
 
 
 @sources_app.command("validate")
@@ -209,6 +212,146 @@ def run_editorial(
         raise typer.Exit(1) from None
     except SQLAlchemyError:
         typer.echo("DATABASE_ERROR", err=True)
+        raise typer.Exit(1) from None
+
+
+comparison_app = typer.Typer(no_args_is_help=True, pretty_exceptions_show_locals=False)
+app.add_typer(comparison_app, name="comparison")
+
+
+@comparison_app.command("shadow")
+def evaluate_comparison_shadow(
+    item: Annotated[str, typer.Option("--item")],
+    candidate: Annotated[list[str], typer.Option("--candidate")],
+    output: Annotated[Path | None, typer.Option("--output")] = None,
+    exclusion_baseline: Annotated[
+        Path | None, typer.Option("--exclusion-baseline", exists=True, readable=True)
+    ] = None,
+) -> None:
+    """Evaluate supplied registered sources, saving audit only; never send an article."""
+    import json
+    from uuid import UUID
+
+    from app.contracts.comparison_selection_v1 import SourceExclusionBaselineV1
+    from app.core.comparison_selection import render_selection_table
+    from app.core.editorial import EditorialError
+    from app.orchestration.comparison_selection import ComparisonSelectionService
+
+    try:
+        key, candidates = UUID(item), tuple(UUID(v) for v in candidate)
+        baseline = (
+            SourceExclusionBaselineV1.model_validate_json(
+                exclusion_baseline.read_text(encoding="utf-8")
+            )
+            if exclusion_baseline
+            else None
+        )
+        settings = get_settings().model_copy(update={"comparison_selection_mode": "shadow"})
+        with SessionLocal() as session:
+            service = ComparisonSelectionService(session, settings, checkpoint=True)
+            try:
+                audit = service.evaluate(key, candidates, baseline)
+                session.commit()
+            except EditorialError:
+                session.commit()  # Preserve failed AI diagnostics and completed stages.
+                raise
+        report = audit.model_dump(mode="json")
+        group = [
+            e for e in audit.evaluations if e.product.product_key in audit.selected_product_keys
+        ]
+        report["comparison_table"] = render_selection_table(audit.plan.plan, group) if group else ""
+        text = json.dumps(report, ensure_ascii=False, indent=2)
+        if output:
+            output.write_text(text + "\n", encoding="utf-8")
+        else:
+            typer.echo(text)
+        if audit.outcome != "eligible":
+            raise typer.Exit(2)
+    except EditorialError as exc:
+        typer.echo("comparison deferred: " + exc.code, err=True)
+        raise typer.Exit(2) from None
+    except (OSError, ValueError):
+        typer.echo("comparison failed: INVALID_INPUT_OR_OUTPUT", err=True)
+        raise typer.Exit(1) from None
+    except SQLAlchemyError:
+        typer.echo("comparison failed: DATABASE_ERROR", err=True)
+        raise typer.Exit(1) from None
+
+
+@comparison_app.command("discover")
+def discover_comparison(
+    seed: Annotated[str, typer.Option("--seed")],
+    group_selection: Annotated[str, typer.Option("--group-selection")] = "keyword_mmr",
+    semantic_profiles: Annotated[bool, typer.Option("--semantic-profiles")] = False,
+    evidence_first: Annotated[bool, typer.Option("--evidence-first")] = False,
+    exclude_group: Annotated[list[str] | None, typer.Option("--exclude-group")] = None,
+    budget_id: Annotated[str | None, typer.Option("--budget-id")] = None,
+    candidate: Annotated[list[str] | None, typer.Option("--candidate")] = None,
+    purpose: Annotated[str | None, typer.Option("--purpose")] = None,
+    mode: Annotated[str, typer.Option("--mode")] = "shadow",
+    maximum_groups: Annotated[int, typer.Option("--maximum-groups", min=1, max=5)] = 3,
+    maximum_api_calls: Annotated[int, typer.Option("--maximum-api-calls", min=1, max=30)] = 30,
+    output: Annotated[Path | None, typer.Option("--output")] = None,
+    exclusion_baseline: Annotated[
+        Path | None, typer.Option("--exclusion-baseline", exists=True, readable=True)
+    ] = None,
+) -> None:
+    """Jointly discover questions and source groups; save V2 audit only."""
+    from uuid import UUID
+
+    from app.contracts.comparison_discovery_v2 import ComparisonDiscoveryRequestV2
+    from app.contracts.comparison_selection_v1 import SourceExclusionBaselineV1
+    from app.core.editorial import EditorialError
+    from app.orchestration.comparison_discovery import ComparisonDiscoveryService
+
+    if mode != "shadow":
+        typer.echo("discovery failed: SHADOW_MODE_REQUIRED", err=True)
+        raise typer.Exit(1)
+    try:
+        request = ComparisonDiscoveryRequestV2(
+            seed_item_id=UUID(seed),
+            candidate_item_ids=tuple(UUID(v) for v in candidate or ()),
+            budget_id=UUID(budget_id) if budget_id else None,
+            group_selection=group_selection,
+            semantic_profiles=semantic_profiles,
+            evidence_first=evidence_first,
+            excluded_group_item_ids=tuple(
+                tuple(UUID(k) for k in value.split(",")) for value in exclude_group or ()
+            ),
+            editorial_intent=purpose,
+            maximum_groups=maximum_groups,
+            maximum_api_calls=maximum_api_calls,
+        )
+        baseline = (
+            SourceExclusionBaselineV1.model_validate_json(
+                exclusion_baseline.read_text(encoding="utf-8")
+            )
+            if exclusion_baseline
+            else None
+        )
+        with SessionLocal() as session:
+            service = ComparisonDiscoveryService(session, get_settings(), checkpoint=True)
+            try:
+                audit = service.discover(request, baseline)
+                session.commit()
+            except EditorialError:
+                session.commit()
+                raise
+        text = audit.model_dump_json(indent=2)
+        if output:
+            output.write_text(text + "\n", encoding="utf-8")
+        else:
+            typer.echo(text)
+        if audit.outcome != "eligible":
+            raise typer.Exit(2)
+    except EditorialError as exc:
+        typer.echo("discovery deferred: " + exc.code, err=True)
+        raise typer.Exit(2) from None
+    except (OSError, ValueError):
+        typer.echo("discovery failed: INVALID_INPUT_OR_OUTPUT", err=True)
+        raise typer.Exit(1) from None
+    except SQLAlchemyError:
+        typer.echo("discovery failed: DATABASE_ERROR", err=True)
         raise typer.Exit(1) from None
 
 

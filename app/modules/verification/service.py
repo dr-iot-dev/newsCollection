@@ -1,7 +1,14 @@
 from app.contracts.article_package_v1 import ArticlePackageV1
 from app.contracts.draft_v1 import ArticleDraftV1
 from app.contracts.verification_v1 import CriterionResult, VerificationCriterionV1
-from app.core.article_tables import comparison_prose, render_comparison_table, render_source_list
+from app.core.article_tables import (
+    comparison_coverage,
+    comparison_prose,
+    comparison_sections,
+    render_comparison_table,
+    render_source_list,
+    source_urls,
+)
 from app.core.draft_style import has_polite_ending, title_has_comparison_suffix
 from app.core.editorial import entities_supported, numbers, personal_data
 from app.core.evidence_support import (
@@ -9,11 +16,12 @@ from app.core.evidence_support import (
     comparison_available,
     comparison_section_supported,
     price_conditions_supported,
+    supported_organizations,
     supported_text,
     vendor_claims_attributed,
 )
 
-POLICY_VERSION = "verification-v8"
+POLICY_VERSION = "verification-v10"
 REQUIRED_CRITERIA = frozenset(
     {
         "fact_support",
@@ -32,6 +40,10 @@ REQUIRED_CRITERIA = frozenset(
 )
 
 
+def verification_policy(package: ArticlePackageV1) -> str:
+    return POLICY_VERSION + ("+selection-v1" if package.comparison_selection is not None else "")
+
+
 def rule_criteria(
     draft: ArticleDraftV1,
     package: ArticlePackageV1,
@@ -43,13 +55,17 @@ def rule_criteria(
     allowed = supported_text(package)
     comparison = package.comparison
     support = numbers(text) <= numbers(allowed) and entities_supported(
-        text, allowed, tuple(f.value for f in package.facts if f.fact_type == "organization")
+        text, allowed, supported_organizations(package)
     )
     fact_ids = set(package.verified_fact_ids)
     support = support and all(set(p.fact_ids) <= fact_ids for p in draft.paragraph_facts)
     results = {
         "fact_support": support and table_valid,
-        "comparison_table": table_valid,
+        "comparison_table": table_valid
+        and (
+            (len(source_urls(package)) <= 1 and not table)
+            or (comparison_sections(body, package) and comparison_coverage(package).valid)
+        ),
         "title_clarity": 0 < len(draft.title) <= 60
         and not title_has_comparison_suffix(draft.title),
         "editorial_conciseness": not has_polite_ending(text + table),
@@ -76,6 +92,14 @@ def rule_criteria(
         and "<" not in text
         and (not table or not personal_data(table)),
     }
+    if package.comparison_selection is not None:
+        from app.core.article_selection import validate_selection_package
+
+        validate_selection_package(package)
+        results["comparison_conditions"] = comparison is not None and all(
+            v.conditions and v.region and (v.evidence_id is not None or v.unavailable_reason)
+            for v in (*comparison.previous_products, *comparison.competitor_products)
+        )
     results["comparison_conditions"] = results[
         "comparison_conditions"
     ] and price_conditions_supported(text, package)

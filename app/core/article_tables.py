@@ -1,10 +1,14 @@
 """Deterministic, source-numbered comparisons from verified article-package facts."""
 
 import re
+from collections.abc import Iterable
+from dataclasses import dataclass
 
 from app.contracts.article_package_v1 import ArticlePackageV1
 from app.contracts.facts_v1 import VerifiedFactV1
+from app.core.content import normalize_url
 from app.core.draft_style import plain_style
+from app.core.editorial import EditorialError
 
 UNKNOWN = "資料で確認できず"
 TABLE_ROWS = (
@@ -50,7 +54,133 @@ def fact_text(fact: VerifiedFactV1) -> str:
     return table_cell(plain_style(value))
 
 
+@dataclass(frozen=True)
+class TableCoverage:
+    source_count: int
+    required: int
+    rows: tuple[tuple[str, str, int], ...]
+    missing_products: tuple[str, ...] = ()
+
+    @property
+    def valid(self) -> bool:
+        return (
+            self.source_count >= 2
+            and bool(self.rows)
+            and not self.missing_products
+            and all(count >= self.required for _, _, count in self.rows)
+        )
+
+    @property
+    def deficient_rows(self) -> tuple[str, ...]:
+        return tuple(label for _, label, count in self.rows if count < self.required)
+
+
+def coverage_for_sources(
+    sources: Iterable[tuple[str, Iterable[VerifiedFactV1]]],
+    required_rows: Iterable[str] = (),
+) -> TableCoverage:
+    # Duplicate URLs cannot increase the denominator or the number of confirmations.
+    columns: dict[str, set[str]] = {}
+    for url, facts in sources:
+        columns.setdefault(normalize_url(url), set()).update(f.fact_type for f in facts)
+    required = len(columns) // 2 + 1
+    retained = set(required_rows)
+    rows = tuple(
+        (kind, label, sum(kind in kinds for kinds in columns.values()))
+        for kind, label in TABLE_ROWS
+        if kind in retained or any(kind in kinds for kinds in columns.values())
+    )
+    return TableCoverage(
+        len(columns),
+        required,
+        rows,
+        tuple(url for url, kinds in columns.items() if "product" not in kinds),
+    )
+
+
+def comparison_coverage(package: ArticlePackageV1) -> TableCoverage:
+    if package.comparison_selection is not None:
+        from app.core.article_selection import validate_selection_package
+
+        group = validate_selection_package(package)
+        docs = {d.item_id: d for e in group for d in e.product.documents}
+        announcements = {d.announcement_key for d in docs.values() if d.role == "announcement"}
+        rows = []
+        for question in package.comparison_selection.plan.plan.questions:
+            votes: set[str] = set()
+            for entry in group:
+                cell = next(c for c in entry.evaluation.cells if c.question_key == question.key)
+                if cell.status not in {"unknown", "incomparable"}:
+                    votes.update(
+                        docs[a.item_id].announcement_key
+                        for a in cell.evidence
+                        if docs[a.item_id].role == "announcement"
+                    )
+            rows.append((question.key, question.label, len(votes)))
+        return TableCoverage(len(announcements), len(announcements) // 2 + 1, tuple(rows))
+    allowed = set(package.verified_fact_ids)
+    return coverage_for_sources(
+        (
+            (
+                url,
+                (
+                    f
+                    for f in package.facts
+                    if f.fact_id in allowed
+                    and any(
+                        ref.url and str(ref.url) == url and f.fact_id in ref.fact_ids
+                        for ref in package.source_references
+                    )
+                ),
+            )
+            for url in source_urls(package)
+        ),
+        package.comparison_required_rows,
+    )
+
+
+def require_comparison_coverage(package: ArticlePackageV1) -> None:
+    audit = comparison_coverage(package)
+    if not audit.valid:
+        raise EditorialError(
+            "COMPARISON_ROW_MAJORITY_REQUIRED",
+            path=("comparison_table", *audit.deficient_rows),
+        )
+
+
+COMPARISON_PROSE_HEADING = "## 比較の考察"
+
+
+def comparison_sections(body: str, package: ArticlePackageV1) -> bool:
+    """Keep the table and its note separate from the comparative prose."""
+    table = render_comparison_table(package)
+    return (
+        bool(table)
+        and table_first(body, package)
+        and body.count(COMPARISON_PROSE_HEADING) == 1
+        and body.lstrip()[len(table.lstrip()) :]
+        .lstrip()
+        .startswith(COMPARISON_PROSE_HEADING + "\n\n")
+    )
+
+
+def table_first(body: str, package: ArticlePackageV1) -> bool:
+    table = render_comparison_table(package)
+    return bool(table) and body.lstrip().startswith(table.lstrip())
+
+
 def render_comparison_table(package: ArticlePackageV1) -> str:
+    if package.comparison_selection is not None:
+        from app.core.article_selection import validate_selection_package
+        from app.core.comparison_selection import render_selection_table
+
+        group = validate_selection_package(package)
+        return (
+            "\n\n## 比較表\n\n各提供元の発表資料に記載された内容を、同じ質問で整理した。\n\n"
+            + render_selection_table(package.comparison_selection.plan.plan, group)
+            + "\n\n「未記載」は非対応を意味しない。条件付き・提供予定を区別し、"
+            "発表時点の記載を比較した。性能や価格の優劣を示すものではない。"
+        )
     allowed = set(package.verified_fact_ids)
     columns: list[tuple[int, str, tuple[VerifiedFactV1, ...]]] = []
     for number, url in enumerate(source_urls(package), 1):
@@ -71,7 +201,9 @@ def render_comparison_table(package: ArticlePackageV1) -> str:
         headers.append(table_cell(" / ".join(names)) + f" [資料{number}]({url})")
     rows = []
     for kind, label in TABLE_ROWS:
-        if not any(f.fact_type == kind for _, _, facts in columns for f in facts):
+        if kind not in package.comparison_required_rows and not any(
+            f.fact_type == kind for _, _, facts in columns for f in facts
+        ):
             continue
         cells = []
         for _, _, facts in columns:

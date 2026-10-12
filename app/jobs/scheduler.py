@@ -94,7 +94,7 @@ def decorate_wordpress_drafts() -> None:
 
 def reconcile_wordpress() -> None:
     settings = get_settings()
-    if not settings.wordpress_enabled:
+    if not settings.wordpress_enabled or settings.comparison_selection_mode == "shadow":
         return
     target = wordpress_target(
         settings.wordpress_base_url, settings.wordpress_post_type, settings.wordpress_rest_base,

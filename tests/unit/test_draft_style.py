@@ -23,6 +23,14 @@ from tests.unit.test_comparison_research import prepared_root, seed_articles
         ),
         ("製品は『便利です。』と説明しています。", "製品は『便利です。』と説明している。"),
         ("「ますます便利」は製品名です。", "「ますます便利」は製品名である。"),
+        (
+            "設計します。減らします。読み取ります。実行します。",
+            "設計する。減らす。読み取る。実行する。",
+        ),
+        (
+            "使い分けます。分析します。完結させます。支援します。",
+            "使い分ける。分析する。完結させる。支援する。",
+        ),
     ],
 )
 def test_plain_style_keeps_meaning_and_literal_quotes(polite, plain):
@@ -65,3 +73,22 @@ def test_future_article_style_is_consistent_and_mixed_style_is_rejected(acquisit
     changed = dto.model_copy(update={"lead": dto.lead + "仕様を紹介します。"})
     criteria = {c.key: c.result for c in rule_criteria(changed, package)}
     assert criteria["editorial_conciseness"] == "fail"
+
+
+def test_diagnostic_table_endings_use_plain_style():
+    source = (
+        "候補を洗い出します。誤検知を取除きます。結果を報告します。"
+        "リスクを可視化します。課題を解消します。"
+    )
+    rendered = plain_style(source)
+    assert rendered == (
+        "候補を洗い出す。誤検知を取除く。結果を報告する。"
+        "リスクを可視化する。課題を解消する。"
+    )
+    assert not has_polite_ending(rendered)
+    assert plain_style("「結果を報告します。」との説明") == "「結果を報告します。」との説明"
+
+
+def test_plain_style_support_ending_keeps_quoted_source():
+    assert plain_style("運用の最適化をサポートします |") == "運用の最適化をサポートする |"
+    assert plain_style("「運用の最適化をサポートします」") == "「運用の最適化をサポートします」"

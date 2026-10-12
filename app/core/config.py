@@ -32,8 +32,19 @@ class Settings(BaseSettings):
     ai_require_distinct_models: bool = True
     ai_max_input_chars: int = Field(default=50000, ge=1000, le=200000)
     ai_max_output_tokens: int = Field(default=4000, ge=100, le=16000)
+    ai_pair_keyword_max_input_chars: int = Field(default=200000, ge=1000, le=200000)
+    ai_pair_keyword_max_output_tokens: int = Field(default=16000, ge=100, le=16000)
     ai_input_cost_per_million: float | None = Field(default=None, ge=0)
     ai_output_cost_per_million: float | None = Field(default=None, ge=0)
+    # Explicit shadow evaluation does not participate in article publication.
+    comparison_selection_mode: Literal["legacy", "shadow"] = "legacy"
+    ai_comparison_planner_model: str = ""
+    ai_comparison_assessor_model: str = ""
+    ai_comparison_verifier_model: str = ""
+    ai_embedding_model: str = ""
+    ai_embedding_revision: str = "v1"
+    comparison_min_products: int = Field(default=3, ge=2, le=9)
+    comparison_max_evaluations: int = Field(default=8, ge=1, le=20)
     comparison_auto_research: bool = True
     comparison_min_sources: int = Field(default=3, ge=1, le=21)
     research_refresh_sources: bool = True
@@ -51,9 +62,7 @@ class Settings(BaseSettings):
     wordpress_enabled: bool = False
     wordpress_base_url: str = ""
     wordpress_post_type: str = Field(default="post", pattern=r"^[a-z0-9_-]{1,20}$")
-    wordpress_rest_base: str | None = Field(
-        default=None, pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$"
-    )
+    wordpress_rest_base: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$")
     wordpress_username: str = ""
     wordpress_application_password: SecretStr | None = Field(default=None, repr=False)
     wordpress_category_map: dict[str, Annotated[int, Field(ge=1, strict=True)]] = Field(

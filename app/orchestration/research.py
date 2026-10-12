@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from itertools import combinations
 from typing import Any, cast
 from uuid import UUID
 
@@ -14,6 +15,7 @@ from app.contracts.comparison_analysis_v1 import ComparisonAnalysisV1
 from app.contracts.content_v1 import NormalizedContentV1
 from app.contracts.editorial_v1 import ResearchRequestV1
 from app.contracts.envelope import canonical_payload_hash
+from app.core.article_tables import coverage_for_sources
 from app.core.config import Settings
 from app.core.content import normalize_url
 from app.core.editorial import EditorialError
@@ -111,6 +113,7 @@ def search_catalog(
     eligible(session, target)
     _, target_evidence = service.evidence(target)
     target_topic = topic_for_item(service, target)
+    required_rows = service.retained_comparison_rows(target.id)
     rows = session.execute(
         select(Item, ExtractionResult)
         .join(Source, Source.id == Item.source_id)
@@ -159,6 +162,7 @@ def search_catalog(
     ranked.sort(key=lambda value: (-value[0], str(value[1].id)))
     checked = dict(result.get("checked_item_versions", {}))
     selected = []
+    evidence_pool = {}
     selected_urls = {normalize_url(str(target_evidence.canonical_url))}
     for rank, (score, item) in enumerate(ranked, start=1):
         revision_key = str(item.id) + ":" + str(item.version)
@@ -205,6 +209,7 @@ def search_catalog(
         if url in selected_urls:
             continue
         selected_urls.add(url)
+        evidence_pool[str(item.id)] = evidence
         selected.append(
             {
                 "item_id": str(item.id),
@@ -216,8 +221,28 @@ def search_catalog(
                 "retrieval_rank": rank,
             }
         )
-        if len(selected) >= request.max_articles:
+        if len(selected) >= max(request.max_articles, service.settings.research_max_fact_checks):
             break
+    # Select the documents jointly. A high-ranked pair can leave most cells blank.
+    # Try alternative groups; never remove a deficient comparison row from the table.
+    pool = selected
+    selected = []
+    target_source = (str(target_evidence.canonical_url), target_evidence.verified_facts)
+    for size in range(min(request.max_articles, len(pool)), 0, -1):
+        for group in combinations(pool, size):
+            audit = coverage_for_sources([
+                target_source,
+                *((str(evidence_pool[v["item_id"]].canonical_url),
+                   evidence_pool[v["item_id"]].verified_facts) for v in group),
+            ], required_rows)
+            if audit.valid:
+                selected = list(group)
+                break
+        if selected:
+            break
+    result["coverage_candidates"] = pool
+    if pool and not selected:
+        rejected.append({"item_id": str(target.id), "code": "COMPARISON_ROW_MAJORITY_REQUIRED"})
     analysis = ComparisonAnalysisV1(
         item_id=target.id,
         item_version=target.version,
@@ -389,6 +414,67 @@ def fulfill_search(
     return (), False
 
 
+def select_joint_sources(
+    service: EditorialService, evidence: Any,
+    selected: dict[str, tuple[UUID, ...]], requests: tuple[UUID, ...],
+    fixed: dict[str, tuple[UUID, ...]],
+) -> dict[str, tuple[UUID, ...]]:
+    """Previous and competitor searches must also pass as one final document group."""
+    mandatory = {(relation, key) for relation, ids in fixed.items() for key in ids}
+    pool: dict[tuple[str, UUID], dict[str, Any]] = {}
+    for request_id in requests:
+        message = service.session.get(ModuleMessage, request_id)
+        assert message is not None
+        relation = message.payload_json["relation"]
+        result = message.result_json or {}
+        for value in result.get("coverage_candidates", result.get("selected", [])):
+            pool[(relation, UUID(value["item_id"]))] = value
+    choices = sorted(set(pool) | mandatory, key=lambda pair: (pair[0], str(pair[1])))
+    target = (str(evidence.canonical_url), evidence.verified_facts)
+    required_rows = service.retained_comparison_rows(evidence.item_id)
+    verified = {}
+    for _, key in choices:
+        _, value = service.evidence(item_for_update(service.session, key))
+        verified[key] = (str(value.canonical_url), value.verified_facts)
+    available_relations = {relation for relation, _ in choices}
+    minimum = max(
+        len(mandatory), len(available_relations), service.settings.comparison_min_sources - 1
+    )
+    maximum = min(len(choices), max(minimum, 2 * (service.settings.comparison_min_sources - 1)))
+    for size in range(minimum, maximum + 1):
+        eligible_groups = []
+        for group in combinations(choices, size):
+            if (
+                not mandatory <= set(group)
+                or {relation for relation, _ in group} != available_relations
+            ):
+                continue
+            sources = [target, *(verified[key] for _, key in group)]
+            audit = coverage_for_sources(sources, required_rows)
+            if audit.source_count != len(sources) or not audit.valid:
+                continue
+            score = (len({relation for relation, _ in group}),
+                     sum(pool.get(pair, {}).get("score", 0) for pair in group))
+            eligible_groups.append((score, group))
+        if not eligible_groups:
+            continue
+        _, best = max(eligible_groups, key=lambda value: value[0])
+        chosen = {relation: tuple(key for rel, key in best if rel == relation)
+                  for relation in selected}
+        for request_id in requests:
+            message = service.session.get(ModuleMessage, request_id)
+            assert message is not None
+            relation = message.payload_json["relation"]
+            rows = [pool[(relation, key)] for key in chosen[relation]]
+            message.result_json = {**(message.result_json or {}), "selected": rows,
+                                   "joint_coverage_sources": len(best) + 1}
+            if rows:
+                message.status, message.processed_at = "processed", datetime.now(UTC)
+                message.error_json = None
+        return chosen
+    return selected
+
+
 def prepare_comparison(
     service: EditorialService,
     item_id: UUID,
@@ -426,6 +512,11 @@ def prepare_comparison(
         assert message is not None
         selected[relation], waiting = fulfill_search(service, message)
         pending = pending or waiting
+    if not pending and request_ids:
+        selected = select_joint_sources(
+            service, evidence, selected, tuple(request_ids),
+            {"previous": previous_ids, "competitor": competitor_ids},
+        )
     return ResearchPreparation(
         selected["previous"], selected["competitor"], tuple(request_ids), pending
     )

@@ -7,7 +7,7 @@ from typing import Literal
 from app.contracts.comparison_analysis_v1 import ArticleTopicV1, SelectionCheckV1
 from app.contracts.evidence_v1 import EvidencePackageV1
 
-POLICY_VERSION = "research-v3"
+POLICY_VERSION = "research-v6"
 APPLICATIONS = (
     ("介護", "見守り", "高齢者", "安否", "elderly", "caregiving"),
     ("製造", "工場", "産業", "設備", "industrial", "manufacturing"),
@@ -153,6 +153,18 @@ def topic_checks(target: ArticleTopicV1, candidate: ArticleTopicV1) -> tuple[Sel
                 explanation=explanation,
             )
         )
+    left, right = keys(target, "product_kind"), keys(candidate, "product_kind")
+    if "vehicle" in left | right:
+        checks.append(
+            SelectionCheckV1(
+                criterion="product_kind",
+                required=True,
+                result="pass" if "vehicle" in left & right else "fail",
+                target_values=tuple(sorted(left)),
+                candidate_values=tuple(sorted(right)),
+                explanation="車両のOTA機能や企業のIoT事業からソフトウェア基盤との同種性を推定しない。",
+            )
+        )
     return tuple(checks)
 
 
@@ -162,5 +174,7 @@ def topic_reasons(checks: tuple[SelectionCheckV1, ...]) -> tuple[str, ...]:
         + check.criterion.upper()
         + ("_UNCONFIRMED" if check.result == "unknown" else "_MISMATCH")
         for check in checks
-        if check.criterion in {"purpose", "environment", "function"} and check.result != "pass"
+        if check.required and check.criterion in {
+            "purpose", "environment", "function", "product_kind"
+        } and check.result != "pass"
     )

@@ -10,11 +10,21 @@ class EditorialError(Exception):
         super().__init__(code)
 
 
+class EditorialBatchError(EditorialError):
+    def __init__(self, errors: tuple[EditorialError, ...]) -> None:
+        if not errors:
+            raise ValueError("A validation batch must contain an error")
+        self.errors = errors[:20]
+        super().__init__(self.errors[0].code, path=self.errors[0].path)
+
+
 EMAIL = re.compile(r"[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}")
 PHONE = re.compile(r"(?<!\d)(?:\+81[- ]?)?0\d{1,4}[- ]\d{1,4}[- ]\d{3,4}(?!\d)")
 INJECTION = re.compile(
     r"ignore (?:all |previous |the )*(?:instructions|prompts)|system prompt|"
-    r"(?:指示|命令).{0,10}(?:無視|上書き)|(?:API|秘密|secret).{0,10}(?:キー|key|開示)",
+    r"(?:指示|命令).{0,10}(?:無視|上書き)|(?:秘密|secret).{0,10}(?:キー|key|開示)|"
+    r"API[\s_-]*(?:キー|key).{0,20}(?:開示|公開|教えて|送信して|出力して|表示して|"
+    r"exfiltrat|disclos|reveal)|(?:reveal|disclose|exfiltrate).{0,30}API[\s_-]*key",
     re.I,
 )
 NUMBER = re.compile(r"\d+(?:[,.]\d+)*(?:%|\uff05)?")

@@ -223,6 +223,7 @@ class SafeHttpClient:
         last_modified: str | None = None,
         headers: dict[str, str] | None = None,
         url_guard: Callable[[str], None] | None = None,
+        allow_not_found: bool = False,
     ) -> FetchResponse:
         # A daemon bounds DNS and slow trickle responses as well as socket operations.
         # The worker only performs GETs; it never touches the database or source cursor.
@@ -239,6 +240,7 @@ class SafeHttpClient:
                         headers=headers,
                         deadline=deadline,
                         url_guard=url_guard,
+                        allow_not_found=allow_not_found,
                     )
                 )
             except CollectionError as exc:
@@ -264,6 +266,7 @@ class SafeHttpClient:
         headers: dict[str, str] | None,
         deadline: float,
         url_guard: Callable[[str], None] | None,
+        allow_not_found: bool = False,
     ) -> FetchResponse:
         requested = str(self.policy.validate(value))
         current = requested
@@ -339,7 +342,7 @@ class SafeHttpClient:
                         attempts += 1
                         self.sleep(delay)
                         continue
-                    if status not in {200, 304}:
+                    if status not in {200, 304} and not (allow_not_found and status == 404):
                         raise CollectionError(f"HTTP_{status}")
                     try:
                         declared = int(safe_headers.get("content-length", "0"))

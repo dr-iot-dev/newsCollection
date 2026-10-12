@@ -6,7 +6,7 @@ Owns commits and uses a plain Session. Never creates or publishes an article.
 import hashlib
 import json
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import structlog
 from sqlalchemy import select
@@ -26,6 +26,7 @@ from app.modules.publication.model_disclosure import with_image_model
 from app.modules.publication.ports import PublicationPort
 from app.modules.publication.service import matches_payload, remote_hash
 from app.orchestration.editorial import item_for_update, touch
+from app.orchestration.model_disclosure import image_model_description
 
 CAPTION = "記事のテーマを表すAI生成のイメージイラストです。製品の実物写真ではありません。"
 
@@ -70,6 +71,8 @@ class FeaturedImageService:
         )
         if not settings.wordpress_enabled or not settings.featured_images_enabled:
             raise EditorialError("FEATURED_IMAGES_DISABLED")
+        if settings.comparison_selection_mode == "shadow":
+            raise EditorialError("COMPARISON_SHADOW_PUBLICATION_DISABLED")
         if port is None:
             if settings.wordpress_application_password is None:
                 raise EditorialError("WORDPRESS_CREDENTIALS_REQUIRED")
@@ -169,19 +172,69 @@ class FeaturedImageService:
         )
         self.session.commit()
 
-    def ensure(self, publication_id: UUID) -> FeaturedImage:
+    def attach_asset(
+        self, publication_id: UUID, data: bytes, *, prompt: str, model: str
+    ) -> FeaturedImage:
+        """Explicitly replace an asset; retain previous CMS media and audit metadata."""
+        if not prompt.strip() or not model.strip() or len(model) > 100:
+            raise EditorialError("FEATURED_IMAGE_PROVENANCE_REQUIRED")
+        validated = validate_image(data, self.settings.ai_image_size)
+        digest = "sha256:" + hashlib.sha256(data).hexdigest()
+        row, item, draft = self.lock(publication_id)
+        self.check_original(row, self.port.get(row.remote_post_id or ""))
+        image = self.session.scalar(
+            select(FeaturedImage).where(FeaturedImage.publication_id == row.id)
+        )
+        if image is not None and image.state == "attached" and image.content_hash == digest:
+            return image
+        previous = None
+        if image is not None:
+            if image.state not in {"attached", "skipped"}:
+                raise EditorialError("FEATURED_IMAGE_RECONCILIATION_PENDING")
+            previous = {
+                "id": str(image.id), "media_id": image.remote_media_id,
+                "content_hash": image.content_hash, "model": image.model,
+                "prompt": image.prompt, "input_hash": image.input_hash,
+            }
+            image.id = uuid4()
+        else:
+            image = FeaturedImage(publication_id=row.id, draft_id=draft.id)
+            self.session.add(image)
+        image.model, image.prompt = model, prompt
+        image.input_hash = canonical_payload_hash(
+            {"draft_hash": draft.source_block["hash"], "prompt": prompt,
+             "model": model, "size": self.settings.ai_image_size,
+             "quality": self.settings.ai_image_quality}
+        )
+        image.image_bytes, image.content_hash = data, digest
+        image.width, image.height = validated.width, validated.height
+        image.state, image.last_error = "generated", None
+        image.remote_media_id, image.remote_url = None, None
+        touch(
+            self.session, item, "image.asset_import_intent",
+            publication_id=str(row.id), previous_image=previous,
+            content_hash=digest, model=model,
+        )
+        self.session.commit()
+        return self.ensure(publication_id, prompt_override=prompt, model_override=model)
+
+    def ensure(
+        self, publication_id: UUID, *, prompt_override: str | None = None,
+        model_override: str | None = None,
+    ) -> FeaturedImage:
         row, item, draft = self.lock(publication_id)
         image = self.session.scalar(
             select(FeaturedImage).where(
                 FeaturedImage.publication_id == row.id,
             )
         )
-        prompt = image_prompt(draft)
+        prompt = prompt_override if prompt_override is not None else image_prompt(draft)
+        model = model_override if model_override is not None else self.settings.ai_image_model
         fingerprint = canonical_payload_hash(
             {
                 "draft_hash": draft.source_block["hash"],
                 "prompt": prompt,
-                "model": self.settings.ai_image_model,
+                "model": model,
                 "size": self.settings.ai_image_size,
                 "quality": self.settings.ai_image_quality,
             }
@@ -190,7 +243,7 @@ class FeaturedImageService:
             image = FeaturedImage(
                 publication_id=row.id,
                 draft_id=draft.id,
-                model=self.settings.ai_image_model,
+                model=model,
                 prompt=prompt,
                 input_hash=fingerprint,
                 state="prepared",
@@ -297,7 +350,9 @@ class FeaturedImageService:
             payload = WordPressPayloadV1.model_validate(row.payload_json).model_copy(
                 update={
                     "featured_media": int(image.remote_media_id),
-                    "content": with_image_model(row.payload_json["content"], image.model),
+                    "content": with_image_model(
+                        row.payload_json["content"], image_model_description(self.session, image)
+                    ),
                 },
             )
             post = self.port.get(row.remote_post_id or "")
@@ -354,7 +409,8 @@ def process_featured_images(
     port: PublicationPort | None = None,
     provider: ImageProvider | None = None,
 ) -> int:
-    if not settings.wordpress_enabled or not settings.featured_images_enabled:
+    if (not settings.wordpress_enabled or not settings.featured_images_enabled
+            or settings.comparison_selection_mode == "shadow"):
         return 0
     if provider is None and (settings.ai_provider != "openai" or not settings.ai_api_key):
         return 0

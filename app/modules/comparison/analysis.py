@@ -7,6 +7,36 @@ from app.contracts.facts_v1 import VerifiedFactV1
 
 FEATURES = (
     (
+        "security_diagnostic_scope", "診断するシステム・情報",
+        ("Web", "ネットワーク", "API", "ソースコード", "認証", "脆弱性"),
+    ),
+
+    ("ai_retrieval", "情報検索・参照", ("RAG", "検索", "ナレッジ", "文書", "情報源", "知識")),
+    (
+        "ai_output", "生成・分析する内容",
+        ("文章", "資料", "レポート", "要約", "分析", "コード", "返信文"),
+    ),
+    (
+        "ai_operation", "AI処理の実行方法",
+        ("AIエージェント", "AI エージェント", "自動化", "ワークフロー", "チャット", "AIが一次受付"),
+    ),
+    ("deployment", "実行・提供環境", ("クラウド", "SaaS", "オンプレミス", "エッジ")),
+    (
+        "security_controls", "防御・アクセス制御",
+        ("脆弱性", "ランサムウェア", "EDR", "XDR", "多要素認証", "アクセス制御", "ゼロトラスト"),
+    ),
+    (
+        "device_management", "機器データと運用",
+        (
+            "データ収集", "データの収集", "データを収集", "データ解析", "可視化",
+            "遠隔監視", "遠隔制御", "デバイス管理", "機器管理",
+            "設備監視", "MQTT", "HTTP", "API",
+            "現場作業データ", "現場での記録", "点検情報", "IoTデータ", "回線モニタリング",
+            "センサーデータ", "設備データ", "自動制御",
+        ),
+    ),
+
+    (
         "ai_processor",
         "AI処理チップ",
         ("Jetson AGX Orin", "Jetson Orin NX", "Jetson Orin Nano", "RZ/V2H", "Hailo-8L"),
@@ -24,7 +54,7 @@ FEATURES = (
         ),
     ),
     ("observed_signals", "観測する状態", ("心拍", "呼吸", "転倒", "在室", "動きの有無")),
-    ("communication", "通信方式", ("LoRaWAN", "LTE", "Wi-Fi", "Bluetooth", "Ethernet")),
+    ("communication", "通信方式", ("LoRaWAN", "LTE", "Wi-Fi", "Bluetooth", "Ethernet", "SIM")),
     (
         "programming_method",
         "プログラミング方法",

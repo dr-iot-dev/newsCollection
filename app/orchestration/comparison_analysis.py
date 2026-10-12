@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from app.orchestration.editorial import EditorialService
 
 SELECTION_CRITERIA = (
+    "主題の製品種別を確認し、OTA対応の車両をIoTソフトウェア基盤として比較しない。",
     "用途・利用環境・機能トピックを根拠付きで確認し、すべて共通する候補に限定する。",
     "同社旧製品は会社と公開日の前後関係、他社製品は会社の相違を確認する。",
     "単なるhardware_spec等の型一致ではなく、通信・検知等の具体的な共通比較軸を要求する。",
@@ -78,7 +79,14 @@ def record_contract(
 
 def topic_for_item(service: "EditorialService", item: Item) -> ArticleTopicV1:
     row, content = content_for_item(service, item)
-    topic = classify_topic(content, row.payload_hash)
+    products: tuple[str, ...] = ()
+    try:
+        _, evidence = service.evidence(item)
+        products = tuple(f.value for f in evidence.verified_facts if f.fact_type == "product")
+    except EditorialError as exc:
+        if exc.code != "CURRENT_FACTS_REQUIRED":
+            raise
+    topic = classify_topic(content, row.payload_hash, products)
     record_contract(service, topic, "article_topic")
     return topic
 

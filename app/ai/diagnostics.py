@@ -6,9 +6,24 @@ from typing import Any
 from pydantic import ValidationError
 
 from app.contracts.base import ContractModel
-from app.core.editorial import EditorialError
+from app.core.editorial import EditorialBatchError, EditorialError
 
 MESSAGES = {
+    "PAIR_GROUNDING_INVALID": "引用を指定資料の原文と一致させてください。",
+    "PAIR_GROUNDING_AMBIGUOUS": "引用が複数箇所にあり、位置を確定できません。",
+    "PAIR_TERM_NOT_GROUNDED": "labelかaliasを引用原文の語句と一致させてください。",
+    "PAIR_OVERLAPPING_TERMS": "同義語を別の特徴語として数えないでください。",
+    "PAIR_CATEGORY_NOT_GROUNDED": "初期資料で抽出済みの語と引用だけを選んでください。",
+    "PAIR_GENERIC_TERM": "広報定型句を特徴語へ含めないでください。",
+    "PAIR_KEYWORD_DISTINCTION_REQUIRED": (
+        "各特徴語のdistinction_reasonに、指定カテゴリ内で区別できる具体的な技術・機能・用途と"
+        "その原文根拠を説明してください。出現頻度やカテゴリ所属だけを採用理由にしないでください。"
+    ),
+    "PAIR_PRODUCT_UNGROUNDED": "製品名と提供元を同じ資料の原文で確認できません。",
+    "PAIR_UNSUPPORTED_NUMBER": "特徴の数値を引用原文で確認できません。",
+    "PAIR_CELL_COVERAGE_INVALID": "固定した全比較項目に一つずつ回答してください。",
+    "PAIR_UNKNOWN_WITH_EVIDENCE": "未記載の回答は根拠を空にしてください。",
+    "PAIR_REVIEW_AXES_INVALID": "成立した固定比較項目だけを検証結果へ含めてください。",
     "FACT_EVIDENCE_AMBIGUOUS": "根拠文が本文内の複数箇所に一致し、位置を確定できません。",
     "FACT_EVIDENCE_MISMATCH": "指定した本文範囲と根拠文が一致しません。",
     "FACT_PERSONAL_DATA": "根拠・値・主語に個人の連絡先が含まれています。",
@@ -30,8 +45,7 @@ MESSAGES = {
     ),
     "DRAFT_TITLE_REDUNDANT_SUFFIX": "タイトル末尾の「を比較」は省略してください。",
     "DRAFT_COMPARISON_SECTION_FORBIDDEN": (
-        "比較用の独立した見出しは省き、"
-        "比較を本文に組み込んでください。"
+        "比較用の独立した見出しは省き、比較を本文に組み込んでください。"
     ),
     "DRAFT_COMPARISON_CONTENT_MISSING": "比較欄が確認済みの比較データと一致しません。",
     "DRAFT_PRICE_CONDITIONS_MISSING": "補助適用後の料金から補助条件が抜けています。",
@@ -40,12 +54,104 @@ MESSAGES = {
     "DRAFT_ENTITY_UNSUPPORTED": "草稿の固有名詞を検証済み事実で確認できません。",
     "DRAFT_UNSAFE_CONTENT": "草稿に連絡先・HTML・直接記述されたURLが含まれています。",
     "VERIFIER_OUTPUT_SCOPE_INVALID": "検証対象・ポリシー・必須検証項目が一致しません。",
+    "COMPARISON_REASON_PRODUCT_MISMATCH": (
+        "reasonへ評価対象のcandidate_product_nameを明記し、"
+        "元製品と候補の役割を取り違えないでください。"
+    ),
+    "COMPARISON_GROUNDING_INVALID": (
+        "引用・範囲・事実ID・証拠IDを指定資料の原文と一致させてください。"
+    ),
+    "COMPARISON_OTHER_PRODUCT_GROUNDING": (
+        "候補自身の事実だけを採否理由とセルへ参照してください。"
+    ),
+    "COMPARISON_JUDGMENT_UNSUPPORTED_NUMBER": (
+        "分類判断へ根拠のない数値を追加しないでください。"
+        "事実IDはfact_ids配列だけに置き、説明文にIDや項目数を記載しないでください。"
+    ),
+    "COMPARISON_PLAN_PRODUCT_MISMATCH": (
+        "元製品名とその根拠を検証済みの唯一の製品事実に合わせてください。"
+    ),
+    "COMPARISON_QUESTION_SET_MISMATCH": (
+        "固定計画の全質問へ一つずつ回答し、項目を削除しないでください。"
+    ),
+    "COMPARISON_UNKNOWN_WITH_EVIDENCE": (
+        "未記載のセルは根拠を空にし、確認できる記載と区別してください。"
+    ),
+    "COMPARISON_CELL_GROUNDING_REQUIRED": (
+        "未記載以外の回答には候補自身の確認済み事実と原文根拠が必要です。"
+    ),
+    "COMPARISON_CELL_CONDITION_LOST": (
+        "引用事実の条件・地域・単位・通貨・帰属を回答またはconditionsへそのまま保持してください。"
+    ),
+    "COMPARISON_CELL_CONDITION_STATUS_INVALID": (
+        "条件がある事実を一般対応とせず、条件付き・予定・比較不能に分類してください。"
+    ),
+    "COMPARISON_CELL_QUALIFIER_UNGROUNDED": (
+        "プラン・版・地域・確認時点に原文で確認できない値を追加しないでください。"
+    ),
+    "COMPARISON_CELL_UNSUPPORTED_NUMBER": (
+        "回答とconditionsの数値は引用原文で確認できるものに限定してください。"
+    ),
+    "COMPARISON_MISSING_QUESTIONS_MISMATCH": (
+        "missing_question_keysには必須の未記載・比較不能の質問だけをすべて列挙してください。"
+    ),
+    "COMPARISON_REQUIRED_CONDITION_FAILED": (
+        "用途・役割・利用者が不適合または必須回答が不足する場合は採用可能にしないでください。"
+    ),
+    "COMPARISON_REJECTED_ROLE_REQUIRED": (
+        "用途や役割が不適合の場合は追加情報待ちではなく不適合にしてください。"
+    ),
+    "COMPARISON_REVIEW_FACT_REFERENCE_INVALID": (
+        "独立検証では選定資料群に存在する事実IDだけを参照してください。"
+    ),
+    "COMPARISON_REVIEW_GROUNDING_REQUIRED": (
+        "合格とする独立検証項目には確認した事実IDを示してください。"
+    ),
     "AI_PROVIDER_ERROR": "AIサービスが正常なHTTP応答を返しませんでした。",
     "AI_RESPONSE_TOO_LARGE": "AI応答がサイズ上限を超えました。",
     "AI_RESPONSE_INCOMPLETE": "AI応答が完了していません。",
     "AI_REFUSAL": "AIサービスが回答を拒否しました。",
     "AI_PROVIDER_INVALID_RESPONSE": "AIサービスの応答を読み取れませんでした。",
 }
+MESSAGES.update(
+    {
+        "DISCOVERY_PRODUCT_SET_MISMATCH": "入力製品ごとに採用理由を対応させてください。",
+        "DISCOVERY_FACT_REFERENCE_INVALID": "入力の検証済み事実IDだけを参照してください。",
+        "DISCOVERY_UNSUPPORTED_NUMBER": MESSAGES["COMPARISON_JUDGMENT_UNSUPPORTED_NUMBER"],
+        "DISCOVERY_OTHER_PRODUCT_GROUNDING": MESSAGES["COMPARISON_OTHER_PRODUCT_GROUNDING"],
+        "DISCOVERY_REASON_IDENTITY_REQUIRED": "採用理由に自身のproduct事実IDが必要です。",
+        "DISCOVERY_REASON_FUNCTION_REQUIRED": "採用理由に自身の機能・用途の事実IDも必要です。",
+        "DISCOVERY_REASON_PRODUCT_MISMATCH": (
+            "採用理由に、その資料自身のproduct事実のvalueにある製品名をそのまま明記してください。"
+        ),
+        "DISCOVERY_QUESTION_SUPPORT_REQUIRED": (
+            "question_supportへ全質問と全製品の組み合わせを一つずつ記載してください。"
+        ),
+        "DISCOVERY_PROPOSED_MAJOR_UNSUPPORTED": (
+            "主要項目には全製品の根拠付き回答が必要です。未記載を非対応へ変換しないでください。"
+        ),
+        "DISCOVERY_PROPOSED_MAJORITY_UNSUPPORTED": (
+            "表示項目には異なる二つ以上の主発表の根拠付き回答が必要です。"
+        ),
+        "DISCOVERY_REASON_UNSUPPORTED_NUMBER": MESSAGES["COMPARISON_JUDGMENT_UNSUPPORTED_NUMBER"],
+        "DISCOVERY_HYPOTHESIS_BUDGET_EXCEEDED": "仮説数上限を守ってください。",
+        "DISCOVERY_QUESTION_SET_MISMATCH": MESSAGES["COMPARISON_QUESTION_SET_MISMATCH"],
+        "DISCOVERY_UNKNOWN_WITH_EVIDENCE": MESSAGES["COMPARISON_UNKNOWN_WITH_EVIDENCE"],
+        "DISCOVERY_CELL_GROUNDING_REQUIRED": MESSAGES["COMPARISON_CELL_GROUNDING_REQUIRED"],
+        "DISCOVERY_CELL_UNSUPPORTED_NUMBER": MESSAGES["COMPARISON_CELL_UNSUPPORTED_NUMBER"],
+        "DISCOVERY_CELL_QUALIFIER_UNGROUNDED": MESSAGES["COMPARISON_CELL_QUALIFIER_UNGROUNDED"],
+        "DISCOVERY_CELL_CONDITION_LOST": MESSAGES["COMPARISON_CELL_CONDITION_LOST"],
+        "DISCOVERY_CELL_CONDITION_STATUS_INVALID": MESSAGES[
+            "COMPARISON_CELL_CONDITION_STATUS_INVALID"
+        ],
+        "DISCOVERY_MISSING_QUESTIONS_MISMATCH": MESSAGES["COMPARISON_MISSING_QUESTIONS_MISMATCH"],
+        "DISCOVERY_REQUIRED_CONDITION_FAILED": MESSAGES["COMPARISON_REQUIRED_CONDITION_FAILED"],
+        "DISCOVERY_REJECTED_ROLE_REQUIRED": MESSAGES["COMPARISON_REJECTED_ROLE_REQUIRED"],
+        "DISCOVERY_REVIEW_REFERENCE_INVALID": MESSAGES["COMPARISON_REVIEW_FACT_REFERENCE_INVALID"],
+        "DISCOVERY_REVIEW_GROUNDING_REQUIRED": MESSAGES["COMPARISON_REVIEW_GROUNDING_REQUIRED"],
+    }
+)
+
 SCHEMA_MESSAGES = {
     "missing": "必須項目がありません。",
     "extra_forbidden": "許可されていない項目があります。",
@@ -74,6 +180,12 @@ def validation_diagnostics(
     model_type: type[ContractModel],
     attempt: int,
 ) -> list[dict[str, Any]]:
+    if isinstance(exc, EditorialBatchError):
+        return [
+            diagnostic
+            for error in exc.errors
+            for diagnostic in validation_diagnostics(error, model_type, attempt)
+        ][:20]
     fields: set[str] = set()
 
     def collect(node: Any) -> None:

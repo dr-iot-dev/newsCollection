@@ -6,6 +6,18 @@ from bs4 import BeautifulSoup, Tag
 
 HEADING = "使用したAIモデル"
 IMAGE_STAGE = "画像生成"
+OBSOLETE_NOTE = (
+    "モデル名は記事に紐づく実行記録に基づく。"
+    "AI検証は正確性や権利上の問題がないことを保証するものではない。"
+)
+
+
+def remove_obsolete_note(content: str) -> str:
+    soup = BeautifulSoup(content, "html.parser")
+    for paragraph in list(soup.find_all("p")):
+        if paragraph.get_text(strip=True) == OBSOLETE_NOTE:
+            paragraph.decompose()
+    return str(soup)
 
 
 def append_model_disclosure(content: str, stages: list[tuple[str, str]]) -> str:
@@ -26,17 +38,14 @@ def append_model_disclosure(content: str, stages: list[tuple[str, str]]) -> str:
         + HEADING
         + "</h2><ul>"
         + "".join(f"<li>{escape(stage)}: {escape(value)}</li>" for stage, value in stages)
-        + (
-            "</ul><p>モデル名は記事に紐づく実行記録に基づく。"
-            "AI検証は正確性や権利上の問題がないことを保証するものではない。</p>"
-        )
+        + "</ul>"
     )
     return str(soup).rstrip() + "\n" + section
 
 
 def with_image_model(content: str, model: str) -> str:
     """Add the actual generated image model without replacing article text."""
-    soup = BeautifulSoup(content, "html.parser")
+    soup = BeautifulSoup(remove_obsolete_note(content), "html.parser")
     heading = next(
         (h for h in soup.find_all("h2", recursive=False) if h.get_text(strip=True) == HEADING), None
     )

@@ -1,4 +1,4 @@
-"""Stable, category-wide art direction for new editorial featured images."""
+"""Subtle category backgrounds with naturally colored editorial subjects."""
 
 import colorsys
 import hashlib
@@ -15,33 +15,33 @@ class ImageStyle:
 
 CATEGORY_STYLES = {
     "generative_ai": ImageStyle(
-        "lavender #D8C2F0",
+        "pale lavender #F3EDF9",
         "violet and plum #6935A2",
-        "soft violet ambient light",
+        "neutral daylight without a color cast",
         "subtle flowing translucent layers",
     ),
     "edge_ai": ImageStyle(
-        "peach #F7D2AA",
+        "pale peach #FCF2E8",
         "burnt orange and terracotta #BE5B1C",
-        "warm amber directional light",
+        "neutral daylight without a color cast",
         "subtle angular layered planes",
     ),
     "iot_platform": ImageStyle(
-        "sky blue #BFD9F1",
+        "pale sky blue #EDF5FB",
         "ocean blue #246DAB",
-        "clear cool blue ambient light",
+        "neutral daylight without a color cast",
         "subtle connected circular ripples",
     ),
     "security": ImageStyle(
-        "sage green #BCDCC4",
+        "pale sage green #EFF7F1",
         "forest green #296645",
-        "soft green ambient light",
+        "neutral daylight without a color cast",
         "subtle enclosing curved layers",
     ),
     "standards": ImageStyle(
-        "warm stone gray #D1CDC4",
+        "pale warm stone gray #F5F3EF",
         "neutral graphite #555453",
-        "neutral daylight without a blue cast",
+        "neutral daylight without a color cast",
         "subtle orderly grid and aligned planes",
     ),
 }
@@ -50,7 +50,7 @@ CATEGORY_STYLES = {
 def image_style(category: str) -> ImageStyle:
     if category in CATEGORY_STYLES:
         return CATEGORY_STYLES[category]
-    # New category keys receive a repeatable whole-image palette, never the old blue default.
+    # New category keys receive a repeatable subtle background palette, never the old blue default.
     hue = int.from_bytes(hashlib.sha256(category.encode()).digest()[:4], "big") % 360 / 360
 
     def color(lightness: float, saturation: float) -> str:
@@ -58,9 +58,9 @@ def image_style(category: str) -> ImageStyle:
         return "#" + "".join(f"{round(channel * 255):02X}" for channel in rgb)
 
     return ImageStyle(
-        color(0.79, 0.55),
-        color(0.39, 0.65),
-        "ambient light tinted to the dominant palette",
+        color(0.96, 0.20),
+        color(0.60, 0.25),
+        "neutral daylight without a color cast",
         "subtle layered geometric texture",
     )
 
@@ -68,15 +68,14 @@ def image_style(category: str) -> ImageStyle:
 def category_art_direction(category: str) -> str:
     style = image_style(category)
     return (
-        "Category art direction policy: category-colors-v1. "
-        f"Use a {style.background} background and a {style.dominant} dominant palette. "
+        "Category art direction policy: category-colors-v2. "
+        f"Use a very light, low-saturation {style.background} tint only in the background. "
+        f"The category accent {style.dominant} may appear sparingly in background decoration. "
         f"Lighting: {style.lighting}. Background texture: {style.texture}. "
-        "Make the category recognizable from the WHOLE image even at thumbnail size. "
-        "Apply this palette to the broad backdrop, scene surfaces, shadows and ambient lighting; "
-        "at least 70 percent of the visible image must read as this palette. "
-        "Do not limit the category color to a small badge, border, icon or tiny accent. "
-        "Keep objects legible with restrained neutral details; competing hues occupy at most "
-        "10 percent of the image. Avoid a generic blue/teal technology look unless the selected "
-        "category is iot_platform. Background textures stay abstract and secondary to the "
-        "actual article theme; do not add unrelated objects or category logos. "
+        "Keep foreground people and objects in natural colors: realistic skin, hair, clothing, "
+        "neutral silver or charcoal equipment, and varied material colors. "
+        "Never apply the category tint to people, foreground surfaces, shadows or scene lighting. "
+        "Do not use a monochrome palette or an overall color cast. "
+        "The background stays quiet and secondary to the article theme. "
+        "Do not add unrelated objects or category logos. "
     )

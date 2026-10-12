@@ -16,6 +16,7 @@ from app.ai.runner import AIRunner
 from app.contracts.article_package_v1 import ArticlePackageV1, SourceReferenceV1
 from app.contracts.base import ContractModel
 from app.contracts.candidate_v1 import CandidateDecisionV1
+from app.contracts.comparison_selection_v1 import ComparisonSelectionAuditV1
 from app.contracts.content_v1 import NormalizedContentV1
 from app.contracts.draft_v1 import ArticleDraftV1, ParagraphFactMapV1
 from app.contracts.editorial_v1 import (
@@ -26,23 +27,32 @@ from app.contracts.editorial_v1 import (
 )
 from app.contracts.envelope import ContractEnvelope, canonical_payload_hash
 from app.contracts.evidence_v1 import EvidencePackageV1, FactReferenceV1
-from app.contracts.facts_v1 import FactsOutputV1, VerifiedFactV1
+from app.contracts.facts_v1 import FactKind, FactsOutputV1, VerifiedFactV1
 from app.contracts.verification_v1 import (
     CriterionResult,
     VerificationCriterionV1,
     VerificationReportV1,
 )
-from app.core.article_tables import comparison_prose, render_comparison_table, render_source_list
+from app.core.article_tables import (
+    COMPARISON_PROSE_HEADING,
+    TABLE_ROWS,
+    comparison_coverage,
+    comparison_prose,
+    render_comparison_table,
+    render_source_list,
+    require_comparison_coverage,
+)
 from app.core.config import Settings
 from app.core.content import normalize_url
 from app.core.editorial import INJECTION, EditorialError, numbers, redact_contacts
-from app.core.evidence_support import supported_text
+from app.core.evidence_support import supported_organizations, supported_text
 from app.infrastructure.db.models import (
     AiRun,
     ArticleDraft,
     ArticlePackage,
     CandidateDecision,
     ComparisonDataset,
+    DuplicateDecision,
     EvidencePackage,
     ExtractionResult,
     Fact,
@@ -50,6 +60,7 @@ from app.infrastructure.db.models import (
     ItemStatus,
     LegalStatus,
     ModuleMessage,
+    Publication,
     Review,
     Source,
     VerificationRun,
@@ -69,8 +80,7 @@ from app.modules.extraction.facts import (
 from app.modules.review.service import validate_checklist
 from app.modules.selection.service import POLICY_VERSION as SELECTION_POLICY
 from app.modules.selection.service import rule_selection
-from app.modules.verification.service import POLICY_VERSION as VERIFICATION_POLICY
-from app.modules.verification.service import REQUIRED_CRITERIA, rule_criteria
+from app.modules.verification.service import REQUIRED_CRITERIA, rule_criteria, verification_policy
 from app.modules.writing.service import POLICY_VERSION as WRITING_POLICY
 from app.modules.writing.service import normalize_writing_style, render_comparison, validate_writing
 from app.orchestration.phase2 import lock_item
@@ -164,7 +174,11 @@ class EditorialService:
         )
 
     def facts(
-        self, item_id: UUID, mode: Literal["rules", "ai"] = "rules"
+        self,
+        item_id: UUID,
+        mode: Literal["rules", "ai"] = "rules",
+        *,
+        manual: FactsOutputV1 | None = None,
     ) -> EvidencePackage | None:
         item = item_for_update(self.session, item_id)
         eligible(self.session, item)
@@ -189,8 +203,11 @@ class EditorialService:
         from app.orchestration.comparison_analysis import topic_for_item
 
         topic_for_item(self, item)
+        if manual is not None:
+            validate_facts(content, manual)
         identity = canonical_payload_hash(
             {
+                "manual": manual.model_dump(mode="json") if manual is not None else None,
                 "extraction": extracted.payload_hash,
                 "mode": mode,
                 "profile": self.runner.profile("facts").fingerprint
@@ -211,9 +228,28 @@ class EditorialService:
             latest(self.session, EvidencePackage, item.id) is None
             and item.status != ItemStatus.DEDUPED
         ):
-            raise EditorialError("DEDUPLICATION_REQUIRED")
+            decisions = list(
+                self.session.scalars(
+                    select(DuplicateDecision).where(
+                        DuplicateDecision.item_id == item.id,
+                        DuplicateDecision.revision == item.version,
+                    )
+                )
+            )
+            # A failed first extraction changes the state to REVIEW_PENDING.
+            # Resume only a completed, unambiguous deduplication of this version;
+            # source rights, quality and injection checks have already run above.
+            if (
+                item.status != ItemStatus.REVIEW_PENDING
+                or not decisions
+                or any(row.decision != "separate" for row in decisions)
+            ):
+                raise EditorialError("DEDUPLICATION_REQUIRED")
         run_id = None
-        if mode == "ai":
+        output: FactsOutputV1 | None
+        if manual is not None:
+            output = manual
+        elif mode == "ai":
             omitted: tuple[EditorialError, ...] = ()
             normalize_attempt = 0
 
@@ -304,7 +340,7 @@ class EditorialService:
                 evidence_end=value.evidence_end,
                 source_url=str(content.canonical_url),
                 confidence=Decimal(str(value.confidence)),
-                extractor=mode,
+                extractor="manual" if manual is not None else mode,
             )
             self.session.add(fact)
             safe = {
@@ -397,6 +433,8 @@ class EditorialService:
             policy_version=SELECTION_POLICY,
             ai_run_id=run_id,
             input_hash=identity,
+            # SQLite CURRENT_TIMESTAMP has second precision; preserve decision order.
+            created_at=datetime.now(UTC),
         )
         self.session.add(record)
         self.session.flush()
@@ -424,6 +462,13 @@ class EditorialService:
         )
         return record
 
+    def retained_comparison_rows(self, item_id: UUID) -> tuple[FactKind, ...]:
+        existing = latest(self.session, ArticlePackage, item_id)
+        if existing is None:
+            return ()
+        previous = checked_payload(existing, ArticlePackageV1)
+        return tuple(cast(FactKind, kind) for kind, _, _ in comparison_coverage(previous).rows)
+
     def comparison(
         self,
         item_id: UUID,
@@ -431,7 +476,13 @@ class EditorialService:
         competitor_ids: tuple[UUID, ...] = (),
         *,
         request_missing: bool = True,
+        required_rows: tuple[FactKind, ...] = (),
+        selection_audit: ComparisonSelectionAuditV1 | None = None,
     ) -> ArticlePackage:
+        if selection_audit is not None:
+            from app.core.article_selection import selection_group
+
+            selection_group(selection_audit)
         item = item_for_update(self.session, item_id)
         eligible(self.session, item)
         evidence_row, evidence = self.evidence(item)
@@ -482,10 +533,26 @@ class EditorialService:
                         fact_ids=tuple(f.fact_id for f in other_evidence.verified_facts),
                     )
                 )
+        # Keep every existing comparison axis when selecting replacement documents.
+        required_rows = tuple(
+            dict.fromkeys(
+                (
+                    *self.retained_comparison_rows(item.id),
+                    *required_rows,
+                    *(
+                        cast(FactKind, kind)
+                        for kind, _ in TABLE_ROWS
+                        if any(f.fact_type == kind for f in all_facts)
+                    ),
+                )
+            )
+        )
         from app.modules.research.service import POLICY_VERSION as RESEARCH_POLICY
         from app.orchestration.comparison_analysis import analysis_for_items
 
-        analysis = analysis_for_items(self, item, previous_ids, competitor_ids, enforce=True)
+        analysis = analysis_for_items(
+            self, item, previous_ids, competitor_ids, enforce=selection_audit is None
+        )
         identity = canonical_payload_hash(
             {
                 "candidate": str(candidate.id),
@@ -493,8 +560,14 @@ class EditorialService:
                 "previous": [str(i) for i in previous_ids],
                 "competitor": [str(i) for i in competitor_ids],
                 "policy": WRITING_POLICY,
+                "required_rows": required_rows,
                 "research_policy": RESEARCH_POLICY,
                 "analysis": canonical_payload_hash(analysis.model_dump(mode="json")),
+                **(
+                    {"selection_audit": selection_audit.model_dump(mode="json")}
+                    if selection_audit
+                    else {}
+                ),
             }
         )
         existing = latest(self.session, ArticlePackage, item.id)
@@ -530,10 +603,13 @@ class EditorialService:
             verified_fact_ids=tuple(f.fact_id for f in all_facts),
             comparison_dataset_id=dataset.id,
             comparison=comparison,
+            comparison_selection=selection_audit,
             source_references=tuple(references),
             uncertainties=evidence.uncertainties,
+            comparison_required_rows=required_rows,
             writing_policy_version=WRITING_POLICY,
         )
+        self.validate_article_selection(package)
         result = ArticlePackage(
             item_id=item.id,
             revision=revision,
@@ -603,7 +679,91 @@ class EditorialService:
             current = latest(self.session, EvidencePackage, parent.id)
             if current is None or current.id != fact.evidence_package_id:
                 raise EditorialError("COMPARISON_FACTS_STALE")
+        self.validate_article_selection(package)
         return row, package
+
+    def validate_article_selection(self, package: ArticlePackageV1) -> None:
+        audit = package.comparison_selection
+        if audit is None:
+            return
+        from app.contracts.comparison_selection_ai_v1 import (
+            CandidateSuitabilityAIOutputV1,
+            ComparisonPlanAIOutputV1,
+        )
+        from app.core.article_selection import validate_selection_package
+        from app.core.comparison_selection import (
+            bind_candidate,
+            bind_plan,
+            excluded,
+            group_issues,
+            primary_product,
+            validate_candidate,
+            validate_independent,
+            validate_plan,
+        )
+        from app.orchestration.comparison_selection import ComparisonSelectionService
+
+        group = validate_selection_package(package)
+        if group_issues(
+            audit.plan.plan,
+            group,
+            max(audit.minimum_products, self.settings.comparison_min_products),
+            max(audit.minimum_sources, self.settings.comparison_min_sources),
+        ):
+            raise EditorialError("ARTICLE_SELECTION_NOT_APPROVED")
+        saved = self.session.scalar(
+            select(ModuleMessage).where(
+                ModuleMessage.consumer == "comparison_selection_audit",
+                ModuleMessage.payload_hash == canonical_payload_hash(audit.model_dump(mode="json")),
+                ModuleMessage.status == "processed",
+            )
+        )
+        if saved is None or saved.payload_json != audit.model_dump(mode="json"):
+            raise EditorialError("ARTICLE_SELECTION_RECORD_REQUIRED")
+        service = ComparisonSelectionService(self.session, self.settings)
+        sources = {d.item_id: service.source(d.item_id) for e in group for d in e.product.documents}
+        target = sources[package.item_id]
+        validate_plan(audit.plan.plan, target)
+        runs = [self.session.get(AiRun, audit.plan.ai_run_id)]
+        for entry in group:
+            for doc in entry.product.documents:
+                if doc != sources[doc.item_id].document or excluded(
+                    sources[doc.item_id], audit.exclusion_baseline
+                ):
+                    raise EditorialError("ARTICLE_SELECTION_STALE")
+            source = sources[entry.product.documents[0].item_id]
+            if primary_product(source) != entry.product:
+                raise EditorialError("ARTICLE_SELECTION_SOURCE_MISMATCH")
+            validate_candidate(entry.evaluation, audit.plan.plan, entry.product, sources)
+            run = self.session.get(AiRun, entry.ai_run_id)
+            if (
+                run is None
+                or run.validation_status != "valid"
+                or run.execution_role != "comparison_assess"
+                or bind_candidate(
+                    CandidateSuitabilityAIOutputV1.model_validate(run.output_json), source
+                )
+                != entry.evaluation
+            ):
+                raise EditorialError("ARTICLE_SELECTION_AI_RECORD_INVALID")
+            runs.append(run)
+        plan_run = runs[0]
+        independent = self.session.get(AiRun, audit.independent_ai_run_id)
+        if (
+            plan_run is None
+            or plan_run.validation_status != "valid"
+            or plan_run.execution_role != "comparison_plan"
+            or bind_plan(ComparisonPlanAIOutputV1.model_validate(plan_run.output_json), target)
+            != audit.plan.plan
+            or independent is None
+            or independent.validation_status != "valid"
+            or independent.execution_role != "comparison_verify"
+            or audit.independent is None
+            or independent.output_json != audit.independent.model_dump(mode="json")
+            or any(run is None or run.model == independent.model for run in runs)
+        ):
+            raise EditorialError("ARTICLE_SELECTION_AI_RECORD_INVALID")
+        validate_independent(audit.independent, group, sources)
 
     def validate_source_count(self, package: ArticlePackageV1) -> None:
         verified = set(package.verified_fact_ids)
@@ -614,8 +774,17 @@ class EditorialService:
         }
         if len(urls) < self.settings.comparison_min_sources:
             raise EditorialError("COMPARISON_MIN_SOURCES_REQUIRED")
+        if len(urls) > 1:
+            require_comparison_coverage(package)
 
-    def draft(self, item_id: UUID, manual: WritingOutputV1 | None = None) -> ArticleDraft | None:
+    def draft(
+        self,
+        item_id: UUID,
+        manual: WritingOutputV1 | None = None,
+        *,
+        revise_failed: bool = False,
+        revision_reason: str | None = None,
+    ) -> ArticleDraft | None:
         item = item_for_update(self.session, item_id)
         eligible(self.session, item)
         if item.status in {ItemStatus.REJECTED, ItemStatus.BLOCKED_RIGHTS, ItemStatus.PUBLISHED}:
@@ -626,8 +795,57 @@ class EditorialService:
             manual = normalize_writing_style(manual)
             validate_writing(manual, package)
         claim = claim_source_set(self.session, "writing", package, item.id)
-        if claim.item_id != item.id or (manual is None and claim.draft_id is not None):
+        if claim.item_id != item.id:
             raise EditorialError("DRAFT_SOURCE_SET_DUPLICATE")
+        failed_verification = None
+        prior = latest(self.session, ArticleDraft, item.id)
+        if manual is None and claim.draft_id is not None:
+            if revision_reason:
+                publications = list(
+                    self.session.scalars(select(Publication).where(Publication.item_id == item.id))
+                )
+                if (
+                    prior is None
+                    or prior.id != claim.draft_id
+                    or any(p.state not in {"drafted", "superseded"} for p in publications)
+                ):
+                    raise EditorialError("DRAFT_REVISION_NOT_ALLOWED")
+                touch(
+                    self.session,
+                    item,
+                    "draft.revision_requested",
+                    self.actor_id,
+                    reason=revision_reason,
+                    previous_draft_id=str(prior.id),
+                )
+            elif not revise_failed:
+                raise EditorialError("DRAFT_SOURCE_SET_DUPLICATE")
+            if prior is not None:
+                failed_verification = self.session.scalars(
+                    select(VerificationRun)
+                    .where(VerificationRun.draft_id == prior.id)
+                    .order_by(VerificationRun.verified_at.desc(), VerificationRun.id.desc())
+                ).first()
+            if (
+                revision_reason
+                and failed_verification is not None
+                and (failed_verification.overall_result not in {"fail", "error"})
+            ):
+                failed_verification = None
+            if not revision_reason and (
+                prior is None
+                or prior.id != claim.draft_id
+                or item.status
+                not in {
+                    ItemStatus.VERIFICATION_FAILED,
+                    ItemStatus.COMPARISON_READY,
+                }
+                or failed_verification is None
+                or failed_verification.overall_result not in {"fail", "error"}
+                or self.session.scalar(select(Publication.id).where(Publication.item_id == item.id))
+                is not None
+            ):
+                raise EditorialError("DRAFT_REVISION_NOT_ALLOWED")
         output: WritingOutputV1 | None
         if manual is not None:
             output, run_id = manual, None
@@ -639,8 +857,22 @@ class EditorialService:
                 "allowed_entities": sorted(
                     set(re.findall(r"(?<![A-Za-z0-9_-])[A-Z][A-Za-z0-9_-]{2,}", supported))
                     | {f.value for f in package.facts if f.fact_type in {"organization", "product"}}
+                    | set(supported_organizations(package))
                 ),
             }
+            if failed_verification is not None and prior is not None:
+                data["revision_feedback"] = {
+                    "previous_title": prior.title,
+                    "previous_lead": prior.lead,
+                    "previous_body": prior.body_markdown.split("## 比較表", 1)[0][:8000],
+                    "blocking_issues": failed_verification.blocking_issues_json,
+                    "criteria": [
+                        c for c in failed_verification.criteria_json if c["result"] != "pass"
+                    ],
+                    "instruction": "Revise the failed prose using only the current package facts. "
+                    "Address all failed criteria, paraphrase long source expressions, "
+                    "and identify each comparison product only once. Do not change facts.",
+                }
             try:
                 output, run_id = self.runner.run(
                     "writer",
@@ -664,9 +896,11 @@ class EditorialService:
         prior = latest(self.session, ArticleDraft, item.id)
         revision = (prior.revision if prior else 0) + 1
         sources = render_source_list(package)
-        body = "\n\n".join(p.text for p in output.paragraphs)
+        body = render_comparison_table(package)
+        if body:
+            body += "\n\n" + COMPARISON_PROSE_HEADING
+        body += "\n\n" + "\n\n".join(p.text for p in output.paragraphs)
         body += render_comparison(output, package)
-        body += render_comparison_table(package)
         body += "\n\n## 出典\n\n" + sources
         draft_id = uuid4()
         payload = ArticleDraftV1(
@@ -765,21 +999,22 @@ class EditorialService:
                 writer_run is not None and writer_run.model == self.runner.profile("verifier").model
             ):
                 raise EditorialError("AI_MODELS_MUST_BE_DISTINCT")
+        current_policy = verification_policy(package)
         data = {
             "draft": dto.model_dump(mode="json"),
             "package": package.model_dump(mode="json"),
             "required_criteria": sorted(REQUIRED_CRITERIA),
             "verifier_profile_key": self.runner.profile("verifier").key,
             "verification_id": str(uuid4()),
-            "policy_version": VERIFICATION_POLICY,
-            "policy": VERIFICATION_POLICY,
+            "policy_version": current_policy,
+            "policy": current_policy,
         }
 
         def validate(report: VerificationReportV1) -> None:
             for field, expected in (
                 ("draft_id", dto.draft_id),
                 ("article_package_id", row.id),
-                ("policy_version", VERIFICATION_POLICY),
+                ("policy_version", current_policy),
                 ("verifier_profile_key", self.runner.profile("verifier").key),
             ):
                 if getattr(report, field) != expected:
@@ -821,7 +1056,7 @@ class EditorialService:
             item_id=item.id,
             draft_id=draft.id,
             ai_run_id=run_id,
-            policy_version=VERIFICATION_POLICY,
+            policy_version=current_policy,
             input_hash=canonical_payload_hash(data),
             overall_result=overall,
             criteria_json=[c.model_dump(mode="json") for c in criteria.values()],
@@ -905,7 +1140,7 @@ class EditorialService:
             ArticleDraftV1.model_validate(draft.source_block["draft"]).model_dump(mode="json")
         )
         if (
-            verification.policy_version != VERIFICATION_POLICY
+            verification.policy_version != verification_policy(package)
             or meta.get("require_distinct_models") != self.settings.ai_require_distinct_models
             or meta["verifier_fingerprint"] != self.runner.profile("verifier").fingerprint
             or meta["draft_hash"] != current_hash

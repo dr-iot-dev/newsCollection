@@ -24,6 +24,26 @@ def client(handler: object, *, hosts: list[str] | None = None, limit: int = 1024
     )
 
 
+def test_not_found_response_requires_explicit_opt_in_and_preserves_status_and_body():
+    http = client(lambda request: httpx.Response(404, text="Document not found"))
+    try:
+        with pytest.raises(CollectionError, match="HTTP_404"):
+            http.get("https://news.example/search")
+        response = http.get("https://news.example/search", allow_not_found=True)
+        assert response.status_code == 404 and response.body == b"Document not found"
+    finally:
+        http.close()
+
+
+def test_opt_in_not_found_response_still_enforces_body_limit():
+    http = client(lambda request: httpx.Response(404, content=b"x" * 1025))
+    try:
+        with pytest.raises(CollectionError, match="RESPONSE_TOO_LARGE"):
+            http.get("https://news.example/search", allow_not_found=True)
+    finally:
+        http.close()
+
+
 @pytest.mark.parametrize(
     "url",
     [

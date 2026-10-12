@@ -37,6 +37,11 @@ class ResearchRequestV1(ContractModel):
     item_version: int = Field(ge=1)
     relation: Literal["previous", "competitor"]
     query: str
+    comparison_plan_id: UUID | None = None
+    search_queries: tuple[str, ...] = ()
+    missing_question_keys: tuple[str, ...] = ()
+    exclusion_baseline_id: UUID | None = None
+    exclusion_scope: Literal["none", "batch", "global"] = "none"
     approved_source_keys: tuple[str, ...]
     evidence_package_id: UUID | None = None
     evidence_hash: str | None = None

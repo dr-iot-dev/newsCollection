@@ -54,7 +54,7 @@ from app.orchestration.editorial import (
     latest,
     touch,
 )
-from app.orchestration.model_disclosure import article_model_stages
+from app.orchestration.model_disclosure import article_model_stages, image_model_description
 from app.orchestration.source_sets import claim_source_set, package_source_set
 
 
@@ -68,6 +68,8 @@ class PublicationService:
         self.session, self.settings = session, settings
         if not settings.wordpress_enabled:
             raise EditorialError("WORDPRESS_DISABLED", 503)
+        if settings.comparison_selection_mode == "shadow":
+            raise EditorialError("COMPARISON_SHADOW_PUBLICATION_DISABLED")
         self.base_url = validate_base_url(settings.wordpress_base_url)
         self.target = wordpress_target(
             self.base_url,
@@ -190,7 +192,9 @@ class PublicationService:
             payload = payload.model_copy(
                 update={
                     "featured_media": int(image.remote_media_id),
-                    "content": with_image_model(payload.content, image.model),
+                    "content": with_image_model(
+                        payload.content, image_model_description(self.session, image)
+                    ),
                 }
             )
         approval_id = review.id
@@ -658,7 +662,8 @@ def process_verified_publications(
     port: PublicationPort | None = None,
 ) -> int:
     """Send AI-verified drafts using a plain Session; create_draft owns its commits."""
-    if not settings.wordpress_enabled or settings.review_required:
+    if (not settings.wordpress_enabled or settings.review_required
+            or settings.comparison_selection_mode == "shadow"):
         return 0
     service = PublicationService(session, settings, port)
     item_ids = list(

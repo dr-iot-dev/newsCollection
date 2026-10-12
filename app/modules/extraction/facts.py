@@ -166,6 +166,16 @@ def validate_facts(content: NormalizedContentV1, output: FactsOutputV1) -> None:
         if fact.date_precision is None and not numbers(fact.value) <= numbers(evidence):
             raise EditorialError("FACT_NUMBER_UNSUPPORTED", path=("facts", index, "value"))
         if fact.date_precision is not None:
+            context_start = content.body.rfind("\n", 0, fact.evidence_start) + 1
+            context_end = content.body.find("\n", fact.evidence_end)
+            context = content.body[context_start : context_end if context_end >= 0 else None]
+            if re.search(
+                r"設立|創業|創立|[Ff]ounded|[Ee]stablished|"
+                r"(?:公式|[Ww][Ee][Bb])サイト.{0,30}(?:開設|公開)|"
+                r"(?:登録|予約).{0,15}受付",
+                context,
+            ):
+                raise EditorialError("FACT_DATE_CONTEXT_UNSUPPORTED", path=("facts", index))
             parts = re.fullmatch(r"(\d{4})年(?:(\d{1,2})月)?(?:(\d{1,2})日)?", evidence)
             iso = re.fullmatch(r"(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?", evidence)
             parts = parts or iso

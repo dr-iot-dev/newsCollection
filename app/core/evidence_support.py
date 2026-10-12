@@ -92,3 +92,12 @@ def vendor_claims_attributed(text: str) -> bool:
         ):
             return False
     return True
+
+
+def supported_organizations(package: ArticlePackageV1) -> tuple[str, ...]:
+    # Case-study customers are legitimate named subjects, not product providers.
+    return tuple(dict.fromkeys(
+        f.value if f.fact_type == "organization" else f.subject
+        for f in package.facts
+        if f.fact_type == "organization" or f.subject.endswith(("株式会社", "合同会社"))
+    ))

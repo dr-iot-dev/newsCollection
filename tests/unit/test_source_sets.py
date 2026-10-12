@@ -318,3 +318,83 @@ def test_concurrent_rotated_sends_create_one_cms_post(acquisition_session):
     assert results.count("WORDPRESS_SOURCE_SET_DUPLICATE") == 1
     assert len(cms.posts) == len(cms.writes) == 1
     assert len(session.scalars(select(Publication)).all()) == 1
+
+
+def test_explicit_ai_revision_preserves_claim_and_failed_history(acquisition_session):
+    from app.infrastructure.db.models import ItemStatus, VerificationRun
+
+    session = acquisition_session
+    articles, service = three_articles(session)
+    item = articles[0]
+    first = service.draft(item.id)
+    verification = service.verify(first.id)
+    verification.overall_result = "fail"
+    verification.blocking_issues_json = ["original_expression"]
+    item.status = ItemStatus.VERIFICATION_FAILED
+    session.commit()
+    revised = service.draft(item.id, revise_failed=True)
+    assert revised.revision == first.revision + 1
+    assert revised.created_by_type == "ai" and revised.ai_run_id is not None
+    claim = session.scalars(select(SourceSetClaim)).one()
+    assert claim.item_id == item.id and claim.draft_id == revised.id
+    assert session.get(VerificationRun, verification.id).overall_result == "fail"
+    assert service.runner.provider.calls[-1][1]["revision_feedback"]["blocking_issues"] == [
+        "original_expression"
+    ]
+    other = rotated(session, articles)
+    with pytest.raises(EditorialError, match="DRAFT_SOURCE_SET_DUPLICATE"):
+        other.draft(articles[1].id, revise_failed=True)
+
+
+def test_ai_revision_does_not_regenerate_a_passed_draft(acquisition_session):
+    session = acquisition_session
+    articles, service = three_articles(session)
+    first = service.draft(articles[0].id)
+    service.verify(first.id)
+    session.commit()
+    calls = len(service.runner.provider.calls)
+    with pytest.raises(EditorialError, match="DRAFT_REVISION_NOT_ALLOWED"):
+        service.draft(articles[0].id, revise_failed=True)
+    assert len(service.runner.provider.calls) == calls
+
+
+def test_failed_ai_draft_can_use_updated_evidence_for_same_sources(acquisition_session):
+    from app.infrastructure.db.models import ItemStatus
+    from tests.unit.test_comparison_research import svc
+
+    session = acquisition_session
+    articles, service = three_articles(session)
+    item = articles[0]
+    first = service.draft(item.id)
+    verification = service.verify(first.id)
+    verification.overall_result = "fail"
+    verification.blocking_issues_json = ["fact_support"]
+    item.status = ItemStatus.VERIFICATION_FAILED
+    session.commit()
+    from app.ai.provider import AIResponse
+    from app.modules.extraction.facts import rule_facts
+    from tests.unit.test_comparison_research import ComparisonProvider
+    from tests.unit.test_phase3_facts import content
+
+    class RefreshedProvider(ComparisonProvider):
+        def generate(self, **kwargs):
+            if kwargs["model"] == "facts-reviewed":
+                output = rule_facts(content(kwargs["data"]["body"]))
+                return AIResponse(output.model_dump(mode="json"), "facts-reviewed", 10, 5, 1)
+            return super().generate(**kwargs)
+
+    refreshed = svc(
+        session, config().model_copy(update={"ai_model_facts": "facts-reviewed"}),
+        RefreshedProvider(),
+    )
+    for article in articles:
+        refreshed.facts(article.id, mode="ai")
+    refreshed.select(item.id)
+    package = refreshed.comparison(
+        item.id, (), (articles[1].id, articles[2].id), request_missing=False,
+    )
+    assert package.id != first.article_package_id
+    revised = refreshed.draft(item.id, revise_failed=True)
+    assert revised.article_package_id == package.id and revised.id != first.id
+    claim = session.scalars(select(SourceSetClaim)).one()
+    assert claim.draft_id == revised.id and claim.item_id == item.id

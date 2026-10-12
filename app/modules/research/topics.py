@@ -11,8 +11,69 @@ from app.contracts.content_v1 import NormalizedContentV1
 from app.contracts.envelope import canonical_payload_hash
 from app.core.editorial import personal_data
 
-POLICY_VERSION = "topics-v3"
+POLICY_VERSION = "topics-v7"
 TAXONOMY = (
+    (
+        "purpose", "public_information", "公的・公共情報の活用",
+        ("公的情報", "公開情報", "公共情報", "公的データ", "公的API"),
+    ),
+    (
+        "function", "mcp_data_access", "MCPによる外部データ接続",
+        ("MCP", "Model Context Protocol"),
+    ),
+    (
+        "environment", "application_system", "Web・アプリケーション環境",
+        ("Webアプリケーション", "Webシステム", "Webサイト", "アプリケーション", "API基盤"),
+    ),
+    (
+        "purpose", "business_automation", "業務の自動化・支援",
+        (
+            "業務効率", "業務自動化", "業務の自動化", "業務支援", "業務プロセス",
+            "生産性", "業務オペレーション", "業務システム", "業務ツール", "業務フロー",
+            "在庫管理", "カスタマーサクセス", "営業リスト", "顧客対応",
+        ),
+    ),
+    (
+        "purpose", "cyber_security", "サイバーリスク対策",
+        ("サイバー", "情報セキュリティ", "脆弱性", "不正アクセス", "ランサムウェア"),
+    ),
+    (
+        "purpose", "device_operations", "接続機器の運用・監視",
+        ("IoT", "設備監視", "遠隔監視", "デバイス管理", "機器管理", "スマートメーター"),
+    ),
+    (
+        "environment", "business_system", "企業・業務システム",
+        ("企業向け", "法人向け", "企業の", "業務", "組織の", "組織向け", "社内"),
+    ),
+    (
+        "environment", "cloud_service", "クラウド環境",
+        ("クラウド", "SaaS", "cloud"),
+    ),
+    (
+        "environment", "connected_devices", "接続機器・IoT環境",
+        ("IoT", "接続機器", "センサー", "デバイス", "スマートメーター"),
+    ),
+    (
+        "function", "generative_ai", "生成AIによる情報処理",
+        ("生成AI", "生成 AI", "AIエージェント", "AI エージェント",
+         "AIデータエージェント", "AI Agent", "RAG", "LLM"),
+    ),
+    (
+        "function", "security_detection", "脅威・脆弱性の検出と対処",
+        ("脆弱性", "脅威検知", "脅威を検知", "脅威の検知", "EDR", "XDR", "ランサムウェア"),
+    ),
+    (
+        "function", "identity_access", "認証・アクセス管理",
+        ("多要素認証", "アクセス管理", "アクセス制御", "認証", "ゼロトラスト"),
+    ),
+    (
+        "function", "device_telemetry", "機器データの収集・監視",
+        (
+            "遠隔監視", "設備監視", "デバイス管理", "機器管理",
+            "データ収集", "データの収集", "IoTプラットフォーム",
+        ),
+    ),
+
     ("purpose", "edge_ai", "エッジAI処理", ("エッジAI", "エッジ AI", "edge AI")),
     (
         "environment",
@@ -140,9 +201,13 @@ def keys(topic: ArticleTopicV1, dimension: str) -> set[str]:
     return {facet.key for facet in topic.facets if facet.dimension == dimension}
 
 
-def classify_topic(content: NormalizedContentV1, extraction_hash: str) -> ArticleTopicV1:
+def classify_topic(
+    content: NormalizedContentV1, extraction_hash: str,
+    primary_products: tuple[str, ...] = (),
+) -> ArticleTopicV1:
     identity = canonical_payload_hash(
-        {"extraction": extraction_hash, "policy": POLICY_VERSION, "taxonomy": TAXONOMY}
+        {"extraction": extraction_hash, "policy": POLICY_VERSION, "taxonomy": TAXONOMY,
+         "primary_products": primary_products}
     )
     facets = []
     # Use editorial content only; exclude contact sections and company boilerplate.
@@ -174,6 +239,34 @@ def classify_topic(content: NormalizedContentV1, extraction_hash: str) -> Articl
                     dimension=dimension, key=key, label=label, evidence=tuple(evidence[:4])
                 )
             )
+    # An explicitly announced vehicle remains a vehicle despite OTA software
+    # or IoT-related corporate boilerplate. Only the title/announcement opening
+    # determine this role; later customer examples cannot change the primary kind.
+    vehicle_pattern = r"超小型EV|小型EV|電気自動車|電動車両|electric vehicle"
+    vehicle_evidence = []
+    for field, text in (("title", content.title), ("body", body[:1200])):
+        match = re.search(vehicle_pattern, text, flags=re.I)
+        # Body examples of customer vehicles are not the announced product.
+        product_nearby = bool(
+            match and any(
+                re.split(r"[\uFF08(]", product, maxsplit=1)[0].casefold()
+                in text[max(0, match.start() - 24):match.end() + 24].casefold()
+                for product in primary_products
+            )
+        )
+        if match and (field == "title" or product_nearby):
+            vehicle_evidence.append(
+                TopicEvidenceV1(
+                    field=field, start=match.start(), end=match.end(), quote=match[0]
+                )
+            )
+    if vehicle_evidence:
+        facets.append(
+            TopicFacetV1(
+                dimension="product_kind", key="vehicle", label="車両",
+                evidence=tuple(vehicle_evidence),
+            )
+        )
     labels = []
     for dimension in ("purpose", "environment", "function", "article_focus"):
         values = [facet.label for facet in facets if facet.dimension == dimension]

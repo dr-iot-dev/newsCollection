@@ -1,5 +1,5 @@
-# Keep the deployed project identity so the existing PostgreSQL volume is reused.
-name: ai-iot-news
+# Separate deployment for kunsen.net; database and networks are isolated from airlabs.jp.
+name: news-weave
 
 x-app: &app
   build:
@@ -20,6 +20,14 @@ x-app: &app
     AI_INPUT_COST_PER_MILLION: ${AI_INPUT_COST_PER_MILLION:-}
     AI_OUTPUT_COST_PER_MILLION: ${AI_OUTPUT_COST_PER_MILLION:-}
     AI_REQUIRE_DISTINCT_MODELS: ${AI_REQUIRE_DISTINCT_MODELS:-true}
+    COMPARISON_SELECTION_MODE: ${COMPARISON_SELECTION_MODE:-legacy}
+    AI_COMPARISON_PLANNER_MODEL: ${AI_COMPARISON_PLANNER_MODEL:-}
+    AI_COMPARISON_ASSESSOR_MODEL: ${AI_COMPARISON_ASSESSOR_MODEL:-}
+    AI_COMPARISON_VERIFIER_MODEL: ${AI_COMPARISON_VERIFIER_MODEL:-}
+    AI_EMBEDDING_MODEL: ${AI_EMBEDDING_MODEL:-}
+    AI_EMBEDDING_REVISION: ${AI_EMBEDDING_REVISION:-v1}
+    COMPARISON_MIN_PRODUCTS: ${COMPARISON_MIN_PRODUCTS:-3}
+    COMPARISON_MAX_EVALUATIONS: ${COMPARISON_MAX_EVALUATIONS:-8}
     COMPARISON_MIN_SOURCES: ${COMPARISON_MIN_SOURCES:-3}
     COMPARISON_AUTO_RESEARCH: ${COMPARISON_AUTO_RESEARCH:-true}
     RESEARCH_REFRESH_SOURCES: ${RESEARCH_REFRESH_SOURCES:-true}
@@ -84,7 +92,7 @@ services:
     tmpfs: [/tmp]
     networks: [backend, frontend]
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:8001:8000"
     healthcheck:
       test:
         - CMD

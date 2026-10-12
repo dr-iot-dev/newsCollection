@@ -12,7 +12,11 @@ from app.sources.config import WebSource, load_sources
 def test_requested_sources_have_expected_urls_and_acquisition_status() -> None:
     config = load_sources(Path("config/sources.yaml"))
     sources = {source.key: source for source in config.sources}
-    assert len(sources) == 3
+    assert set(sources) == {
+        "prtimes-iot", "prtimes-electronics", "nikkei-topic-24032506",
+        "prtimes-generative-ai", "prtimes-security", "prtimes-iot-platform",
+        "prtimes-ai-agents",
+    }
     assert sources["prtimes-iot"].list_url == "https://prtimes.jp/topics/keywords/IoT"
     assert (
         sources["prtimes-electronics"].list_url
@@ -23,7 +27,15 @@ def test_requested_sources_have_expected_urls_and_acquisition_status() -> None:
         source = sources[key]
         source.assert_collectable(source.legal.terms_reviewed_at)
         assert source.legal.media_use == "none" and source.timezone_hint == "Asia/Tokyo"
-        assert source.max_pages_per_run == 6 and source.min_delay_seconds == 5
+        assert source.max_pages_per_run == (11 if key == "prtimes-iot" else 6)
+        assert source.min_delay_seconds == 5
+    for key in ("prtimes-generative-ai", "prtimes-security",
+                "prtimes-iot-platform", "prtimes-ai-agents"):
+        source = sources[key]
+        source.assert_collectable(source.legal.terms_reviewed_at)
+        assert source.list_url.startswith("https://prtimes.jp/topics/keywords/")
+        assert source.max_pages_per_run == 11 and source.min_delay_seconds == 5
+        assert source.legal.text_use == "facts_only" and source.legal.media_use == "none"
     with pytest.raises(PermissionError):
         sources["nikkei-topic-24032506"].assert_collectable()
     assert sources["nikkei-topic-24032506"].legal.status == "pending"

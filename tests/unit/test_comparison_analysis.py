@@ -335,7 +335,7 @@ def test_edge_ai_topics_require_explicit_processing_and_keep_source_offsets():
     vague = classify_topic(content("AI関連イベント", "新技術を紹介する。"), "vague")
     assert "TOPIC_FUNCTION_UNCONFIRMED" in topic_reasons(topic_checks(topics[0], vague))
     cloud = classify_topic(content("言語モデル", "クラウドでLLMを提供する。"), "cloud")
-    assert "TOPIC_ENVIRONMENT_UNCONFIRMED" in topic_reasons(topic_checks(topics[0], cloud))
+    assert "TOPIC_ENVIRONMENT_MISMATCH" in topic_reasons(topic_checks(topics[0], cloud))
 
 
 def test_ai_chip_axis_compares_recorded_families_without_ranking_performance():
@@ -348,3 +348,64 @@ def test_ai_chip_axis_compares_recorded_families_without_ranking_performance():
         r for r in compare_features((left,), (fact("高性能AI処理"),)) if r.axis == "ai_processor"
     )
     assert unknown.result == "unknown"
+
+def test_vehicle_with_ota_and_corporate_iot_noise_cannot_compare_as_platform():
+    vehicle = classify_topic(
+        content("超小型EV「mibot」の事業提携",
+                "1人乗り超小型EV。OTAでソフトウェアを更新する。"
+                "提携企業はIoTプラットフォームとクラウドによる機器管理を提供。"
+                "工場向け業務支援とデータ収集を行う。"),
+        "vehicle",
+    )
+    platform = classify_topic(
+        content("IoTプラットフォーム", "工場向けクラウドによる機器管理とデータ収集。業務支援。"),
+        "platform",
+    )
+    for left, right in ((vehicle, platform), (platform, vehicle)):
+        checks = topic_checks(left, right)
+        assert "TOPIC_PRODUCT_KIND_MISMATCH" in topic_reasons(checks)
+        assert next(c for c in checks if c.criterion == "product_kind").required
+    second_vehicle = classify_topic(
+        content("小型EVを発表", "OTAとIoT機器管理。工場向けクラウドでデータ収集と業務支援。"),
+        "second",
+    )
+    assert next(c for c in topic_checks(vehicle, second_vehicle)
+                if c.criterion == "product_kind").result == "pass"
+    for facet in vehicle.facets:
+        for evidence in facet.evidence:
+            source = content("超小型EV「mibot」の事業提携",
+                "1人乗り超小型EV。OTAでソフトウェアを更新する。"
+                "提携企業はIoTプラットフォームとクラウドによる機器管理を提供。"
+                "工場向け業務支援とデータ収集を行う。")
+            assert getattr(source, evidence.field)[evidence.start:evidence.end] == evidence.quote
+
+def test_vehicle_customer_example_does_not_reclassify_iot_platform():
+    source = content("IoTプラットフォーム「Fleet Cloud」",
+                     "Fleet Cloudはクラウドによる機器管理とデータ収集を提供。"
+                     "接続先の例として小型EVや工場設備を挙げる。")
+    topic = classify_topic(source, "platform", ("Fleet Cloud",))
+    assert not any(f.dimension == "product_kind" for f in topic.facets)
+    vehicle = content("新製品のお知らせ",
+                      "超小型EV「mibot」はOTAで更新する。企業はIoT事業も提供。")
+    topic = classify_topic(vehicle, "vehicle", ("mibot\uFF08ミボット\uFF09",))
+    assert any(f.dimension == "product_kind" and f.key == "vehicle" for f in topic.facets)
+
+def test_iot_operations_axis_preserves_verified_collection_analysis_and_control():
+    target = (fact("データを収集・蓄積から可視化・分析までを担う活用基盤"),)
+    reference = (fact("通信デバイス・クラウド・データ解析を提供。遠隔監視や遠隔制御"),)
+    row = next(f for f in compare_features(target, reference) if f.axis == "device_management")
+    assert row.target.values == ("データを収集", "可視化")
+    assert row.candidate.values == ("データ解析", "遠隔制御", "遠隔監視")
+    assert row.target.fact_ids == (target[0].fact_id,)
+    assert row.candidate.fact_ids == (reference[0].fact_id,)
+    assert row.result == "different"
+
+def test_sim_connectivity_is_a_specific_comparison_axis():
+    left = (fact("MEEQ SIM 対応のLTE評価機", "compatibility"),)
+    right = (fact("データ通信専用SIMの利用が可能"),)
+    row = next(f for f in compare_features(left, right) if f.axis == "communication")
+    assert row.target.values == ("LTE", "SIM")
+    assert row.candidate.values == ("SIM",)
+    assert row.result == "partial_overlap"
+    assert not next(f for f in compare_features((fact("SIMD計算"),), right)
+                    if f.axis == "communication").target.values
