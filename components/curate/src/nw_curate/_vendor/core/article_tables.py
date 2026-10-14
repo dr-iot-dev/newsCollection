@@ -212,6 +212,11 @@ def render_comparison_table(package: ArticlePackageV1) -> str:
         rows.append("| " + " | ".join([label, *cells]) + " |")
     if not rows:
         return ""
+    unknown_note = (
+        f"「{UNKNOWN}」は非対応を意味しない。"
+        if any(UNKNOWN in row for row in rows)
+        else ""
+    )
     return (
         "\n\n## 比較表\n\n各提供元の発表資料に記載された内容を整理した。\n\n"
         + "| "
@@ -221,7 +226,8 @@ def render_comparison_table(package: ArticlePackageV1) -> str:
         + " | ".join("---" for _ in headers)
         + " |\n"
         + "\n".join(rows)
-        + "\n\n「資料で確認できず」は非対応を意味しない。"
+        + "\n\n"
+        + unknown_note
         + "記載された条件での比較であり、性能や価格の優劣を示すものではない。"
     )
 
