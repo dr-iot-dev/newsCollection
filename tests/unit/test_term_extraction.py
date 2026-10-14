@@ -17,7 +17,7 @@ def test_each_requested_word_excludes_a_matching_title(word):
 
 
 def test_multiple_matches_and_duplicate_user_terms():
-    assert len(TITLE_EXCLUSION_WORDS) == len(set(TITLE_EXCLUSION_WORDS)) == 103
+    assert len(TITLE_EXCLUSION_WORDS) == len(set(TITLE_EXCLUSION_WORDS)) == 111
     assert title_exclusion_terms("パートナー提携でセミナー開催を開始") == (
         "パートナー",
         "開催",

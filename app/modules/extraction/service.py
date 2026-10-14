@@ -141,6 +141,14 @@ def extract_content(
             or (heading.get_text(" ", strip=True) if heading else None)
             or title
         )
+        if "\ufffd" in title:
+            # Some source pages corrupt the rendered heading while their official
+            # metadata still contains the complete title. Never guess missing text.
+            for candidate in (ld_title, meta("og:title")):
+                if candidate and "\ufffd" not in candidate:
+                    title = candidate
+                    reasons.append("title_recovered_from_metadata")
+                    break
         title_match = bool(
             ld_title and normalize_text(ld_title).casefold() == normalize_text(title).casefold()
         )

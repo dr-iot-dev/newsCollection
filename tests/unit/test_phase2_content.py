@@ -58,6 +58,18 @@ def test_selector_extraction_keeps_heading_and_lists_removes_boilerplate() -> No
     assert str(content.canonical_url) == "https://vendor.example/news/2026/x1"
 
 
+@pytest.mark.parametrize("heading", ["設備��機器AI", "設備機器AI"])
+def test_corrupted_heading_recovers_official_title(heading: str) -> None:
+    document = (
+        '<meta property="og:title" content="設備機器AI 正式版">'
+        f"<h1>{heading}</h1><article class='content'><p>"
+        + "AI製品の公式説明。" * 30
+        + "</p></article>"
+    )
+    content = extract(document, selectors=SELECTORS)
+    assert content.title == ("設備機器AI 正式版" if "\ufffd" in heading else heading)
+
+
 def test_jsonld_graph_and_open_graph_fallback() -> None:
     body = "A documented product release with official installation information. " * 8
     document = (

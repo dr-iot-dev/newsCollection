@@ -30,6 +30,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["mypy==1.18.2", "pytest==8.4.2", "pytest-cov==7.0.0", "ruff==0.13.3"]
+clustering = ["umap-learn==0.5.12", "hdbscan==0.8.44"]
 
 [project.scripts]
 news-weave = "app.cli:app"
@@ -60,4 +61,8 @@ plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
 
 [[tool.mypy.overrides]]
 module = ["apscheduler.*", "defusedxml.*", "yaml"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["hdbscan.*", "umap.*", "sklearn.*"]
 ignore_missing_imports = true

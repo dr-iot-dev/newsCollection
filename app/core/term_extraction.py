@@ -5,7 +5,7 @@ import re
 from app.contracts.discovery_search_vocabulary_v2 import normalized_text
 from app.core.discovery_search_vocabulary import term_matches
 
-TITLE_FILTER_POLICY = "extraction-title-keywords-v2-20261013"
+TITLE_FILTER_POLICY = "extraction-title-keywords-v3-20261013"
 TITLE_EXCLUSION_WORDS = (
     "出展",
     "締結",
@@ -110,6 +110,14 @@ TITLE_EXCLUSION_WORDS = (
     "語る",
     "施設",
     "分譲",
+    "強化",
+    "推進",
+    "刷新",
+    "選出",
+    "展開",
+    "人材育成",
+    "誕生",
+    "出資",
 )
 
 

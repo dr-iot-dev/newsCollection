@@ -93,13 +93,89 @@ class TermCorpusStore:
             ("domain_eligible", "INTEGER NOT NULL DEFAULT 0"),
             ("matched_domains", "TEXT NOT NULL DEFAULT '[]'"),
             ("domain_filter_policy", "TEXT NOT NULL DEFAULT ''"),
+            ("release_type_excluded", "INTEGER NOT NULL DEFAULT 0"),
         ):
             if name not in columns:
                 self.connection.execute(
                     f"ALTER TABLE term_articles ADD COLUMN {name} {declaration}"
                 )
+        corpus_columns = {
+            row[1] for row in self.connection.execute("PRAGMA table_info(term_corpora)")
+        }
+        if "require_product_service" not in corpus_columns:
+            self.connection.execute(
+                "ALTER TABLE term_corpora ADD COLUMN "
+                "require_product_service INTEGER NOT NULL DEFAULT 0"
+            )
+        self.connection.executescript("""
+            CREATE TABLE IF NOT EXISTS term_release_type_screenings (
+                corpus_id TEXT NOT NULL,article_id TEXT NOT NULL,url TEXT NOT NULL,
+                title TEXT NOT NULL,release_type_id TEXT NOT NULL,release_type_name TEXT NOT NULL,
+                source_hash TEXT NOT NULL,screened_at TEXT NOT NULL,
+                PRIMARY KEY(corpus_id,article_id)
+            );
+        """)
+        self.refresh_release_type_filter()
         self.refresh_title_filter()
         self.refresh_domain_filter()
+
+    def refresh_release_type_filter(self) -> None:
+        self.connection.execute("""
+            UPDATE term_articles AS a SET release_type_excluded=CASE
+                WHEN (SELECT require_product_service FROM term_corpora c
+                      WHERE c.corpus_id=a.corpus_id)=1 THEN NOT EXISTS (
+                    SELECT 1 FROM term_release_type_screenings s
+                    WHERE s.corpus_id=a.corpus_id AND s.article_id=a.article_id
+                    AND s.release_type_id='01' AND s.release_type_name='商品サービス'
+                ) ELSE 0 END
+        """)
+        self.connection.commit()
+
+    def require_product_service(self, corpus_id: str) -> None:
+        self.connection.execute(
+            "UPDATE term_corpora SET require_product_service=1 WHERE corpus_id=?", (corpus_id,)
+        )
+        self.refresh_release_type_filter()
+
+    def record_release_type(
+        self,
+        corpus_id: str,
+        article_id: str,
+        title: str,
+        url: str,
+        release_type: tuple[str, str] | None,
+        source_hash: str,
+    ) -> None:
+        type_id, type_name = release_type or ("", "")
+        self.connection.execute(
+            "INSERT INTO term_release_type_screenings VALUES (?,?,?,?,?,?,?,?) "
+            "ON CONFLICT(corpus_id,article_id) DO UPDATE SET "
+            "url=excluded.url,title=excluded.title,release_type_id=excluded.release_type_id,"
+            "release_type_name=excluded.release_type_name,source_hash=excluded.source_hash,"
+            "screened_at=excluded.screened_at",
+            (
+                corpus_id,
+                article_id,
+                url,
+                title,
+                type_id,
+                type_name,
+                source_hash,
+                datetime.now(UTC).isoformat(),
+            ),
+        )
+        required = self.connection.execute(
+            "SELECT require_product_service FROM term_corpora WHERE corpus_id=?", (corpus_id,)
+        ).fetchone()
+        self.connection.execute(
+            "UPDATE term_articles SET release_type_excluded=? WHERE corpus_id=? AND article_id=?",
+            (
+                int(bool(required and required[0]) and release_type != ("01", "商品サービス")),
+                corpus_id,
+                article_id,
+            ),
+        )
+        self.connection.commit()
 
     def refresh_title_filter(self) -> None:
         """Classify legacy stored titles without reading or deleting article bodies."""
@@ -134,7 +210,7 @@ class TermCorpusStore:
     def refresh_domain_filter(self) -> None:
         rows = self.connection.execute(
             "SELECT corpus_id,article_id,title,substr(body,1,?),url FROM term_articles a "
-            "WHERE title_excluded=0 AND domain_filter_policy<>? "
+            "WHERE title_excluded=0 AND release_type_excluded=0 AND domain_filter_policy<>? "
             "AND NOT EXISTS (SELECT 1 FROM term_title_exclusions x "
             "WHERE x.corpus_id=a.corpus_id AND x.article_id=a.article_id)",
             (DOMAIN_LEAD_CHARS, DOMAIN_FILTER_POLICY),
@@ -235,6 +311,28 @@ class TermCorpusStore:
             for row in self.domain_screenings(corpus_id)
             if not row["domains"] and row["article_id"] not in title_ids
         )
+        excluded_ids = {row["article_id"] for row in rows}
+        required = self.connection.execute(
+            "SELECT require_product_service FROM term_corpora WHERE corpus_id=?", (corpus_id,)
+        ).fetchone()
+        if required and required[0]:
+            for record in self.connection.execute(
+                "SELECT article_id,url,title,release_type_id,release_type_name "
+                "FROM term_release_type_screenings WHERE corpus_id=? "
+                "AND NOT (release_type_id='01' AND release_type_name='商品サービス')",
+                (corpus_id,),
+            ):
+                if record["article_id"] not in excluded_ids:
+                    rows.append(
+                        {
+                            **dict(record),
+                            "matched_exclusion_terms": [],
+                            "exclusion_reason": "outside_product_service"
+                            if record["release_type_id"]
+                            else "release_type_unconfirmed",
+                            "policy": "extraction-prtimes-product-service-v1-20261013",
+                        }
+                    )
         return sorted(rows, key=lambda row: row["article_id"])
 
     def __enter__(self) -> Self:
@@ -245,7 +343,8 @@ class TermCorpusStore:
 
     def create_corpus(self, corpus_id: str, domain_label: str) -> None:
         self.connection.execute(
-            "INSERT INTO term_corpora VALUES (?, ?, ?) ON CONFLICT(corpus_id) "
+            "INSERT INTO term_corpora (corpus_id,domain_label,created_at) VALUES (?, ?, ?) "
+            "ON CONFLICT(corpus_id) "
             "DO UPDATE SET domain_label=excluded.domain_label",
             (corpus_id, domain_label, datetime.now(UTC).isoformat()),
         )
@@ -254,6 +353,20 @@ class TermCorpusStore:
     def import_article(self, corpus_id: str, article: DiscoveryArticle, url: str = "") -> bool:
         if title_is_excluded(article.title):
             self.record_title_exclusion(corpus_id, article.article_id, article.title, url)
+            return False
+        required = self.connection.execute(
+            "SELECT require_product_service FROM term_corpora WHERE corpus_id=?", (corpus_id,)
+        ).fetchone()
+        if (
+            required
+            and required[0]
+            and self.connection.execute(
+                "SELECT 1 FROM term_release_type_screenings WHERE corpus_id=? AND article_id=? "
+                "AND release_type_id='01' AND release_type_name='商品サービス'",
+                (corpus_id, article.article_id),
+            ).fetchone()
+            is None
+        ):
             return False
         self.connection.execute(
             "DELETE FROM term_title_exclusions WHERE corpus_id=? AND article_id=?",
@@ -276,7 +389,7 @@ class TermCorpusStore:
             "content_hash=excluded.content_hash,imported_at=excluded.imported_at,"
             "title_excluded=0,title_exclusion_terms='[]',title_filter_policy=excluded.title_filter_policy,"
             "domain_eligible=1,matched_domains=excluded.matched_domains,"
-            "domain_filter_policy=excluded.domain_filter_policy",
+            "domain_filter_policy=excluded.domain_filter_policy,release_type_excluded=0",
             (
                 corpus_id,
                 article.article_id,
@@ -307,7 +420,8 @@ class TermCorpusStore:
             self.connection.execute(
                 "SELECT COUNT(*) FROM term_articles a WHERE corpus_id=? "
                 "AND title_excluded=0 AND title_is_excluded(title)=0 "
-                "AND domain_eligible=1 AND domain_filter_policy=current_domain_policy() "
+                "AND release_type_excluded=0 AND domain_eligible=1 "
+                "AND domain_filter_policy=current_domain_policy() "
                 "AND NOT EXISTS (SELECT 1 FROM term_title_exclusions x "
                 "WHERE x.corpus_id=a.corpus_id AND x.article_id=a.article_id)",
                 (corpus_id,),
@@ -320,7 +434,8 @@ class TermCorpusStore:
             for row in self.connection.execute(
                 "SELECT article_id,title,body FROM term_articles a "
                 "WHERE corpus_id=? AND title_excluded=0 AND title_is_excluded(title)=0 "
-                "AND domain_eligible=1 AND domain_filter_policy=current_domain_policy() "
+                "AND release_type_excluded=0 AND domain_eligible=1 "
+                "AND domain_filter_policy=current_domain_policy() "
                 "AND NOT EXISTS (SELECT 1 FROM term_title_exclusions x "
                 "WHERE x.corpus_id=a.corpus_id AND x.article_id=a.article_id) ORDER BY article_id",
                 (corpus_id,),
@@ -366,7 +481,8 @@ class TermCorpusStore:
                 SELECT article_id,normalized_title,normalized_body
                 FROM term_articles a
                 WHERE corpus_id=? AND title_excluded=0 AND title_is_excluded(title)=0
-                AND domain_eligible=1 AND domain_filter_policy=current_domain_policy()
+                AND release_type_excluded=0 AND domain_eligible=1
+                AND domain_filter_policy=current_domain_policy()
                 AND NOT EXISTS (SELECT 1 FROM term_title_exclusions x
                     WHERE x.corpus_id=a.corpus_id AND x.article_id=a.article_id)
             )
@@ -381,7 +497,8 @@ class TermCorpusStore:
                 SELECT article_id,title,url,matched_domains,normalized_title,normalized_body
                 FROM term_articles a
                 WHERE corpus_id=? AND title_excluded=0 AND title_is_excluded(title)=0
-                AND domain_eligible=1 AND domain_filter_policy=current_domain_policy()
+                AND release_type_excluded=0 AND domain_eligible=1
+                AND domain_filter_policy=current_domain_policy()
                 AND NOT EXISTS (SELECT 1 FROM term_title_exclusions x
                     WHERE x.corpus_id=a.corpus_id AND x.article_id=a.article_id)
             ), matches AS (

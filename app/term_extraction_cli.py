@@ -267,3 +267,134 @@ def count(
         typer.echo(table)
     except (OSError, ValueError, sqlite3.Error) as exc:
         failure(exc)
+
+
+@extraction_app.command("distances")
+def distances(
+    database: Annotated[Path, typer.Option("--database")],
+    corpus: Annotated[str, typer.Option("--corpus")],
+    counts_file: Annotated[Path, typer.Option("--counts")],
+    output: Annotated[Path, typer.Option("--output")],
+    model: Annotated[str, typer.Option("--model")] = "text-embedding-3-small",
+    prepare_only: Annotated[bool, typer.Option("--prepare-only")] = False,
+) -> None:
+    """E -> F (candidate count > 4), per-article vectors, and all cosine-distance pairs."""
+    from app.core.config import get_settings
+    from app.infrastructure.extraction_embeddings import OpenAIEmbeddingBatchProvider
+    from app.orchestration.extraction_distances import (
+        calculate_distances,
+        prepare_distance_analysis,
+    )
+
+    try:
+        run = prepare_distance_analysis(database, corpus, counts_file, output, model)
+        if prepare_only:
+            typer.echo(
+                json.dumps({k: v for k, v in run.items() if k != "articles"}, ensure_ascii=False)
+            )
+            return
+        settings = get_settings()
+        if settings.ai_api_key is None:
+            raise ValueError("embedding API key not configured")
+        result = calculate_distances(
+            run,
+            output,
+            OpenAIEmbeddingBatchProvider(settings.ai_api_key.get_secret_value(), model),
+            progress=lambda value: typer.echo(json.dumps(value)),
+        )
+        typer.echo(json.dumps(result, ensure_ascii=False))
+    except (OSError, ValueError, KeyError, TypeError, sqlite3.Error) as exc:
+        failure(exc)
+
+
+@extraction_app.command("cores")
+def cores(
+    vectors_file: Annotated[Path, typer.Option("--vectors")],
+    output: Annotated[Path, typer.Option("--output")],
+    n_components: Annotated[int, typer.Option("--n-components", min=2)] = 15,
+    n_neighbors: Annotated[int, typer.Option("--n-neighbors", min=2)] = 15,
+    min_cluster_size: Annotated[int, typer.Option("--min-cluster-size", min=2)] = 5,
+    min_samples: Annotated[int, typer.Option("--min-samples", min=1)] = 5,
+    core_top_n: Annotated[int, typer.Option("--core-top-n", min=1)] = 3,
+    core_min_probability: Annotated[
+        float, typer.Option("--core-min-probability", min=0, max=1)
+    ] = 0.9,
+    random_state: Annotated[int, typer.Option("--random-state")] = 42,
+    sensitivity: Annotated[bool, typer.Option("--sensitivity/--no-sensitivity")] = True,
+    latest_per_organization: Annotated[bool, typer.Option("--latest-per-organization")] = False,
+    audit_database: Annotated[Path | None, typer.Option("--audit-database")] = None,
+) -> None:
+    """Extract UMAP/HDBSCAN density cores locally from previously saved vectors."""
+    from app.orchestration.extraction_cores import CoreParameters, extract_density_cores
+
+    try:
+        if latest_per_organization:
+            from app.orchestration.extraction_organizations import select_latest_organizations
+
+            if audit_database is None:
+                raise ValueError("--latest-per-organization requires --audit-database")
+            vectors_file = select_latest_organizations(
+                vectors_file, audit_database, output / "selection"
+            )
+        result = extract_density_cores(
+            vectors_file,
+            output,
+            CoreParameters(
+                n_components=n_components,
+                n_neighbors=n_neighbors,
+                min_cluster_size=min_cluster_size,
+                min_samples=min_samples,
+                core_top_n=core_top_n,
+                core_min_probability=core_min_probability,
+                random_state=random_state,
+            ),
+            sensitivity=sensitivity,
+            progress=lambda value: typer.echo(json.dumps(value)),
+        )
+        typer.echo(json.dumps(result, ensure_ascii=False))
+    except ImportError:
+        typer.echo("extraction failed: install news-weave[clustering] first", err=True)
+        raise typer.Exit(1) from None
+    except (OSError, ValueError, KeyError, TypeError, sqlite3.Error) as exc:
+        failure(exc)
+
+
+@extraction_app.command("embeddings")
+def embeddings(
+    database: Annotated[Path, typer.Option("--database")],
+    corpus: Annotated[str, typer.Option("--corpus")],
+    counts_file: Annotated[Path, typer.Option("--counts")],
+    output: Annotated[Path, typer.Option("--output")],
+    reuse_database: Annotated[Path | None, typer.Option("--reuse-database")] = None,
+    minimum_articles: Annotated[int, typer.Option("--minimum-articles", min=1)] = 1000,
+    prepare_only: Annotated[bool, typer.Option("--prepare-only")] = False,
+) -> None:
+    """Embed count > 4 articles, reusing old vectors and reporting actual-token costs."""
+    from app.core.config import get_settings
+    from app.core.editorial import EditorialError
+    from app.infrastructure.extraction_embeddings import OpenAIEmbeddingBatchProvider
+    from app.orchestration.extraction_distances import prepare_distance_analysis
+    from app.orchestration.extraction_embedding_values import embed_article_values
+
+    try:
+        run = prepare_distance_analysis(database, corpus, counts_file, output)
+        if run["F_count"] < minimum_articles:
+            raise ValueError("not enough count > 4 articles for embedding")
+        if prepare_only:
+            typer.echo(
+                json.dumps({k: v for k, v in run.items() if k != "articles"}, ensure_ascii=False)
+            )
+            return
+        settings = get_settings()
+        if settings.ai_api_key is None:
+            raise ValueError("embedding API key not configured")
+        result = embed_article_values(
+            run,
+            output,
+            OpenAIEmbeddingBatchProvider(settings.ai_api_key.get_secret_value(), run["model"]),
+            reuse_database,
+            progress=lambda value: typer.echo(json.dumps(value)),
+        )
+        typer.echo(json.dumps(result, ensure_ascii=False))
+    except (OSError, ValueError, KeyError, TypeError, sqlite3.Error, EditorialError) as exc:
+        failure(exc)
