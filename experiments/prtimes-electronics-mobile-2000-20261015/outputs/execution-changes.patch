@@ -1,0 +1,129 @@
+--- a/app/acquisition.py
++++ b/app/acquisition.py
+@@ -71,7 +71,9 @@
+     return own + article_nodes(value.get("@graph", []))
+ 
+ 
+-def parse_article(url: str, html: str, exclusions: list[str]) -> dict | None:
++def parse_article(
++    url: str, html: str, exclusions: list[str], *, require_domain: bool = True
++) -> dict | None:
+     parsed = urlsplit(url)
+     match = RELEASE.fullmatch(parsed.path)
+     if parsed.scheme != "https" or parsed.netloc != "prtimes.jp" or not match:
+@@ -130,7 +132,7 @@
+         node.decompose()
+     body = body_node.get_text("\n", strip=True)
+     domains = domain_names(title, body)
+-    if not body or not domains:
++    if not body or (require_domain and not domains):
+         return None
+     data = {
+         "url": "https://prtimes.jp" + parsed.path,
+--- a/app/pipeline.py
++++ b/app/pipeline.py
+@@ -241,7 +241,9 @@
+             if draft.generation_status == "APPROPRIATE":
+                 break
+ 
+-    def process(self, run_id: str) -> Run:
++    def process(self, run_id: str, *, stop_after: str | None = None) -> Run:
++        if stop_after not in (None, "select"):
++            raise ValueError("INVALID_STOP_STAGE")
+         run = self.session.get(Run, run_id)
+         if run is None:
+             raise ValueError("RUN_NOT_FOUND")
+@@ -329,6 +331,10 @@
+                     self.session.commit()
+                 run.step = "generate"
+                 self.session.commit()
++            if stop_after == "select" and run.step == "generate":
++                run.error = None
++                self.session.commit()
++                return run
+             comparisons = list(
+                 self.session.scalars(
+                     select(Comparison)
+--- a/app/cli.py
++++ b/app/cli.py
+@@ -34,6 +34,7 @@
+         "--exclude-titles", type=Path, default=Path(__file__).with_name("title-exclusions.txt")
+     )
+     run = commands.add_parser("run")
++    run.add_argument("--stop-after", choices=["select"])
+     run.add_argument("--embedding-model", default=Settings.embedding_model)
+     run.add_argument("--selection-model", default=Settings.selection_model)
+     run.add_argument("--selection-candidate-limit", type=int, default=30)
+@@ -46,6 +47,7 @@
+     commands.add_parser("list")
+     resume = commands.add_parser("resume")
+     resume.add_argument("run_id")
++    resume.add_argument("--stop-after", choices=["select"])
+     export = commands.add_parser("export")
+     export.add_argument("run_id")
+     export.add_argument("--output", type=Path, required=True)
+@@ -104,7 +106,7 @@
+                     run = session.get(Run, args.run_id)
+                     if run is None:
+                         raise ValueError("RUN_NOT_FOUND")
+-                run = pipeline.process(run.id)
++                run = pipeline.process(run.id, stop_after=args.stop_after)
+                 result = {"run_id": run.id, "step": run.step, "error": run.error}
+             print(json.dumps(result, ensure_ascii=False))
+     except (ValueError, OSError, KeyError) as exc:
+--- a/app/model_client.py
++++ b/app/model_client.py
+@@ -21,7 +21,16 @@
+ 
+ SELECTION_SCHEMA = object_schema(
+     {
+-        "selection_status": {"type": "string", "enum": ["TWO_SETS", "ONE_SET", "NO_SET"]},
++        "selection_status": {
++            "type": "string",
++            "enum": ["TWO_SETS", "ONE_SET", "NO_SET"],
++            "description": (
++                "Count primary and reserve triplets separately. TWO_SETS means primary has "
++                "exactly 3 IDs AND reserve has exactly 3 IDs. ONE_SET means primary has exactly "
++                "3 IDs AND reserve is empty. NO_SET means both arrays are empty. "
++                "A primary triplet plus a reserve triplet MUST be TWO_SETS, never ONE_SET."
++            ),
++        },
+         "primary_article_ids": {"type": "array", "items": STRING},
+         "reserve_article_ids": {"type": "array", "items": STRING},
+         "reason": STRING,
+--- a/tests/test_pipeline.py
++++ b/tests/test_pipeline.py
+@@ -101,6 +101,33 @@
+     assert parse_article(*release(title="一般製品", body="概要のみ"), []) is None
+     assert parse_article(*release(title="IoT 展示の案内"), ["展示"]) is None
+     assert parse_article(*release(title="一般製品", body="rapidapi と会社概要 AI"), []) is None
++
++
++def test_keyword_collection_can_omit_domain_but_keeps_type_and_exclusions():
++    assert parse_article(
++        *release(title="電子工作キット", body="製品の仕様"), [], require_domain=False
++    )
++    assert parse_article(*release(kind="02"), [], require_domain=False) is None
++    assert parse_article(*release(title="モバイル 展示"), ["展示"], require_domain=False) is None
++    assert parse_article(*release(title="電子工作キット", body="製品の仕様"), []) is None
++
++
++def test_selection_checkpoint_does_not_generate_and_can_resume(session):
++    for company in range(1, 7):
++        add(session, company)
++    provider = Provider()
++    pipeline = Pipeline(session, provider, lambda v, _: [0, 0, 0, 1, 1, 1])
++    run = pipeline.start(Settings())
++    assert pipeline.process(run.id, stop_after="select").step == "generate"
++    assert len(session.scalars(select(Comparison)).all()) == 2
++    assert not session.scalars(select(Draft)).all()
++    assert not session.scalars(select(Verification)).all()
++    assert all(c[0] in ("embed", SELECTION_SCHEMA) for c in provider.calls)
++    before = len(provider.calls)
++    pipeline.process(run.id, stop_after="select")
++    assert len(provider.calls) == before
++    assert pipeline.process(run.id).step == "complete"
++    assert len([c for c in provider.calls if c[0] == SELECTION_SCHEMA]) == 2
+ 
+ 
+ def test_latest_before_embedding_and_distinct_company_ids(session):

@@ -71,7 +71,9 @@ def article_nodes(value):
     return own + article_nodes(value.get("@graph", []))
 
 
-def parse_article(url: str, html: str, exclusions: list[str]) -> dict | None:
+def parse_article(
+    url: str, html: str, exclusions: list[str], *, require_domain: bool = True
+) -> dict | None:
     parsed = urlsplit(url)
     match = RELEASE.fullmatch(parsed.path)
     if parsed.scheme != "https" or parsed.netloc != "prtimes.jp" or not match:
@@ -130,7 +132,7 @@ def parse_article(url: str, html: str, exclusions: list[str]) -> dict | None:
         node.decompose()
     body = body_node.get_text("\n", strip=True)
     domains = domain_names(title, body)
-    if not body or not domains:
+    if not body or (require_domain and not domains):
         return None
     data = {
         "url": "https://prtimes.jp" + parsed.path,

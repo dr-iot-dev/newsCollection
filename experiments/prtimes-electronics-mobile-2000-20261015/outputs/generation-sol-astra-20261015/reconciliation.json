@@ -1,0 +1,30 @@
+{
+  "state": "complete",
+  "run_id": "1defd226-ac70-47f3-91f0-9ebf0a7cc442",
+  "api_requests_reconciled": 26,
+  "api_calls_by_operation": {
+    "generation": 16,
+    "verification": 7,
+    "repair": 1,
+    "reverification": 1
+  },
+  "sources_and_full_texts_match": true,
+  "frozen_generation_instructions_match": true,
+  "independent_verification_inputs_match": true,
+  "verification_api_calls": 8,
+  "actual_returned_models_match": true,
+  "all_generated_articles_verified": true,
+  "unverified_generated_drafts": 0,
+  "failed_requests": [
+    {
+      "call_id": "d59f3132-03ea-4d2c-bc71-810a34c48c46",
+      "error_code": "API_ERROR:429:credit_balance_exhausted"
+    }
+  ],
+  "max_repairs_per_comparison": 1,
+  "generation_verification_cost_usd": "1.9418200",
+  "cost_unpriced_calls": 1,
+  "source_selection_database_unchanged": true,
+  "integrity": "ok",
+  "foreign_keys": "ok"
+}

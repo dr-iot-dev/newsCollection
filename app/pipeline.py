@@ -241,7 +241,9 @@ class Pipeline:
             if draft.generation_status == "APPROPRIATE":
                 break
 
-    def process(self, run_id: str) -> Run:
+    def process(self, run_id: str, *, stop_after: str | None = None) -> Run:
+        if stop_after not in (None, "select"):
+            raise ValueError("INVALID_STOP_STAGE")
         run = self.session.get(Run, run_id)
         if run is None:
             raise ValueError("RUN_NOT_FOUND")
@@ -329,6 +331,10 @@ class Pipeline:
                     self.session.commit()
                 run.step = "generate"
                 self.session.commit()
+            if stop_after == "select" and run.step == "generate":
+                run.error = None
+                self.session.commit()
+                return run
             comparisons = list(
                 self.session.scalars(
                     select(Comparison)

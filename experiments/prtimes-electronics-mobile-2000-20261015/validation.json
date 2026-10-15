@@ -1,0 +1,9 @@
+{
+  "environment_check": "passed",
+  "pytest": {"passed": 90, "failed": 0, "warnings": ["Pytest cache could not be persisted on the network share; tests completed successfully."]},
+  "ruff_app_tests": "passed",
+  "git_diff_check": "passed",
+  "tracked_secret_scan": {"findings": 0, "source_archives_checked": 2},
+  "featured_image_count": 6,
+  "large_databases_and_raw_api_payloads": "retained at documented local output paths, excluded from Git"
+}

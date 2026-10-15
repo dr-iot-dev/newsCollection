@@ -21,7 +21,16 @@ def object_schema(properties: dict) -> dict:
 
 SELECTION_SCHEMA = object_schema(
     {
-        "selection_status": {"type": "string", "enum": ["TWO_SETS", "ONE_SET", "NO_SET"]},
+        "selection_status": {
+            "type": "string",
+            "enum": ["TWO_SETS", "ONE_SET", "NO_SET"],
+            "description": (
+                "Count primary and reserve triplets separately. TWO_SETS means primary has "
+                "exactly 3 IDs AND reserve has exactly 3 IDs. ONE_SET means primary has exactly "
+                "3 IDs AND reserve is empty. NO_SET means both arrays are empty. "
+                "A primary triplet plus a reserve triplet MUST be TWO_SETS, never ONE_SET."
+            ),
+        },
         "primary_article_ids": {"type": "array", "items": STRING},
         "reserve_article_ids": {"type": "array", "items": STRING},
         "reason": STRING,

@@ -1,0 +1,31 @@
+{
+  "article_count": 2000,
+  "unique_urls": 2000,
+  "snapshot_counts": {
+    "accepted": 2000,
+    "excluded": 731
+  },
+  "keyword_article_counts": {
+    "モバイル": 1601,
+    "電子工作": 399
+  },
+  "snapshot_origins": {
+    "live": 2573,
+    "stored_official_snapshot": 158
+  },
+  "real_model_calls": {
+    "embeddings": 696,
+    "responses": 31
+  },
+  "model_tokens": {
+    "input_tokens": 2752676,
+    "output_tokens": 23304,
+    "total_tokens": 2775980
+  },
+  "selection_extra_responses": 2,
+  "old_sqlite_unchanged": true,
+  "database_integrity": "ok",
+  "foreign_keys": "ok",
+  "snapshot_hashes": "2000 matched",
+  "verified_at": "2026-10-15T11:35:27.248535+00:00"
+}

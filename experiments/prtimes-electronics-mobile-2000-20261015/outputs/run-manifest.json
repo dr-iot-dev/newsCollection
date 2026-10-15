@@ -1,0 +1,40 @@
+{
+  "database": "C:\\Users\\driot\\Documents\\Codex\\2026-10-15\\pr-times-2000-db-db-db\\outputs\\newsweave-electronics-mobile-2000-20261015.sqlite",
+  "database_url": "sqlite:///C:/Users/driot/Documents/Codex/2026-10-15/pr-times-2000-db-db-db/outputs/newsweave-electronics-mobile-2000-20261015.sqlite",
+  "run_id": "ba426ed6-3fcc-403c-a9e4-a178c2e938d0",
+  "target_articles": 2000,
+  "keywords": [
+    "電子工作",
+    "モバイル"
+  ],
+  "require_ai_iot": false,
+  "release_type": "01",
+  "title_exclusions": "app/title-exclusions.txt",
+  "selection_model": "gpt-4.1-2025-04-14",
+  "stop_after": "select",
+  "settings": {
+    "embedding_model": "text-embedding-3-small",
+    "selection_model": "gpt-4.1-2025-04-14",
+    "selection_candidate_limit": 30,
+    "generation_model": "gpt-6.1-sol",
+    "verification_model": "gpt-4.1-2025-04-14",
+    "n_components": 15,
+    "n_neighbors": 15,
+    "min_cluster_size": 5,
+    "min_samples": 5
+  },
+  "step": "generate",
+  "selection_complete": true,
+  "article_count": 2000,
+  "latest_company_articles": 696,
+  "noise_articles": 226,
+  "clusters": 29,
+  "selection_results": {
+    "TWO_SETS": 4,
+    "ONE_SET": 11,
+    "NO_SET": 14
+  },
+  "drafts": 0,
+  "verifications": 0,
+  "completed_at": "2026-10-15T11:34:03.339969+00:00"
+}

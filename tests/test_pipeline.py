@@ -103,6 +103,33 @@ def test_acquisition_requires_product_domain_and_title_conditions():
     assert parse_article(*release(title="一般製品", body="rapidapi と会社概要 AI"), []) is None
 
 
+def test_keyword_collection_can_omit_domain_but_keeps_type_and_exclusions():
+    assert parse_article(
+        *release(title="電子工作キット", body="製品の仕様"), [], require_domain=False
+    )
+    assert parse_article(*release(kind="02"), [], require_domain=False) is None
+    assert parse_article(*release(title="モバイル 展示"), ["展示"], require_domain=False) is None
+    assert parse_article(*release(title="電子工作キット", body="製品の仕様"), []) is None
+
+
+def test_selection_checkpoint_does_not_generate_and_can_resume(session):
+    for company in range(1, 7):
+        add(session, company)
+    provider = Provider()
+    pipeline = Pipeline(session, provider, lambda v, _: [0, 0, 0, 1, 1, 1])
+    run = pipeline.start(Settings())
+    assert pipeline.process(run.id, stop_after="select").step == "generate"
+    assert len(session.scalars(select(Comparison)).all()) == 2
+    assert not session.scalars(select(Draft)).all()
+    assert not session.scalars(select(Verification)).all()
+    assert all(c[0] in ("embed", SELECTION_SCHEMA) for c in provider.calls)
+    before = len(provider.calls)
+    pipeline.process(run.id, stop_after="select")
+    assert len(provider.calls) == before
+    assert pipeline.process(run.id).step == "complete"
+    assert len([c for c in provider.calls if c[0] == SELECTION_SCHEMA]) == 2
+
+
 def test_latest_before_embedding_and_distinct_company_ids(session):
     old = add(session, 1, 1)
     newest = add(session, 1, 2)

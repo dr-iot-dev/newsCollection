@@ -34,6 +34,7 @@ def parser():
         "--exclude-titles", type=Path, default=Path(__file__).with_name("title-exclusions.txt")
     )
     run = commands.add_parser("run")
+    run.add_argument("--stop-after", choices=["select"])
     run.add_argument("--embedding-model", default=Settings.embedding_model)
     run.add_argument("--selection-model", default=Settings.selection_model)
     run.add_argument("--selection-candidate-limit", type=int, default=30)
@@ -46,6 +47,7 @@ def parser():
     commands.add_parser("list")
     resume = commands.add_parser("resume")
     resume.add_argument("run_id")
+    resume.add_argument("--stop-after", choices=["select"])
     export = commands.add_parser("export")
     export.add_argument("run_id")
     export.add_argument("--output", type=Path, required=True)
@@ -104,7 +106,7 @@ def main(argv=None):
                     run = session.get(Run, args.run_id)
                     if run is None:
                         raise ValueError("RUN_NOT_FOUND")
-                run = pipeline.process(run.id)
+                run = pipeline.process(run.id, stop_after=args.stop_after)
                 result = {"run_id": run.id, "step": run.step, "error": run.error}
             print(json.dumps(result, ensure_ascii=False))
     except (ValueError, OSError, KeyError) as exc:

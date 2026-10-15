@@ -1,0 +1,20 @@
+[
+  {
+    "requested_model": "gpt-6.1-sol",
+    "http_status": 200,
+    "returned_model": "gpt-6.1-sol",
+    "error_code": null
+  },
+  {
+    "requested_model": "gpt-6.1-astra",
+    "http_status": 404,
+    "returned_model": null,
+    "error_code": "model_not_found"
+  },
+  {
+    "requested_model": "gpt-6-astra",
+    "http_status": 200,
+    "returned_model": "gpt-6-astra",
+    "error_code": null
+  }
+]
