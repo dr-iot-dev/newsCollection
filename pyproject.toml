@@ -4,65 +4,36 @@ build-backend = "hatchling.build"
 
 [project]
 name = "news-weave"
-version = "0.5.0"
-description = "News Weave: auditable AI/IoT primary-source news pipeline"
+version = "0.6.0"
+description = "Seven-stage AI/IoT comparison article pipeline"
 readme = "README.md"
-requires-python = ">=3.13,<3.15"
+requires-python = ">=3.12,<3.15"
 dependencies = [
-  "alembic==1.20.0",
-  "APScheduler==3.11.3",
-  "defusedxml==0.7.1",
   "beautifulsoup4==4.14.3",
-  "soupsieve==2.10",
-  "fastapi==0.141.1",
   "httpx==0.28.1",
-  "markdown-it-py==4.0.0",
-  "psycopg[binary]==3.3.6",
-  "Pillow==12.3.0",
-  "pydantic==2.13.5",
-  "pydantic-settings==2.15.0",
-  "PyYAML==6.0.2",
   "SQLAlchemy==2.0.54",
-  "structlog==25.4.0",
-  "typer==0.20.1",
-  "uvicorn==0.53.0",
+  "psycopg[binary]==3.3.6",
+  "umap-learn==0.5.12",
+  "hdbscan==0.8.44",
 ]
 
 [project.optional-dependencies]
-dev = ["mypy==1.18.2", "pytest==8.4.2", "pytest-cov==7.0.0", "ruff==0.13.3"]
-clustering = ["umap-learn==0.5.12", "hdbscan==0.8.44"]
+dev = ["pytest==8.4.2", "ruff==0.13.3"]
 
 [project.scripts]
-news-weave = "app.cli:app"
-nw-stage = "nw_generation.runtime:main"
-# Compatibility alias for existing scripts.
-ai-iot-news = "app.cli:app"
+news-weave = "app.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["app", "nw_generation"]
+packages = ["app"]
 
 [tool.pytest.ini_options]
 addopts = "-q --strict-markers"
 testpaths = ["tests"]
 
 [tool.ruff]
-extend-exclude = ["components"]
-target-version = "py313"
+target-version = "py312"
 line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "S", "RUF"]
-ignore = ["S101", "UP046"]
-
-[tool.mypy]
-python_version = "3.13"
-strict = true
-plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
-
-[[tool.mypy.overrides]]
-module = ["apscheduler.*", "defusedxml.*", "yaml"]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = ["hdbscan.*", "umap.*", "sklearn.*"]
-ignore_missing_imports = true
+ignore = ["S101"]

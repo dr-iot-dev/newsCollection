@@ -1,1 +1,0 @@
-"""Independent verification module."""
