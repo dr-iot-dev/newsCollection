@@ -1,0 +1,26 @@
+{
+  "group": "C22-primary",
+  "finished_at": "2026-10-15T06:44:45.208267+00:00",
+  "elapsed_seconds": 18.95300000000134,
+  "response_id": "resp_0f483025d8f6280a016ad0764ab12887d08662dfc20e1bdd55",
+  "model_requested": "gpt-6.1-sol",
+  "model_returned": "gpt-6.1-sol",
+  "response_status": "completed",
+  "usage": {
+    "input_tokens": 7989,
+    "input_tokens_details": {
+      "cache_write_tokens": 6423,
+      "cached_tokens": 1563
+    },
+    "output_tokens": 830,
+    "output_tokens_details": {
+      "reasoning_tokens": 196
+    },
+    "total_tokens": 8819
+  },
+  "incomplete_details": null,
+  "refusals": [],
+  "model_verdict": "INAPPROPRIATE",
+  "output_chars": 916,
+  "output_sha256": "c78f25b0900f72e1be40bcce8e78db56afe137c81ea19146418d416741ff9d66"
+}

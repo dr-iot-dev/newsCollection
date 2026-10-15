@@ -1,0 +1,12 @@
+{
+  "cluster_id": "C23",
+  "article_count": 8,
+  "body_chars": 23392,
+  "combinations_requested": 56,
+  "verified_source_hashes": 8,
+  "input_sha256": "6d18afa4996a622ec2405514edead59e052cb7014a707cfe375f486ab3ea475f",
+  "instructions_sha256": "9594732b2acfc7849914da434949536b8a0afd4559217f88bc3f248c48f38b9a",
+  "previous_model_outputs_in_selection_input": false,
+  "model": "gpt-4.1-2025-04-14",
+  "temperature": 0
+}

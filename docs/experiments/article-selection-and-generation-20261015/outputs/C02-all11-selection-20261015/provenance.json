@@ -1,0 +1,19 @@
+{
+  "cluster_id": "C02",
+  "articles": 11,
+  "combination_count": 165,
+  "input_body_chars": 25386,
+  "model": "gpt-4.1-2025-04-14",
+  "temperature": 0,
+  "prompt_changes_from_initial_trial": [
+    "7記事 -> 11記事",
+    "全35通り -> 全165通り"
+  ],
+  "previous_model_outputs_in_selector_input": false,
+  "source_snapshot": "\\\\TRUENAS\\dev\\codex\\newsWeave\\.local\\seven-stage-real-c02-fresh-20261015\\cluster-input.json",
+  "source_hashes_verified": 11,
+  "centroid_definition": "L2-normalize all 11 original embeddings; arithmetic mean; normalize centroid; descending cosine similarity",
+  "input_sha256": "2b32cfa3d201336109d2c009da7d898473c7e56ddaa95fcf65250def9cb1d418",
+  "instructions_sha256": "42e418e54ab63220a0e3a9370e7d21b2ff7ab7d146ee98846eeeab323b5a164c",
+  "created_at": "2026-10-15T05:51:59.718779+00:00"
+}

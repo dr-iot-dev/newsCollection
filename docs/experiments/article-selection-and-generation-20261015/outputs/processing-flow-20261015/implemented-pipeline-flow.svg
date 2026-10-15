@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="2330" viewBox="0 0 1700 2330" role="img">
+<title>現行アプリ：生成・独立検証・1回修正の経路</title><desc>実装済みの処理を示す。今回の7組がこの全経路を実行済みという意味ではない。</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="context-stroke"/></marker></defs>
+<rect width="1700" height="2330" fill="#f8fafc"/>
+<text x="60" y="58" text-anchor="start" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="38" fill="#0f172a">現行アプリ：生成・独立検証・1回修正の経路</text>
+<text x="60" y="112" text-anchor="start" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="21" fill="#475569">実装済みの処理を示す。今回の7組がこの全経路を実行済みという意味ではない。</text>
+<rect x="500" y="160" width="740" height="90" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="870.0" y="205.0" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">① 条件を満たす原資料を取得・保存</text>
+<rect x="500" y="290" width="740" height="90" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="870.0" y="335.0" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">② PR TIMES企業IDごとに最新1記事を固定</text>
+<rect x="500" y="420" width="740" height="90" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="870.0" y="465.0" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">③ タイトル＋本文全体から埋め込みを計算</text>
+<rect x="500" y="550" width="740" height="90" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="870.0" y="595.0" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">④ UMAP → HDBSCANでクラスタリング</text>
+<rect x="500" y="680" width="740" height="110" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="870.0" y="716.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">⑤ 元ベクトルの重心に近い3記事を選択</text>
+<text x="870.0" y="753.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">AIなし／各クラスター1組／予備なし</text>
+<rect x="500" y="840" width="740" height="100" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="870.0" y="890.0" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">⑥ 固定した3原文＋生成指示で記事生成</text>
+<path d="M870,250 L870,290" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<path d="M870,380 L870,420" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<path d="M870,510 L870,550" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<path d="M870,640 L870,680" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<path d="M870,790 L870,840" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<polygon points="870.0,990 1180,1055.0 870.0,1120 560,1055.0" fill="#fffbeb" stroke="#d97706" stroke-width="3"/>
+<text x="870.0" y="1055.0" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">生成本文が比較不適か</text>
+<path d="M870,940 L870,990" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<rect x="40" y="985" width="430" height="160" rx="18" fill="#fff1f2" stroke="#e11d48" stroke-width="3" />
+<text x="255.0" y="1028.0" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">即座に不適で確定</text>
+<text x="255.0" y="1065.0" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">点数null</text>
+<text x="255.0" y="1102.0" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">検証・修正を呼ばない</text>
+<path d="M560,1055 L470,1055" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<text x="515" y="1025" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="21" fill="#475569">はい</text>
+<rect x="500" y="1190" width="740" height="120" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="870.0" y="1231.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">⑦ 生成とは異なるモデルで個別検証</text>
+<text x="870.0" y="1268.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">記事1本＋3原文＋実際の生成指示</text>
+<path d="M870,1120 L870,1190" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<text x="935" y="1155" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="21" fill="#475569">いいえ</text>
+<polygon points="870.0,1360 1180,1425.0 870.0,1490 560,1425.0" fill="#fffbeb" stroke="#d97706" stroke-width="3"/>
+<text x="870.0" y="1425.0" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">初回判定が適切か</text>
+<path d="M870,1310 L870,1360" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<rect x="1270" y="1345" width="390" height="160" rx="18" fill="#ecfdf5" stroke="#059669" stroke-width="3" />
+<text x="1465.0" y="1406.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">初回判定を最終結果に</text>
+<text x="1465.0" y="1443.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">採否・点数・理由を保存</text>
+<path d="M1180,1425 L1270,1425" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<text x="1225" y="1388" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="21" fill="#475569">はい</text>
+<rect x="500" y="1570" width="740" height="110" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="870.0" y="1606.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">同じ生成モデルで1回だけ修正</text>
+<text x="870.0" y="1643.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">同じ3原文・生成指示＋初稿・検証指摘</text>
+<path d="M870,1490 L870,1570" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<text x="970" y="1527" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="21" fill="#475569">不適・要確認</text>
+<polygon points="870.0,1730 1180,1795.0 870.0,1860 560,1795.0" fill="#fffbeb" stroke="#d97706" stroke-width="3"/>
+<text x="870.0" y="1795.0" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">修正版が比較不適か</text>
+<path d="M870,1680 L870,1730" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<path d="M560,1795 L255,1795 L255,1145" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<text x="260" y="1840" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="21" fill="#475569">はい：即時不適へ</text>
+<rect x="500" y="1940" width="740" height="110" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="870.0" y="1976.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">同じ検証モデルで修正版を再検証</text>
+<text x="870.0" y="2013.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">同じ3原文・実際の生成指示を再び渡す</text>
+<path d="M870,1860 L870,1940" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<text x="935" y="1895" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="21" fill="#475569">いいえ</text>
+<rect x="500" y="2120" width="740" height="110" rx="18" fill="#ecfdf5" stroke="#059669" stroke-width="3" />
+<text x="870.0" y="2156.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">再検証を最終結果にする</text>
+<text x="870.0" y="2193.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">不適・要確認が残っても追加修正しない</text>
+<path d="M870,2050 L870,2120" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<text x="850" y="2285" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="20" fill="#475569">ノイズ・3記事未満は組を作らない。通信失敗は採否へ変換せず、保存済み成功は再開時に再送しない。</text>
+</svg>

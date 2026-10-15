@@ -1,0 +1,38 @@
+{
+  "cluster_id": "C18",
+  "article_count": 14,
+  "body_chars": 41569,
+  "combinations_requested": 364,
+  "raw_model_status_values": [
+    "TWO_SETS"
+  ],
+  "model_status": "TWO_SETS",
+  "primary_ids": [
+    "F095",
+    "F267",
+    "F509"
+  ],
+  "reserve_ids": [
+    "F784",
+    "F819",
+    "F788"
+  ],
+  "overview": "両組とも不適。完成サービスと周辺ツール・解析技術の混在。",
+  "primary_review": "不適。記事制作の一貫支援サービス2件に、文章校正・文字数計算等の無料ツール群を第三の同種サービスとして加えている。",
+  "reserve_review": "不適。特許出願書類作成・知財業務支援に、化学構造式の抽出・構造化ツールを加えており、支援する工程と選択目的が異なる。",
+  "usage": {
+    "input_tokens": 33509,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 2722,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 36231
+  },
+  "generation_performed": false,
+  "independent_evaluation_model_used": false,
+  "all_combinations_independently_checked": false
+}

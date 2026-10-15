@@ -1,0 +1,12 @@
+{
+  "cluster_id": "C09",
+  "article_count": 5,
+  "body_chars": 12166,
+  "combinations_requested": 10,
+  "verified_source_hashes": 5,
+  "input_sha256": "c1bc893a5d7655e94f8e36a07f4db6a4c169c7d21061ef82f28d28e56c89026e",
+  "instructions_sha256": "7187d1c37dd38c04210b488881f794f19c899f5332eb7f7ce852d6b6f3dfff20",
+  "previous_model_outputs_in_selection_input": false,
+  "model": "gpt-4.1-2025-04-14",
+  "temperature": 0
+}

@@ -1,0 +1,56 @@
+{
+  "cluster_id": "C01",
+  "cluster_members": 13,
+  "k": 7,
+  "selection_model": "gpt-4.1-2025-04-14",
+  "selection_status": "ONE_SET",
+  "model_reported_eligible_set_count": 1,
+  "primary_article_ids": [
+    "F312",
+    "F584",
+    "F965"
+  ],
+  "reserve_article_ids": null,
+  "baseline_centroid_top3": [
+    "F312",
+    "F584",
+    "F965"
+  ],
+  "selection_changed_from_baseline": false,
+  "generation_performer": "current_chat_assistant",
+  "generation_status": "INAPPROPRIATE",
+  "generation_failed_condition": [
+    "G2"
+  ],
+  "selection_evidence_defects": [
+    "G4",
+    "G5",
+    "G6"
+  ],
+  "article_created": false,
+  "fallback_used": false,
+  "fallback_unavailable_reason": "Selector returned no reserve set",
+  "successful_selection_api_calls": 1,
+  "generation_api_calls": 0,
+  "usage": {
+    "input_tokens": 14885,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 2257,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 17142
+  },
+  "external_evaluation_performed": false,
+  "score": null,
+  "source_body_chars": 17035,
+  "experiment_limitations": [
+    "One cluster, one selector response only",
+    "All 35 combinations were requested; the model did not output a per-combination audit",
+    "Category granularity remains a semantic judgement; this run applies the strict category criterion from the supplied prompts",
+    "No latest source refresh, no expansion beyond centroid top seven"
+  ]
+}

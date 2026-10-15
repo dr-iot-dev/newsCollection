@@ -1,0 +1,177 @@
+[
+  {
+    "group": "C03-reserve",
+    "cluster_id": "C03",
+    "role": "RESERVE",
+    "article_ids": [
+      "F865",
+      "F456",
+      "F932"
+    ],
+    "model_requested": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "store": false,
+    "max_output_tokens": 24000,
+    "source_hashes": {
+      "F865": "df39e14d71c92ed71032f1d2c7c2ceaaaa55ab09cddfd0f6c76e12e3f0766ef0",
+      "F456": "f01641985452644e1c645fe2a16e00864e3056ceef21ae6d5133ea4b5d1a53f8",
+      "F932": "5330197869f8ceb9836fcaecace6400b17db00965159a0ca376c241df8f5f62f"
+    },
+    "instructions_sha256": "b542736478b76f47b7b2483f969004c070b058e4dfc6b0f12a0d0fb55fb88f87",
+    "input_sha256": "2a90129cc15a5f685b7ca0377bd1aa47d07ab62d201f3775e3dfe37fc2da748c",
+    "input_body_chars": 9065,
+    "prior_verdicts_or_articles_in_input": false,
+    "tools_provided": false,
+    "input_body_truncated": false
+  },
+  {
+    "group": "C10-primary",
+    "cluster_id": "C10",
+    "role": "PRIMARY",
+    "article_ids": [
+      "F950",
+      "F677",
+      "F698"
+    ],
+    "model_requested": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "store": false,
+    "max_output_tokens": 24000,
+    "source_hashes": {
+      "F950": "93d37bd485ecb3168751b9a0e5d9dccd0c7bf59e1962dfecedeb2dfb80308a46",
+      "F677": "06f8248b58b83732d265c1e0d82e8e9579835054f2f2098accd36a7077c2eb4c",
+      "F698": "8a75f1d6cd7bd64a46551c8e3807b0f424480f6fc734a6abf4d781b88c37e1df"
+    },
+    "instructions_sha256": "b542736478b76f47b7b2483f969004c070b058e4dfc6b0f12a0d0fb55fb88f87",
+    "input_sha256": "74c17336059a054a848086441a532e16dfd7ff860bf2aa835cb73b981bef7688",
+    "input_body_chars": 19145,
+    "prior_verdicts_or_articles_in_input": false,
+    "tools_provided": false,
+    "input_body_truncated": false
+  },
+  {
+    "group": "C13-primary",
+    "cluster_id": "C13",
+    "role": "PRIMARY",
+    "article_ids": [
+      "F438",
+      "F065",
+      "F637"
+    ],
+    "model_requested": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "store": false,
+    "max_output_tokens": 24000,
+    "source_hashes": {
+      "F438": "2c34705deb15e924b9adda27b98cf0f373f5501f5924c4b43e4aa67723e221f7",
+      "F065": "d97b823626ec20565feff30230ef9ecbad555cfa84cd5c449192dba17cfff016",
+      "F637": "ce4f6da479d896c28149b614f2b6f009ae63859cf89e3080497852da080e7194"
+    },
+    "instructions_sha256": "b542736478b76f47b7b2483f969004c070b058e4dfc6b0f12a0d0fb55fb88f87",
+    "input_sha256": "2f6613f3d162c1515f92a93b24a1af1e90e218455314f78ab2b60488be41ad74",
+    "input_body_chars": 11429,
+    "prior_verdicts_or_articles_in_input": false,
+    "tools_provided": false,
+    "input_body_truncated": false
+  },
+  {
+    "group": "C17-primary",
+    "cluster_id": "C17",
+    "role": "PRIMARY",
+    "article_ids": [
+      "F488",
+      "F333",
+      "F411"
+    ],
+    "model_requested": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "store": false,
+    "max_output_tokens": 24000,
+    "source_hashes": {
+      "F488": "574b54ae4557294d8129f2c5e3cfc9d3928cdb7520931c8bcec47f7f3a2d21a2",
+      "F333": "cfe39bb4a654b3068358ed13b823cb10e99520e9c6d738b8102180a03393e956",
+      "F411": "f6df0562085ed8a7613cf22a4f14b42d1ba6f6b35008550847329a1ae1584443"
+    },
+    "instructions_sha256": "b542736478b76f47b7b2483f969004c070b058e4dfc6b0f12a0d0fb55fb88f87",
+    "input_sha256": "068541ebc8f3d8f56855f9de28533c4c6034a9ad7bd84adaf7821765f914d88f",
+    "input_body_chars": 8956,
+    "prior_verdicts_or_articles_in_input": false,
+    "tools_provided": false,
+    "input_body_truncated": false
+  },
+  {
+    "group": "C22-primary",
+    "cluster_id": "C22",
+    "role": "PRIMARY",
+    "article_ids": [
+      "F730",
+      "F903",
+      "F831"
+    ],
+    "model_requested": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "store": false,
+    "max_output_tokens": 24000,
+    "source_hashes": {
+      "F730": "96deae1b970d7c77a58b15a3f0aad0568cf975a047260577ab821941dc368dc7",
+      "F903": "5ca5f27261255a1a0c8da177e7ed1a938ad7ef4b09af44364be19d4e67f6e1dc",
+      "F831": "2d5427e02fbf710b0c56f539a4f964c7fbb33b1fb2deff93459fbdde1ccdaf0c"
+    },
+    "instructions_sha256": "b542736478b76f47b7b2483f969004c070b058e4dfc6b0f12a0d0fb55fb88f87",
+    "input_sha256": "f658ce90317e3e449af5928b17c1d1735cb472d8fd75ae0536a246b5ba23a50f",
+    "input_body_chars": 8086,
+    "prior_verdicts_or_articles_in_input": false,
+    "tools_provided": false,
+    "input_body_truncated": false
+  },
+  {
+    "group": "C22-reserve",
+    "cluster_id": "C22",
+    "role": "RESERVE",
+    "article_ids": [
+      "F730",
+      "F903",
+      "F673"
+    ],
+    "model_requested": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "store": false,
+    "max_output_tokens": 24000,
+    "source_hashes": {
+      "F730": "96deae1b970d7c77a58b15a3f0aad0568cf975a047260577ab821941dc368dc7",
+      "F903": "5ca5f27261255a1a0c8da177e7ed1a938ad7ef4b09af44364be19d4e67f6e1dc",
+      "F673": "a578f4f7a1b597bb2f0e364b576a37082ccb5e711e20b3e309f9b4ba6eaac619"
+    },
+    "instructions_sha256": "b542736478b76f47b7b2483f969004c070b058e4dfc6b0f12a0d0fb55fb88f87",
+    "input_sha256": "a6bebc1be8718a40e3c19b7f64f8a31cb581d79cfb0d69d043c76d30cf653e99",
+    "input_body_chars": 7088,
+    "prior_verdicts_or_articles_in_input": false,
+    "tools_provided": false,
+    "input_body_truncated": false
+  },
+  {
+    "group": "C27-reserve",
+    "cluster_id": "C27",
+    "role": "RESERVE",
+    "article_ids": [
+      "F902",
+      "F711",
+      "F278"
+    ],
+    "model_requested": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "store": false,
+    "max_output_tokens": 24000,
+    "source_hashes": {
+      "F902": "e7260459a2075a68d5dae84afce16fe60b6e94aeb7499df3dcc5bab9c3005f93",
+      "F711": "a6ebfbd3eb33fb5795bf1efb0a146bb15ccaa6fac1058ecada4ac9b1f8a82bb2",
+      "F278": "20bd7a98a6241cdc90c646ad7a2013a88adde610c5fb7e3234510337376e04d1"
+    },
+    "instructions_sha256": "b542736478b76f47b7b2483f969004c070b058e4dfc6b0f12a0d0fb55fb88f87",
+    "input_sha256": "4d2e6c8df5f327b0842c4f7919d72dbf6f7d3da3da825d66526949a5b8a4429a",
+    "input_body_chars": 10499,
+    "prior_verdicts_or_articles_in_input": false,
+    "tools_provided": false,
+    "input_body_truncated": false
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "elapsed_seconds": 20.79699999999866,
+  "response_id": "resp_0cc6f84a1ef860c8016ad06709336487d0bafd6798a2ec7995",
+  "model": "gpt-4.1-2025-04-14",
+  "status": "completed",
+  "usage": {
+    "input_tokens": 14885,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 2257,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 17142
+  }
+}

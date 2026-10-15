@@ -1,0 +1,146 @@
+[
+  {
+    "cluster_id": "C03",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 5313,
+    "usage": {
+      "input_tokens": 44435,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 3268,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 47703
+    }
+  },
+  {
+    "cluster_id": "C04",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 5844,
+    "usage": {
+      "input_tokens": 58651,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 3510,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 62161
+    }
+  },
+  {
+    "cluster_id": "C05",
+    "status": "completed",
+    "model_selection_status": "NO_SET",
+    "output_chars": 1871,
+    "usage": {
+      "input_tokens": 25654,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1269,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 26923
+    }
+  },
+  {
+    "cluster_id": "C06",
+    "status": "completed",
+    "model_selection_status": "NO_SET",
+    "output_chars": 1612,
+    "usage": {
+      "input_tokens": 21148,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1089,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 22237
+    }
+  },
+  {
+    "cluster_id": "C07",
+    "status": "completed",
+    "model_selection_status": "NO_SET",
+    "output_chars": 2285,
+    "usage": {
+      "input_tokens": 25435,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1426,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 26861
+    }
+  },
+  {
+    "cluster_id": "C08",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 4316,
+    "usage": {
+      "input_tokens": 15171,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 2745,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 17916
+    }
+  },
+  {
+    "cluster_id": "C09",
+    "status": "completed",
+    "model_selection_status": "NO_SET",
+    "output_chars": 1673,
+    "usage": {
+      "input_tokens": 12324,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1074,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 13398
+    }
+  },
+  {
+    "cluster_id": "C10",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 5023,
+    "usage": {
+      "input_tokens": 46704,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 2915,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 49619
+    }
+  }
+]

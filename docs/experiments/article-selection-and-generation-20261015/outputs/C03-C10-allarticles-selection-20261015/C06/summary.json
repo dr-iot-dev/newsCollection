@@ -1,0 +1,31 @@
+{
+  "cluster_id": "C06",
+  "input_articles": 8,
+  "body_chars": 23068,
+  "combinations_requested": 56,
+  "model": "gpt-4.1-2025-04-14",
+  "model_selection_status": "NO_SET",
+  "primary_ids": null,
+  "reserve_ids": null,
+  "distinct_article_sets": null,
+  "primary_theme": "なし",
+  "reserve_theme": "なし",
+  "assistant_primary_review": "モデルが選定不可と判定。",
+  "assistant_reserve_review": "なし。",
+  "overview": "モデルは選定不可。外観検査関連も食品用装置・塗装用測定器・学習基盤で用途と比較単位が異なる。",
+  "usage": {
+    "input_tokens": 21148,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 1089,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 22237
+  },
+  "generation_performed": false,
+  "separate_evaluation_model_used": false,
+  "no_set_is_nonexistence_proof": false
+}

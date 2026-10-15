@@ -1,0 +1,39 @@
+{
+  "cluster_id": "C08",
+  "input_articles": 5,
+  "body_chars": 16972,
+  "combinations_requested": 10,
+  "model": "gpt-4.1-2025-04-14",
+  "model_selection_status": "TWO_SETS",
+  "primary_ids": [
+    "F038",
+    "F429",
+    "F518"
+  ],
+  "reserve_ids": [
+    "F038",
+    "F429",
+    "F110"
+  ],
+  "distinct_article_sets": true,
+  "primary_theme": "xPilot／Vusion／mcframe X：クラウド業務基盤",
+  "reserve_theme": "xPilot／Vusion／e-Stand：現場データ活用",
+  "assistant_primary_review": "不適。小売店舗運営プラットフォーム2件に製造業ERPを組み合わせ、DX・業務効率化という広い共通語で採用している。",
+  "assistant_reserve_review": "不適。小売向け2件に建設業ダッシュボードを組み合わせている。モデル自身もG2を△としており、必須条件の全合格という指示に反する。",
+  "overview": "両組とも不適。小売・製造・建設の異なる業務をDXという上位概念でまとめている。",
+  "usage": {
+    "input_tokens": 15171,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 2745,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 17916
+  },
+  "generation_performed": false,
+  "separate_evaluation_model_used": false,
+  "no_set_is_nonexistence_proof": false
+}

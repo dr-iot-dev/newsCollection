@@ -1,0 +1,7 @@
+{
+  "primary": null,
+  "reserve": null,
+  "overview": "モデルが選定不可と判定。",
+  "reason": "SASE、ネットワーク運用、ブラウザ管理、資産管理、ストレージなどの具体的なカテゴリが異なると判定。",
+  "evidence": []
+}

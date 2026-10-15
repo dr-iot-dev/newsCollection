@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1840" viewBox="0 0 1600 1840" role="img">
+<title>今回の実験：記事選定から比較記事生成まで</title><desc>実線＝実施済み　破線＝未実施の独立検証　｜　2026-10-15の保存記録に基づく</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="context-stroke"/></marker></defs>
+<rect width="1600" height="1840" fill="#f8fafc"/>
+<text x="60" y="58" text-anchor="start" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="38" fill="#0f172a">今回の実験：記事選定から比較記事生成まで</text>
+<text x="60" y="112" text-anchor="start" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="21" fill="#475569">実線＝実施済み　破線＝未実施の独立検証　｜　2026-10-15の保存記録に基づく</text>
+<rect x="430" y="150" width="740" height="90" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="800.0" y="195.0" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">保存済みの元記事本文・埋め込み・クラスター所属</text>
+<rect x="430" y="285" width="740" height="100" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="800.0" y="316.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">C01〜C30：各クラスターの全所属記事を入力</text>
+<text x="800.0" y="353.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">実験入力327件／重心に近い順で提示</text>
+<rect x="430" y="430" width="740" height="100" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="800.0" y="461.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">GPT-4.1がG1〜G6で選定</text>
+<text x="800.0" y="498.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">本命・予備：最大2組／不足時は1組・0組</text>
+<rect x="430" y="575" width="740" height="100" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="800.0" y="606.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">本チャットが候補の本文根拠を照合</text>
+<text x="800.0" y="643.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">用途・比較単位・対象重複・根拠不足を確認</text>
+<rect x="430" y="720" width="740" height="100" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="800.0" y="751.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">有望候補などから生成対象の7組を固定</text>
+<text x="800.0" y="788.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">C03予備・C10・C13・C17・C22両組・C27予備</text>
+<rect x="430" y="865" width="740" height="110" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="800.0" y="901.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">GPT 6.1 Sol：各組を独立に実行</text>
+<text x="800.0" y="938.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">3原文＋同じ生成指示／過去の判定は入力しない</text>
+<path d="M800,240 L800,285" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<path d="M800,385 L800,430" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<path d="M800,530 L800,575" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<path d="M800,675 L800,720" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<path d="M800,820 L800,865" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<polygon points="800.0,1030 1110,1095.0 800.0,1160 490,1095.0" fill="#fffbeb" stroke="#d97706" stroke-width="3"/>
+<text x="800.0" y="1095.0" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">生成時にG1〜G6を満たすか</text>
+<path d="M800,975 L800,1030" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<rect x="65" y="1240" width="690" height="120" rx="18" fill="#ecfdf5" stroke="#059669" stroke-width="3" />
+<text x="410.0" y="1281.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">APPROPRIATE：記事を生成</text>
+<text x="410.0" y="1318.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">C03予備・C10本命の2本</text>
+<rect x="845" y="1240" width="690" height="120" rx="18" fill="#fff1f2" stroke="#e11d48" stroke-width="3" />
+<text x="1190.0" y="1281.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">INAPPROPRIATE：記事本文は作らない</text>
+<text x="1190.0" y="1318.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">C13・C17・C22本命/予備・C27予備の5組</text>
+<path d="M490,1095 L410,1095 L410,1240" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<text x="365" y="1170" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="21" fill="#475569">はい</text>
+<path d="M1110,1095 L1190,1095 L1190,1240" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<text x="1250" y="1170" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="21" fill="#475569">いいえ</text>
+<rect x="430" y="1450" width="740" height="110" rx="18" fill="#eff6ff" stroke="#2563eb" stroke-width="3" />
+<text x="800.0" y="1486.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">本チャットの照合と記録保存</text>
+<text x="800.0" y="1523.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">入力・指示・応答原文・不適理由・確認所見</text>
+<path d="M410,1360 L410,1400 L700,1400 L700,1450" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<path d="M1190,1360 L1190,1400 L900,1400 L900,1450" fill="none" stroke="#475569" stroke-width="3"  marker-end="url(#arrow)"/>
+<rect x="430" y="1650" width="740" height="125" rx="18" fill="#f1f5f9" stroke="#64748b" stroke-width="3" stroke-dasharray="10 7"/>
+<text x="800.0" y="1675.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">別モデルによる独立検証・採点：今回未実施</text>
+<text x="800.0" y="1712.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">渡すもの：記事1本＋その3原文＋実際の生成指示</text>
+<text x="800.0" y="1749.5" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="25" fill="#0f172a">検証モデルも今回の実験では未指定</text>
+<path d="M65,1300 L30,1300 L30,1710 L430,1710" fill="none" stroke="#475569" stroke-width="3" stroke-dasharray="10 8" marker-end="url(#arrow)"/>
+<text x="225" y="1615" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="21" fill="#475569">記事がある2組の今後の接続先</text>
+<text x="800" y="1805" text-anchor="middle" dominant-baseline="central" font-family="Yu Gothic,Meiryo,sans-serif" font-size="20" fill="#475569">当初のk=7から全記事入力へ拡大。今回は本命・予備も個別に実行し、自動切り替えは未実装。</text>
+</svg>

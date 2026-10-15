@@ -1,0 +1,41 @@
+{
+  "cluster_id": "C02",
+  "input_articles": 11,
+  "body_chars": 25386,
+  "combinations_requested": 165,
+  "model": "gpt-4.1-2025-04-14",
+  "temperature": 0,
+  "model_selection_status": "TWO_SETS",
+  "model_reported_eligible_set_count": 2,
+  "model_primary_ids": [
+    "F234",
+    "F039",
+    "F118"
+  ],
+  "model_reserve_ids": [
+    "F118",
+    "F342",
+    "F301"
+  ],
+  "assistant_review": {
+    "primary": "Needs reconsideration: different monitoring objects and collection mechanisms, data platform versus integrated MES versus purpose-built monitoring, unsupported integration and quotation assumptions",
+    "reserve": "Inappropriate under strict category and purpose criteria: inventory management and quality management were combined under broad manufacturing data digitization",
+    "sets_confirmed_appropriate_as_returned": 0,
+    "all_possible_sets_independently_rejected": false
+  },
+  "generation_performed": false,
+  "external_evaluation_model_used": false,
+  "successful_api_calls": 1,
+  "usage": {
+    "input_tokens": 22293,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 3238,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 25531
+  }
+}

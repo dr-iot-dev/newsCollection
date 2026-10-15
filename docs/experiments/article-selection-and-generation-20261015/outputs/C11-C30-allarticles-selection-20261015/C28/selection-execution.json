@@ -1,0 +1,19 @@
+{
+  "cluster_id": "C28",
+  "elapsed_seconds": 8.93699999999808,
+  "response_id": "resp_09dd883e4257a0c7016ad06dac85fc87d0b683d11551380d1f",
+  "model": "gpt-4.1-2025-04-14",
+  "status": "completed",
+  "usage": {
+    "input_tokens": 15148,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 1069,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 16217
+  }
+}

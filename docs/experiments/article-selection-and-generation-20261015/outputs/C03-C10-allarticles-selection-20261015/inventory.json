@@ -1,0 +1,98 @@
+[
+  {
+    "cluster_id": "C03",
+    "article_count": 19,
+    "body_chars": 53601,
+    "combinations_requested": 969,
+    "verified_source_hashes": 19,
+    "input_sha256": "de2bea46ed257b0294a385ab4ebfa0fcf01c99126e4d197652f6daacd64e7c98",
+    "instructions_sha256": "6efd642dd6fc89489d58de27a1c33af5942fbbbdfee6ef699b88cfe9f134af71",
+    "previous_model_outputs_in_selection_input": false,
+    "model": "gpt-4.1-2025-04-14",
+    "temperature": 0
+  },
+  {
+    "cluster_id": "C04",
+    "article_count": 19,
+    "body_chars": 81070,
+    "combinations_requested": 969,
+    "verified_source_hashes": 19,
+    "input_sha256": "30cbe95794629fbfb9c2bb46db52066f1efad23e0d6cfe385bb5fd7380e9129a",
+    "instructions_sha256": "6efd642dd6fc89489d58de27a1c33af5942fbbbdfee6ef699b88cfe9f134af71",
+    "previous_model_outputs_in_selection_input": false,
+    "model": "gpt-4.1-2025-04-14",
+    "temperature": 0
+  },
+  {
+    "cluster_id": "C05",
+    "article_count": 12,
+    "body_chars": 27308,
+    "combinations_requested": 220,
+    "verified_source_hashes": 12,
+    "input_sha256": "a3a3d30412efd72d7a82802c23e3c81f94aa3552161ef251c147eeb682823a0b",
+    "instructions_sha256": "138049d1591bd9a45bba01c0132be7833c14752b908b583e1ddc0d9a0c2ce3a1",
+    "previous_model_outputs_in_selection_input": false,
+    "model": "gpt-4.1-2025-04-14",
+    "temperature": 0
+  },
+  {
+    "cluster_id": "C06",
+    "article_count": 8,
+    "body_chars": 23068,
+    "combinations_requested": 56,
+    "verified_source_hashes": 8,
+    "input_sha256": "8d1a1fa8261915b3fbb88a4acc78935eb7467d23f5498063ef3adbe06c91c9b6",
+    "instructions_sha256": "9594732b2acfc7849914da434949536b8a0afd4559217f88bc3f248c48f38b9a",
+    "previous_model_outputs_in_selection_input": false,
+    "model": "gpt-4.1-2025-04-14",
+    "temperature": 0
+  },
+  {
+    "cluster_id": "C07",
+    "article_count": 13,
+    "body_chars": 30383,
+    "combinations_requested": 286,
+    "verified_source_hashes": 13,
+    "input_sha256": "9c0c81f4b9ec4a403a4f3e34db46c9fa549fb406f1e47cfd18f8377246126b40",
+    "instructions_sha256": "4fef105da6ffefa498d8635e8357e7ab6a52217c72dc4177b0a1238fa774fa0a",
+    "previous_model_outputs_in_selection_input": false,
+    "model": "gpt-4.1-2025-04-14",
+    "temperature": 0
+  },
+  {
+    "cluster_id": "C08",
+    "article_count": 5,
+    "body_chars": 16972,
+    "combinations_requested": 10,
+    "verified_source_hashes": 5,
+    "input_sha256": "8475fea0a85d6c7f6a85785fba531377447b7f1e0a161d476199208af710f396",
+    "instructions_sha256": "7187d1c37dd38c04210b488881f794f19c899f5332eb7f7ce852d6b6f3dfff20",
+    "previous_model_outputs_in_selection_input": false,
+    "model": "gpt-4.1-2025-04-14",
+    "temperature": 0
+  },
+  {
+    "cluster_id": "C09",
+    "article_count": 5,
+    "body_chars": 12166,
+    "combinations_requested": 10,
+    "verified_source_hashes": 5,
+    "input_sha256": "c1bc893a5d7655e94f8e36a07f4db6a4c169c7d21061ef82f28d28e56c89026e",
+    "instructions_sha256": "7187d1c37dd38c04210b488881f794f19c899f5332eb7f7ce852d6b6f3dfff20",
+    "previous_model_outputs_in_selection_input": false,
+    "model": "gpt-4.1-2025-04-14",
+    "temperature": 0
+  },
+  {
+    "cluster_id": "C10",
+    "article_count": 12,
+    "body_chars": 58508,
+    "combinations_requested": 220,
+    "verified_source_hashes": 12,
+    "input_sha256": "a44a0347a3f13a5bcc1cc2c22add15a9c1418bf4c89dc88dd18835b08928d25f",
+    "instructions_sha256": "138049d1591bd9a45bba01c0132be7833c14752b908b583e1ddc0d9a0c2ce3a1",
+    "previous_model_outputs_in_selection_input": false,
+    "model": "gpt-4.1-2025-04-14",
+    "temperature": 0
+  }
+]

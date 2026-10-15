@@ -1,0 +1,367 @@
+{
+  "completed_responses": 7,
+  "requested_model_verified": true,
+  "prompt_identical_to_previous": true,
+  "all_source_hashes_match": true,
+  "raw_outputs_unchanged": true,
+  "inappropriate_outputs_have_no_article_body": true,
+  "explicit_citation_paragraph_endpoints_checked": 71,
+  "references": [
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P022"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P023"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P014"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P035"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P013"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P014"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F932",
+      "paragraph_id": "P013"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F932",
+      "paragraph_id": "P014"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P009"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P010"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P009"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P010"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F932",
+      "paragraph_id": "P015"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F932",
+      "paragraph_id": "P016"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P008"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P012"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P011"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P012"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P018"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F932",
+      "paragraph_id": "P020"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F932",
+      "paragraph_id": "P024"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P014"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F932",
+      "paragraph_id": "P013"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F932",
+      "paragraph_id": "P014"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P014"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P010"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P010"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F932",
+      "paragraph_id": "P016"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P008"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P025"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P028"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P012"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F932",
+      "paragraph_id": "P020"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P008"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P010"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P014"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F932",
+      "paragraph_id": "P013"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F932",
+      "paragraph_id": "P016"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P001"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P025"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P014"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P016"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P020"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F932",
+      "paragraph_id": "P002"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F932",
+      "paragraph_id": "P003"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P022"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F456",
+      "paragraph_id": "P024"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P027"
+    },
+    {
+      "group": "C03-reserve",
+      "article_id": "F865",
+      "paragraph_id": "P028"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F950",
+      "paragraph_id": "P004"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F698",
+      "paragraph_id": "P009"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F698",
+      "paragraph_id": "P030"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F677",
+      "paragraph_id": "P006"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F698",
+      "paragraph_id": "P032"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F950",
+      "paragraph_id": "P004"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F677",
+      "paragraph_id": "P006"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F698",
+      "paragraph_id": "P034"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F950",
+      "paragraph_id": "P006"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F950",
+      "paragraph_id": "P129"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F677",
+      "paragraph_id": "P012"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F698",
+      "paragraph_id": "P038"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F950",
+      "paragraph_id": "P008"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F677",
+      "paragraph_id": "P014"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F698",
+      "paragraph_id": "P040"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F677",
+      "paragraph_id": "P031"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F698",
+      "paragraph_id": "P080"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F677",
+      "paragraph_id": "P012"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F950",
+      "paragraph_id": "P073"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F950",
+      "paragraph_id": "P076"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F698",
+      "paragraph_id": "P062"
+    },
+    {
+      "group": "C10-primary",
+      "article_id": "F950",
+      "paragraph_id": "P006"
+    }
+  ],
+  "limitation": "機械確認は参照の実在・入出力整合性に限る。比較の意味と根拠は本チャットで別途確認。独立評価モデルによる採点ではない。"
+}

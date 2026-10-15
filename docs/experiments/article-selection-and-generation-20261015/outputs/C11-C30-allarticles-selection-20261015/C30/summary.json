@@ -1,0 +1,30 @@
+{
+  "cluster_id": "C30",
+  "article_count": 9,
+  "body_chars": 34901,
+  "combinations_requested": 84,
+  "raw_model_status_values": [
+    "NO_SET"
+  ],
+  "model_status": "NO_SET",
+  "primary_ids": null,
+  "reserve_ids": null,
+  "overview": "モデルが選定不可と判定。",
+  "primary_review": null,
+  "reserve_review": null,
+  "usage": {
+    "input_tokens": 28739,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 1250,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 29989
+  },
+  "generation_performed": false,
+  "independent_evaluation_model_used": false,
+  "all_combinations_independently_checked": false
+}

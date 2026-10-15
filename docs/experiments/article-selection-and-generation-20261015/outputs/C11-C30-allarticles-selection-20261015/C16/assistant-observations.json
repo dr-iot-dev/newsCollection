@@ -1,0 +1,12 @@
+{
+  "primary": null,
+  "reserve": null,
+  "overview": "応答不整合。冒頭1組・末尾0組、3記事組は未成立。",
+  "primary_review": "有効な3記事の組なし。冒頭はONE_SETだが本文ではF868・F332の2記事だけで、G1〜G6を不合格とし、末尾でNO_SETに変更している。",
+  "reserve_review": "なし。",
+  "tentative_ids": [
+    "F868",
+    "F332"
+  ],
+  "evidence": []
+}

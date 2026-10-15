@@ -1,0 +1,39 @@
+{
+  "cluster_id": "C04",
+  "input_articles": 19,
+  "body_chars": 81070,
+  "combinations_requested": 969,
+  "model": "gpt-4.1-2025-04-14",
+  "model_selection_status": "TWO_SETS",
+  "primary_ids": [
+    "F017",
+    "F140",
+    "F303"
+  ],
+  "reserve_ids": [
+    "F017",
+    "F140",
+    "F135"
+  ],
+  "distinct_article_sets": true,
+  "primary_theme": "ServiceNow／Zscaler／Vectra AI：AI活用型セキュリティ基盤",
+  "reserve_theme": "ServiceNow／Zscaler／Cohesity：防御・復旧基盤",
+  "assistant_primary_review": "要再検討。製品群全体と個別のSOC・検知機能で比較範囲が異なり、提供予定機能の混在もある。",
+  "assistant_reserve_review": "今回の厳格なカテゴリ・目的基準では不適。防御・SOC運用とAI基盤のバックアップ・復旧という補完的な役割を混在させている。",
+  "overview": "第一候補は比較範囲・提供時期の整理が必要。予備候補は防御と復旧の混在。",
+  "usage": {
+    "input_tokens": 58651,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 3510,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 62161
+  },
+  "generation_performed": false,
+  "separate_evaluation_model_used": false,
+  "no_set_is_nonexistence_proof": false
+}

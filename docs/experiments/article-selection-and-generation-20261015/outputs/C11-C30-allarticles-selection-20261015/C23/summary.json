@@ -1,0 +1,38 @@
+{
+  "cluster_id": "C23",
+  "article_count": 8,
+  "body_chars": 23392,
+  "combinations_requested": 56,
+  "raw_model_status_values": [
+    "TWO_SETS"
+  ],
+  "model_status": "TWO_SETS",
+  "primary_ids": [
+    "F308",
+    "F599",
+    "F798"
+  ],
+  "reserve_ids": [
+    "F930",
+    "F308",
+    "F149"
+  ],
+  "overview": "両組とも不適。サービス独立性・比較単位に問題。",
+  "primary_review": "不適。住宅の導入事例とIoTプラットフォームの単位が混在し、Gハウスと分譲マンションのHomeLinkを別の独立サービスとして数える根拠も不足。",
+  "reserve_review": "不適。集合住宅の総合スマートホーム基盤・居住者アプリに、IoT宅配ボックスという補完機器を並べている。",
+  "usage": {
+    "input_tokens": 21163,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 2573,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 23736
+  },
+  "generation_performed": false,
+  "independent_evaluation_model_used": false,
+  "all_combinations_independently_checked": false
+}

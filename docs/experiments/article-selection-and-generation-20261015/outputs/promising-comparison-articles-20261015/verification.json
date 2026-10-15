@@ -1,0 +1,14 @@
+{
+  "groups": 7,
+  "articles": 3,
+  "inappropriate": 4,
+  "explicit_paragraph_references_checked": 62,
+  "checks": [
+    "各組3記事と出典の対応",
+    "判定と本文有無の一致",
+    "適切組の比較軸数・差異軸数・3記事分の根拠の有無",
+    "参照段落IDの実在",
+    "出典リンクと入力URLの一致"
+  ],
+  "limitation": "形式と参照整合性の機械確認。意味内容・比較適切性は執筆担当自身による確認であり、独立評価ではない。"
+}

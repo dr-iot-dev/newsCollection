@@ -1,0 +1,25 @@
+{
+  "group": "C03-reserve",
+  "cluster_id": "C03",
+  "role": "RESERVE",
+  "article_ids": [
+    "F865",
+    "F456",
+    "F932"
+  ],
+  "model_requested": "gpt-6.1-sol",
+  "reasoning_effort": "medium",
+  "store": false,
+  "max_output_tokens": 24000,
+  "source_hashes": {
+    "F865": "df39e14d71c92ed71032f1d2c7c2ceaaaa55ab09cddfd0f6c76e12e3f0766ef0",
+    "F456": "f01641985452644e1c645fe2a16e00864e3056ceef21ae6d5133ea4b5d1a53f8",
+    "F932": "5330197869f8ceb9836fcaecace6400b17db00965159a0ca376c241df8f5f62f"
+  },
+  "instructions_sha256": "b542736478b76f47b7b2483f969004c070b058e4dfc6b0f12a0d0fb55fb88f87",
+  "input_sha256": "2a90129cc15a5f685b7ca0377bd1aa47d07ab62d201f3775e3dfe37fc2da748c",
+  "input_body_chars": 9065,
+  "prior_verdicts_or_articles_in_input": false,
+  "tools_provided": false,
+  "input_body_truncated": false
+}

@@ -1,0 +1,39 @@
+{
+  "cluster_id": "C10",
+  "input_articles": 12,
+  "body_chars": 58508,
+  "combinations_requested": 220,
+  "model": "gpt-4.1-2025-04-14",
+  "model_selection_status": "TWO_SETS",
+  "primary_ids": [
+    "F950",
+    "F677",
+    "F698"
+  ],
+  "reserve_ids": [
+    "F950",
+    "F677",
+    "F698"
+  ],
+  "distinct_article_sets": false,
+  "primary_theme": "Xiaomi／Roborock／ECOVACS：家庭用ロボット掃除機",
+  "reserve_theme": "同じ3記事のまま、ECOVACSの対象機種だけ変更",
+  "assistant_primary_review": "比較候補として有望。各記事の複数機種から対象を明示し、同じ機種・仕様・価格種別にそろえる必要がある。",
+  "assistant_reserve_review": "予備の記事組として無効。第一候補と同じ3記事であり、別の記事構成の予備を選ぶという指示を満たさない。",
+  "overview": "第一候補が最も有望。ただし複数機種の混在を修正する必要がある。予備は同一記事組のため無効。",
+  "usage": {
+    "input_tokens": 46704,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 2915,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 49619
+  },
+  "generation_performed": false,
+  "separate_evaluation_model_used": false,
+  "no_set_is_nonexistence_proof": false
+}

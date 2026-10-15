@@ -1,0 +1,38 @@
+{
+  "cluster_id": "C13",
+  "article_count": 9,
+  "body_chars": 25355,
+  "combinations_requested": 84,
+  "raw_model_status_values": [
+    "TWO_SETS"
+  ],
+  "model_status": "TWO_SETS",
+  "primary_ids": [
+    "F438",
+    "F065",
+    "F637"
+  ],
+  "reserve_ids": [
+    "F065",
+    "F637",
+    "F908"
+  ],
+  "overview": "第一候補は有望。予備は不適。",
+  "primary_review": "候補として有望。不動産仲介の物件情報登録・入稿の手作業削減という目的がそろう。ただしFaciloの記事内の3プロダクトを混ぜず、AI駆動コンバーターを対象に固定する。",
+  "reserve_review": "不適。マイソクの店舗情報帯の編集は、物件情報登録・複数ポータル入稿とは別工程。モデル自身もG2を△としている。",
+  "usage": {
+    "input_tokens": 22161,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 2873,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 25034
+  },
+  "generation_performed": false,
+  "independent_evaluation_model_used": false,
+  "all_combinations_independently_checked": false
+}

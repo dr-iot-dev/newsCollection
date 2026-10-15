@@ -1,0 +1,10 @@
+{
+  "primary": null,
+  "reserve": null,
+  "primary_theme": "なし",
+  "reserve_theme": "なし",
+  "primary_review": "モデルが選定不可と判定。",
+  "reserve_review": "なし。",
+  "overview": "モデルは選定不可。水位・漏水・浄化槽・農業・介護などで監視対象と利用者が異なる。",
+  "evidence": []
+}

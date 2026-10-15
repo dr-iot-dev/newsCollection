@@ -1,0 +1,38 @@
+{
+  "cluster_id": "C17",
+  "article_count": 13,
+  "body_chars": 38606,
+  "combinations_requested": 286,
+  "raw_model_status_values": [
+    "TWO_SETS"
+  ],
+  "model_status": "TWO_SETS",
+  "primary_ids": [
+    "F488",
+    "F333",
+    "F411"
+  ],
+  "reserve_ids": [
+    "F538",
+    "F541",
+    "F333"
+  ],
+  "overview": "第一候補は条件整理が必要。予備は不適。",
+  "primary_review": "比較候補として有望だが、ツールと受託診断、Webとモバイルの対象範囲、改修支援の有無を根拠に沿って固定する必要がある。",
+  "reserve_review": "不適。AI利用リスクの専門家点検、生成AIの継続的ガバナンス管理、Web脆弱性診断を同じ目的の代替候補として扱っている。",
+  "usage": {
+    "input_tokens": 32679,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 3143,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 35822
+  },
+  "generation_performed": false,
+  "independent_evaluation_model_used": false,
+  "all_combinations_independently_checked": false
+}

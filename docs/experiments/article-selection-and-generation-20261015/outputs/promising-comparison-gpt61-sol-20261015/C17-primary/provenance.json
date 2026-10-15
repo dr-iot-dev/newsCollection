@@ -1,0 +1,25 @@
+{
+  "group": "C17-primary",
+  "cluster_id": "C17",
+  "role": "PRIMARY",
+  "article_ids": [
+    "F488",
+    "F333",
+    "F411"
+  ],
+  "model_requested": "gpt-6.1-sol",
+  "reasoning_effort": "medium",
+  "store": false,
+  "max_output_tokens": 24000,
+  "source_hashes": {
+    "F488": "574b54ae4557294d8129f2c5e3cfc9d3928cdb7520931c8bcec47f7f3a2d21a2",
+    "F333": "cfe39bb4a654b3068358ed13b823cb10e99520e9c6d738b8102180a03393e956",
+    "F411": "f6df0562085ed8a7613cf22a4f14b42d1ba6f6b35008550847329a1ae1584443"
+  },
+  "instructions_sha256": "b542736478b76f47b7b2483f969004c070b058e4dfc6b0f12a0d0fb55fb88f87",
+  "input_sha256": "068541ebc8f3d8f56855f9de28533c4c6034a9ad7bd84adaf7821765f914d88f",
+  "input_body_chars": 8956,
+  "prior_verdicts_or_articles_in_input": false,
+  "tools_provided": false,
+  "input_body_truncated": false
+}

@@ -1,0 +1,12 @@
+{
+  "cluster_id": "C18",
+  "article_count": 14,
+  "body_chars": 41569,
+  "combinations_requested": 364,
+  "verified_source_hashes": 14,
+  "input_sha256": "efac2567557d73ee7e290987df66d181f717a6129b428cd61cc4272f47d46911",
+  "instructions_sha256": "1fc49e44b302ea7d8c262c4b43bd7ecdb2af7204e3669a4fa804fbb48df6905a",
+  "previous_model_outputs_in_selection_input": false,
+  "model": "gpt-4.1-2025-04-14",
+  "temperature": 0
+}

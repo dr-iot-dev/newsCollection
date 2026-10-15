@@ -1,0 +1,38 @@
+{
+  "cluster_id": "C25",
+  "article_count": 13,
+  "body_chars": 43526,
+  "combinations_requested": 286,
+  "raw_model_status_values": [
+    "TWO_SETS"
+  ],
+  "model_status": "TWO_SETS",
+  "primary_ids": [
+    "F671",
+    "F985",
+    "F793"
+  ],
+  "reserve_ids": [
+    "F671",
+    "F870",
+    "F580"
+  ],
+  "overview": "両組とも要再検討。機器カテゴリ・AI機能・装着形状に問題。",
+  "primary_review": "要再検討。イヤホンと専用ボイスレコーダーを混在させており、今回の厳格なカテゴリ一致条件ではそのまま採用しない。",
+  "reserve_review": "要再検討。オープン型イヤホンというテーマに対してHeara Airの開放型構造は本文で確認できず、AI翻訳とAI通話ノイズ抑制も同じ機能として扱えない。",
+  "usage": {
+    "input_tokens": 33646,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 2803,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 36449
+  },
+  "generation_performed": false,
+  "independent_evaluation_model_used": false,
+  "all_combinations_independently_checked": false
+}

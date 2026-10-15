@@ -1,0 +1,39 @@
+{
+  "cluster_id": "C03",
+  "input_articles": 19,
+  "body_chars": 53601,
+  "combinations_requested": 969,
+  "model": "gpt-4.1-2025-04-14",
+  "model_selection_status": "TWO_SETS",
+  "primary_ids": [
+    "F010",
+    "F456",
+    "F932"
+  ],
+  "reserve_ids": [
+    "F865",
+    "F456",
+    "F932"
+  ],
+  "distinct_article_sets": true,
+  "primary_theme": "HARMONY／Navie／GeN：顧客対応AI",
+  "reserve_theme": "AvaTwin Chatbot／Navie／GeN：問い合わせ対応AI",
+  "assistant_primary_review": "要再検討。有人コンタクトセンター運営支援と、利用者が直接使う自動回答エージェントの役割が異なる。",
+  "assistant_reserve_review": "候補として有望。ただし比較軸の修正が必要。誤回答率・自己解決率・コスト削減を同じ指標として扱わない。",
+  "overview": "第一候補は役割の混在。予備候補は比較候補として有望だが根拠表を修正する必要がある。",
+  "usage": {
+    "input_tokens": 44435,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 3268,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 47703
+  },
+  "generation_performed": false,
+  "separate_evaluation_model_used": false,
+  "no_set_is_nonexistence_proof": false
+}

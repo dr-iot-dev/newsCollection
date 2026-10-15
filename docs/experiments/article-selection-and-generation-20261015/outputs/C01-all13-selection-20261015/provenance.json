@@ -1,0 +1,17 @@
+{
+  "cluster_id": "C01",
+  "requested_label": "C0 interpreted as preceding C01",
+  "articles": 13,
+  "combination_count": 286,
+  "input_body_chars": 29624,
+  "model": "gpt-4.1-2025-04-14",
+  "temperature": 0,
+  "prompt_changes_from_seven_article_trial": [
+    "7記事 -> 13記事",
+    "全35通り -> 全286通り"
+  ],
+  "previous_model_outputs_in_selector_input": false,
+  "input_sha256": "77df78f22dd00d519cc41b96510299e4eb455843cc698a4aae5f284162ef3532",
+  "instructions_sha256": "4fef105da6ffefa498d8635e8357e7ab6a52217c72dc4177b0a1238fa774fa0a",
+  "created_at": "2026-10-15T05:46:48.447234+00:00"
+}

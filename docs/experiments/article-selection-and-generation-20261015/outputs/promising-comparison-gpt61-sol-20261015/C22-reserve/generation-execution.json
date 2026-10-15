@@ -1,0 +1,26 @@
+{
+  "group": "C22-reserve",
+  "finished_at": "2026-10-15T06:44:47.050857+00:00",
+  "elapsed_seconds": 16.031000000002678,
+  "response_id": "resp_03e220c1c533f87e016ad0764f71d487d0b22aba19570f443e",
+  "model_requested": "gpt-6.1-sol",
+  "model_returned": "gpt-6.1-sol",
+  "response_status": "completed",
+  "usage": {
+    "input_tokens": 6958,
+    "input_tokens_details": {
+      "cache_write_tokens": 5392,
+      "cached_tokens": 1563
+    },
+    "output_tokens": 735,
+    "output_tokens_details": {
+      "reasoning_tokens": 110
+    },
+    "total_tokens": 7693
+  },
+  "incomplete_details": null,
+  "refusals": [],
+  "model_verdict": "INAPPROPRIATE",
+  "output_chars": 900,
+  "output_sha256": "b28214f2eaaf87afb52a3fa761ec06218a6bc35410fd709308a18cbb4ce45593"
+}

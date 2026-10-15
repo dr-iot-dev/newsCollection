@@ -1,0 +1,38 @@
+{
+  "cluster_id": "C21",
+  "article_count": 11,
+  "body_chars": 43978,
+  "combinations_requested": 165,
+  "raw_model_status_values": [
+    "TWO_SETS"
+  ],
+  "model_status": "TWO_SETS",
+  "primary_ids": [
+    "F156",
+    "F463",
+    "F578"
+  ],
+  "reserve_ids": [
+    "F606",
+    "F828",
+    "F625"
+  ],
+  "overview": "第一候補は不適。予備は要再検討。",
+  "primary_review": "不適。現場のAI実装・定着支援と、既存の実装支援体制を前提とする独立した経営判断のセカンドオピニオンは、代替というより補完的な役割。",
+  "reserve_review": "要再検討。建設業の知識・設計施工支援基盤、工程表作成、汎用プロジェクト管理で範囲と役割が異なる。",
+  "usage": {
+    "input_tokens": 36623,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 3306,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 39929
+  },
+  "generation_performed": false,
+  "independent_evaluation_model_used": false,
+  "all_combinations_independently_checked": false
+}

@@ -1,0 +1,31 @@
+{
+  "cluster_id": "C07",
+  "input_articles": 13,
+  "body_chars": 30383,
+  "combinations_requested": 286,
+  "model": "gpt-4.1-2025-04-14",
+  "model_selection_status": "NO_SET",
+  "primary_ids": null,
+  "reserve_ids": null,
+  "distinct_article_sets": null,
+  "primary_theme": "なし",
+  "reserve_theme": "なし",
+  "assistant_primary_review": "モデルが選定不可と判定。",
+  "assistant_reserve_review": "なし。",
+  "overview": "モデルは選定不可。用途の分散に加え、F809とF876はほぼ同じ内容と判定。",
+  "usage": {
+    "input_tokens": 25435,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 1426,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 26861
+  },
+  "generation_performed": false,
+  "separate_evaluation_model_used": false,
+  "no_set_is_nonexistence_proof": false
+}

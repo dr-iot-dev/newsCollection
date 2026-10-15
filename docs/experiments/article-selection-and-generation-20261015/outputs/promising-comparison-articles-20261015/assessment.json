@@ -1,0 +1,82 @@
+{
+  "date": "2026-10-15",
+  "author": "このチャットのアシスタント自身",
+  "review_method": "生成担当自身による本文照合と完成稿の再確認。別モデルによる独立採点ではない。",
+  "results": [
+    {
+      "group": "C03-reserve",
+      "status": "APPROPRIATE",
+      "article_file": "C03-reserve.md",
+      "scope": "Web問い合わせの自動回答サービス",
+      "gates": {"G1":"PASS","G2":"PASS","G3":"PASS","G4":"PASS","G5":"PASS","G6":"PASS"},
+      "common_axes": [
+        {"axis":"回答知識の取り込み","evidence":{"F865":["P014"],"F456":["P014"],"F932":["P013","P014"]}},
+        {"axis":"利用者の質問経路","evidence":{"F865":["P008","P023"],"F456":["P007","P018"],"F932":["P002","P005","P018"]}},
+        {"axis":"質問意図の把握","evidence":{"F865":["P010"],"F456":["P010"],"F932":["P015","P016"]}}
+      ],
+      "differentiating_axes": ["回答知識の取り込み","質問意図の把握"],
+      "constraints": ["AvaTwinはWeb問い合わせ用途と有料音声認識オプションの条件を明記","GeNの導入成果を全社共通の保証値にしない","誤情報生成率・自己解決率・費用削減試算を相互比較しない","将来連携を現行仕様に含めない"]
+    },
+    {
+      "group": "C10-primary",
+      "status": "APPROPRIATE",
+      "article_file": "C10-primary.md",
+      "scope": "Xiaomi 6 Max・Roborock Saros 20 Sonic・DEEBOT X12S PRO OMNIの機種比較",
+      "gates": {"G1":"PASS","G2":"PASS","G3":"PASS","G4":"PASS","G5":"PASS","G6":"PASS"},
+      "common_axes": [
+        {"axis":"水拭き方式","evidence":{"F950":["P004"],"F677":["P006"],"F698":["P030","P032"]}},
+        {"axis":"壁際・隅への対応機構","evidence":{"F950":["P004"],"F677":["P006"],"F698":["P034"]}},
+        {"axis":"ステーションでの手入れ","evidence":{"F950":["P008"],"F677":["P014"],"F698":["P004","P040"]}},
+        {"axis":"清掃設定・運用","evidence":{"F950":["P008"],"F677":["P006","P016"],"F698":["P032","P038"]}}
+      ],
+      "differentiating_axes": ["水拭き方式","壁際・隅への対応機構","ステーションでの手入れ","清掃設定・運用"],
+      "constraints": ["各記事1機種に固定","価格種別を明記し実売価格としない","吸引力・認識数・単段と二重段差・温度・ゴミ捨て不要日数で性能順位を付けない"]
+    },
+    {
+      "group": "C13-primary",
+      "status": "APPROPRIATE",
+      "article_file": "C13-primary.md",
+      "scope": "3サービス内の物件登録の入力・確認機能に限定",
+      "gates": {"G1":"PASS","G2":"PASS_WITH_SCOPE","G3":"PASS_WITH_SCOPE","G4":"PASS","G5":"PASS","G6":"PASS"},
+      "common_axes": [
+        {"axis":"入力の起点","evidence":{"F438":["P010","P035"],"F065":["P022"],"F637":["P011","P012"]}},
+        {"axis":"登録項目への反映","evidence":{"F438":["P008","P022","P023"],"F065":["P022"],"F637":["P011","P012"]}},
+        {"axis":"入力内容の確認方法","evidence":{"F438":["P018","P019","P020","P027"],"F065":["P027"],"F637":["P013","P015"]}}
+      ],
+      "differentiating_axes": ["入力の起点","入力内容の確認方法"],
+      "constraints": ["OCR3製品やコンバーター全体の比較とはしない","Facilo別製品の登記資料OCRを転用しない","Faciloの無料基本機能と有償AIオプションを区別","売買・賃貸などへの同等適合は確認できず、入力・確認作業に結論を限定","読み取り精度・作業時間・総費用の順位を付けない"]
+    },
+    {
+      "group": "C17-primary",
+      "status": "INAPPROPRIATE",
+      "result_file": "C17-primary.md",
+      "failed_gates": ["G4","G5"],
+      "reason": "Android診断ではセルバの対応範囲が未確認。Web診断に限定するとAeyeScanの具体情報が乏しく、3者共通3軸と2軸の差を確保できない。",
+      "critical_evidence": {"F488":["P011","P020","P024","P026"],"F333":["P057","P066","P068","P080","P091"],"F411":["P003","P005","P007","P010","P012"]}
+    },
+    {
+      "group": "C22-primary",
+      "status": "INAPPROPRIATE",
+      "result_file": "C22-primary.md",
+      "failed_gates": ["G4","G5"],
+      "reason": "PeopleX AI面接の具体的な質問・評価・出力仕様が不足。別製品の面接支援AIや将来構想を混ぜなければ3者共通の比較軸を確保できない。",
+      "critical_evidence": {"F730":["P010","P013","P015","P017","P019","P025"],"F903":["P008","P010","P013","P014"],"F831":["P014","P037","P060","P062"]}
+    },
+    {
+      "group": "C22-reserve",
+      "status": "INAPPROPRIATE",
+      "result_file": "C22-reserve.md",
+      "failed_gates": ["G4","G5"],
+      "reason": "PeopleXに共通する情報不足が残る。Career Gateの実装機能とAVITA API一般仕様も区別する必要があり、予備でも3者共通の比較軸を確保できない。",
+      "critical_evidence": {"F730":["P013","P015"],"F903":["P010","P013","P014"],"F673":["P001","P002","P009","P010","P014","P015","P016","P017"]}
+    },
+    {
+      "group": "C27-reserve",
+      "status": "INAPPROPRIATE",
+      "result_file": "C27-reserve.md",
+      "failed_gates": ["G1","G2","G4"],
+      "reason": "i-PROの入力本文に機種別品番・仕様対応表がなく、条件付き機能を同じ1機種に結び付けて確定できない。シリーズの各機種の長所を合成しない。",
+      "critical_evidence": {"F902":["P001","P004","P008","P010","P018","P019","P020","P021","P022","P023"],"F711":["P070","P071","P080","P084","P086"],"F278":["P001","P012","P013","P014","P015"]}
+    }
+  ]
+}

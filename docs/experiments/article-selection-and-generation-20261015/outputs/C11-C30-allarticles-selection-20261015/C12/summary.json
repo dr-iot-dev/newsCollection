@@ -1,0 +1,38 @@
+{
+  "cluster_id": "C12",
+  "article_count": 12,
+  "body_chars": 29699,
+  "combinations_requested": 220,
+  "raw_model_status_values": [
+    "TWO_SETS"
+  ],
+  "model_status": "TWO_SETS",
+  "primary_ids": [
+    "F443",
+    "F699",
+    "F771"
+  ],
+  "reserve_ids": [
+    "F443",
+    "F699",
+    "F053"
+  ],
+  "overview": "両組とも不適。対象者・用途・提供段階の混在。",
+  "primary_review": "不適。企業向けウェルネス、自治体での高齢者フレイル実装検証、介護施設での健康変化検知実証を同じ選択肢としてまとめている。",
+  "reserve_review": "不適。企業向けウェルネス、自治体の高齢者実装検証、独居高齢者の見守り共同開発を混在。",
+  "usage": {
+    "input_tokens": 25957,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 2761,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 28718
+  },
+  "generation_performed": false,
+  "independent_evaluation_model_used": false,
+  "all_combinations_independently_checked": false
+}

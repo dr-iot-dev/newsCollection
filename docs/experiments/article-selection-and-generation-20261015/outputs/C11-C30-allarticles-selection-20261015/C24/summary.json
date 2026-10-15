@@ -1,0 +1,38 @@
+{
+  "cluster_id": "C24",
+  "article_count": 7,
+  "body_chars": 21455,
+  "combinations_requested": 35,
+  "raw_model_status_values": [
+    "TWO_SETS"
+  ],
+  "model_status": "TWO_SETS",
+  "primary_ids": [
+    "F408",
+    "F519",
+    "F181"
+  ],
+  "reserve_ids": [
+    "F408",
+    "F519",
+    "F428"
+  ],
+  "overview": "両組とも比較対象・処理環境の整理が必要。",
+  "primary_review": "条件整理が必要。現場でカメラから値を電子帳票へ入力するOCRと、紙・PDF帳票を後からデータ化するサービスで入力元・処理工程が異なる。",
+  "reserve_review": "条件整理が必要。Excel帳票を電子化する機能と、OCR結果を既存Excelテンプレートへ出力する機能を同じExcel連携として評価しない。",
+  "usage": {
+    "input_tokens": 18650,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 2646,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 21296
+  },
+  "generation_performed": false,
+  "independent_evaluation_model_used": false,
+  "all_combinations_independently_checked": false
+}

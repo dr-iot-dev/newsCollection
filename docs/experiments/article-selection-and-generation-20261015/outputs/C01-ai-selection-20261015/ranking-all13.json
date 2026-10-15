@@ -1,0 +1,132 @@
+[
+  {
+    "article_id": "F312",
+    "centroid_rank": 1,
+    "cosine_similarity": 0.8267693894200139,
+    "cosine_distance": 0.17323061057998612,
+    "title": "NECプラットフォームズ、Wi-Fi 7対応のトライバンドホームルータ「Aterm 19000T12BE」を発売",
+    "url": "https://prtimes.jp/main/html/rd/p/000000058.000127290.html",
+    "published_at": "2026-01-15T01:00:04+00:00",
+    "body_chars": 4331
+  },
+  {
+    "article_id": "F584",
+    "centroid_rank": 2,
+    "cosine_similarity": 0.8207472565607759,
+    "cosine_distance": 0.17925274343922415,
+    "title": "Wi-Fi 7 × 5G SA対応、多用途ルーター 『HYBRID Wi-Fi® 5G NC03』登場",
+    "url": "https://prtimes.jp/main/html/rd/p/000000004.000004325.html",
+    "published_at": "2025-10-30T01:00:03+00:00",
+    "body_chars": 2091
+  },
+  {
+    "article_id": "F965",
+    "centroid_rank": 3,
+    "cosine_similarity": 0.8074289347795756,
+    "cosine_distance": 0.19257106522042444,
+    "title": "【11/17：更新】Wi-Fi 7対応ルーター「WXR9300BE6Pシリーズ」のアップデートにより「JC-STAR」適合＆MLOのパフォーマンス向上",
+    "url": "https://prtimes.jp/main/html/rd/p/000000365.000017378.html",
+    "published_at": "2025-10-15T01:01:30+00:00",
+    "body_chars": 2495
+  },
+  {
+    "article_id": "F042",
+    "centroid_rank": 4,
+    "cosine_similarity": 0.7829660458646188,
+    "cosine_distance": 0.21703395413538118,
+    "title": "【新商品・価格改定】LTE Cat 1bis対応「iGS03MP」を新発売、既存LTEゲートウェイ「iGS03M」は価格を引き下げ",
+    "url": "https://prtimes.jp/main/html/rd/p/000000018.000163087.html",
+    "published_at": "2026-09-09T01:00:02+00:00",
+    "body_chars": 2433
+  },
+  {
+    "article_id": "F955",
+    "centroid_rank": 5,
+    "cosine_similarity": 0.7649969874417911,
+    "cosine_distance": 0.23500301255820888,
+    "title": "WiFi 7対応 デュアルバンド クラウド管理型アクセスポイント「WBE700」を発売",
+    "url": "https://prtimes.jp/main/html/rd/p/000000287.000029549.html",
+    "published_at": "2026-08-20T02:00:02+00:00",
+    "body_chars": 1274
+  },
+  {
+    "article_id": "F690",
+    "centroid_rank": 6,
+    "cosine_similarity": 0.7645898142875944,
+    "cosine_distance": 0.23541018571240557,
+    "title": "フルノシステムズ、高利得 / 指向性アンテナ対応 Wi-Fi HaLow™ アクセスポイント 「ACERA 332C / ACERA 332P」 を発売",
+    "url": "https://prtimes.jp/main/html/rd/p/000000154.000004012.html",
+    "published_at": "2025-09-30T01:10:02+00:00",
+    "body_chars": 2182
+  },
+  {
+    "article_id": "F289",
+    "centroid_rank": 7,
+    "cosine_similarity": 0.7577816652788062,
+    "cosine_distance": 0.2422183347211938,
+    "title": "LTE Cat.1 bis対応 マイクロゲートウェイ iG350B発売",
+    "url": "https://prtimes.jp/main/html/rd/p/000000018.000038616.html",
+    "published_at": "2025-09-12T02:48:35+00:00",
+    "body_chars": 2229
+  },
+  {
+    "article_id": "F794",
+    "centroid_rank": 8,
+    "cosine_similarity": 0.7518756891479496,
+    "cosine_distance": 0.24812431085205044,
+    "title": "混信を回避する新開発無線モジュール発売！4つの周波数帯（82ch）に対応",
+    "url": "https://prtimes.jp/main/html/rd/p/000000007.000174619.html",
+    "published_at": "2026-08-24T01:40:01+00:00",
+    "body_chars": 1186
+  },
+  {
+    "article_id": "F006",
+    "centroid_rank": 9,
+    "cosine_similarity": 0.7489864089852062,
+    "cosine_distance": 0.2510135910147938,
+    "title": "【2026年秋発売】多彩なインタフェースで現場のIoT化を加速！産業用多機能ルータ「ST956」を発表",
+    "url": "https://prtimes.jp/main/html/rd/p/000000019.000087711.html",
+    "published_at": "2026-07-22T01:10:01+00:00",
+    "body_chars": 2157
+  },
+  {
+    "article_id": "F823",
+    "centroid_rank": 10,
+    "cosine_similarity": 0.7487199750039103,
+    "cosine_distance": 0.2512800249960897,
+    "title": "Extreme Networks、次世代 Wi‑Fi 7 におけるリーダーシップをさらに加速",
+    "url": "https://prtimes.jp/main/html/rd/p/000000025.000065985.html",
+    "published_at": "2026-05-11T02:00:02+00:00",
+    "body_chars": 2190
+  },
+  {
+    "article_id": "F281",
+    "centroid_rank": 11,
+    "cosine_similarity": 0.7269393893084919,
+    "cosine_distance": 0.2730606106915081,
+    "title": "国内衛星通信市場初！低コスト・低容量・帯域保証型でIoT機器向けに最適化された新プラン「ミニマムプラン」が新登場！",
+    "url": "https://prtimes.jp/main/html/rd/p/000000010.000060654.html",
+    "published_at": "2025-09-25T04:30:01+00:00",
+    "body_chars": 1088
+  },
+  {
+    "article_id": "F392",
+    "centroid_rank": 12,
+    "cosine_similarity": 0.7186187940931273,
+    "cosine_distance": 0.28138120590687266,
+    "title": "海外レンタルWiFiの「アクロスWiFi」、5G対応エリアを24商品へ拡充。出張向けニーズに対応",
+    "url": "https://prtimes.jp/main/html/rd/p/000000001.000189590.html",
+    "published_at": "2026-10-01T05:55:32+00:00",
+    "body_chars": 2859
+  },
+  {
+    "article_id": "F689",
+    "centroid_rank": 13,
+    "cosine_similarity": 0.7085657639500267,
+    "cosine_distance": 0.2914342360499733,
+    "title": "ローデ・シュワルツ、Broadcom社と協力して次世代Wi-Fi 8チップセットのテスト・検証を実現",
+    "url": "https://prtimes.jp/main/html/rd/p/000000152.000104512.html",
+    "published_at": "2025-11-26T01:52:19+00:00",
+    "body_chars": 3109
+  }
+]

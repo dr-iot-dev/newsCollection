@@ -1,0 +1,43 @@
+{
+  "cluster_id": "C19",
+  "article_count": 26,
+  "body_chars": 94498,
+  "combinations_requested": 2600,
+  "raw_model_status_values": [
+    "TWO_SETS"
+  ],
+  "model_status": "TWO_SETS",
+  "primary_ids": [
+    "F708",
+    "F722",
+    "F951"
+  ],
+  "reserve_ids": [
+    "F835",
+    "F748",
+    "F708"
+  ],
+  "overview": "第一候補は無効（同一サービス重複）。予備は要再検討。",
+  "primary_review": "無効。F708とF722は同じOne Cueの共同開発・提供発表であり、3記事から3つの異なるサービスを得られていない。",
+  "reserve_review": "要再検討。研修プログラム、組織開発支援、研修後のコーチ伴走という支援段階が異なる。対象を管理職のどの課題に絞るか明確化が必要。",
+  "usage": {
+    "input_tokens": 79061,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 3505,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 82566
+  },
+  "generation_performed": false,
+  "independent_evaluation_model_used": false,
+  "all_combinations_independently_checked": false,
+  "primary_distinct_subjects": 2,
+  "duplicate_subject_article_ids": [
+    "F708",
+    "F722"
+  ]
+}

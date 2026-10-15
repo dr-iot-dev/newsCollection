@@ -1,0 +1,38 @@
+{
+  "cluster_id": "C22",
+  "article_count": 16,
+  "body_chars": 42535,
+  "combinations_requested": 560,
+  "raw_model_status_values": [
+    "TWO_SETS"
+  ],
+  "model_status": "TWO_SETS",
+  "primary_ids": [
+    "F730",
+    "F903",
+    "F831"
+  ],
+  "reserve_ids": [
+    "F730",
+    "F903",
+    "F673"
+  ],
+  "overview": "両組とも候補として有望。提供範囲と根拠の修正は必要。",
+  "primary_review": "有望。PeopleX AI面接・Our AI面接・タレスカAI面接は法人の採用面接をAIで支援するという用途と比較単位がそろう。",
+  "reserve_review": "有望。タレスカをCareer Gateへ替えた、別の3記事組である。AI面接そのものを対象にすれば共通の選択課題を設定できる。",
+  "usage": {
+    "input_tokens": 35652,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 3114,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 38766
+  },
+  "generation_performed": false,
+  "independent_evaluation_model_used": false,
+  "all_combinations_independently_checked": false
+}

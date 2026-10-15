@@ -1,0 +1,26 @@
+{
+  "group": "C03-reserve",
+  "finished_at": "2026-10-15T06:44:07.581495+00:00",
+  "elapsed_seconds": 52.7190000000046,
+  "response_id": "resp_071675d30a38ba5f016ad07603fdd487d09e3ae2378f9a4957",
+  "model_requested": "gpt-6.1-sol",
+  "model_returned": "gpt-6.1-sol",
+  "response_status": "completed",
+  "usage": {
+    "input_tokens": 8590,
+    "input_tokens_details": {
+      "cache_write_tokens": 8587,
+      "cached_tokens": 0
+    },
+    "output_tokens": 2801,
+    "output_tokens_details": {
+      "reasoning_tokens": 191
+    },
+    "total_tokens": 11391
+  },
+  "incomplete_details": null,
+  "refusals": [],
+  "model_verdict": "APPROPRIATE",
+  "output_chars": 4030,
+  "output_sha256": "562d30ac4390869c5e5b1edbda82e3b9618ddd6ee2efbd4798d18b2be325cbf6"
+}

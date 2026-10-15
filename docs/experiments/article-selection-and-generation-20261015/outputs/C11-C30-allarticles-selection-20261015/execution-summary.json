@@ -1,0 +1,362 @@
+[
+  {
+    "cluster_id": "C11",
+    "status": "completed",
+    "model_selection_status": "NO_SET",
+    "output_chars": 2089,
+    "usage": {
+      "input_tokens": 29960,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1310,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 31270
+    }
+  },
+  {
+    "cluster_id": "C12",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 4175,
+    "usage": {
+      "input_tokens": 25957,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 2761,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 28718
+    }
+  },
+  {
+    "cluster_id": "C13",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 4406,
+    "usage": {
+      "input_tokens": 22161,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 2873,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 25034
+    }
+  },
+  {
+    "cluster_id": "C14",
+    "status": "completed",
+    "model_selection_status": "NO_SET",
+    "output_chars": 1790,
+    "usage": {
+      "input_tokens": 11307,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1115,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 12422
+    }
+  },
+  {
+    "cluster_id": "C15",
+    "status": "completed",
+    "model_selection_status": "NO_SET",
+    "output_chars": 1778,
+    "usage": {
+      "input_tokens": 17359,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 985,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 18344
+    }
+  },
+  {
+    "cluster_id": "C16",
+    "status": "completed",
+    "model_selection_status": "ONE_SET",
+    "output_chars": 1793,
+    "usage": {
+      "input_tokens": 12891,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1123,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 14014
+    }
+  },
+  {
+    "cluster_id": "C17",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 4853,
+    "usage": {
+      "input_tokens": 32679,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 3143,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 35822
+    }
+  },
+  {
+    "cluster_id": "C18",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 4540,
+    "usage": {
+      "input_tokens": 33509,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 2722,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 36231
+    }
+  },
+  {
+    "cluster_id": "C19",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 5313,
+    "usage": {
+      "input_tokens": 79061,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 3505,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 82566
+    }
+  },
+  {
+    "cluster_id": "C20",
+    "status": "completed",
+    "model_selection_status": "NO_SET",
+    "output_chars": 1926,
+    "usage": {
+      "input_tokens": 17458,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1182,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 18640
+    }
+  },
+  {
+    "cluster_id": "C21",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 5116,
+    "usage": {
+      "input_tokens": 36623,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 3306,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 39929
+    }
+  },
+  {
+    "cluster_id": "C22",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 4869,
+    "usage": {
+      "input_tokens": 35652,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 3114,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 38766
+    }
+  },
+  {
+    "cluster_id": "C23",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 4020,
+    "usage": {
+      "input_tokens": 21163,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 2573,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 23736
+    }
+  },
+  {
+    "cluster_id": "C24",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 4431,
+    "usage": {
+      "input_tokens": 18650,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 2646,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 21296
+    }
+  },
+  {
+    "cluster_id": "C25",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 4743,
+    "usage": {
+      "input_tokens": 33646,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 2803,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 36449
+    }
+  },
+  {
+    "cluster_id": "C26",
+    "status": "completed",
+    "model_selection_status": "NO_SET",
+    "output_chars": 1955,
+    "usage": {
+      "input_tokens": 26717,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1231,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 27948
+    }
+  },
+  {
+    "cluster_id": "C27",
+    "status": "completed",
+    "model_selection_status": "TWO_SETS",
+    "output_chars": 4362,
+    "usage": {
+      "input_tokens": 26056,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 2944,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 29000
+    }
+  },
+  {
+    "cluster_id": "C28",
+    "status": "completed",
+    "model_selection_status": "NO_SET",
+    "output_chars": 1700,
+    "usage": {
+      "input_tokens": 15148,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1069,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 16217
+    }
+  },
+  {
+    "cluster_id": "C29",
+    "status": "completed",
+    "model_selection_status": "NO_SET",
+    "output_chars": 1513,
+    "usage": {
+      "input_tokens": 14437,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 886,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 15323
+    }
+  },
+  {
+    "cluster_id": "C30",
+    "status": "completed",
+    "model_selection_status": "NO_SET",
+    "output_chars": 1922,
+    "usage": {
+      "input_tokens": 28739,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1250,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 29989
+    }
+  }
+]

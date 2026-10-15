@@ -1,0 +1,719 @@
+{
+  "totals": {
+    "clusters": 20,
+    "articles": 210,
+    "body_chars": 639193,
+    "api_calls_succeeded": 20,
+    "status_counts": {
+      "NO_SET": 8,
+      "TWO_SETS": 11,
+      "INCONSISTENT": 1
+    },
+    "input_tokens": 539173,
+    "output_tokens": 42541,
+    "combinations_requested": 5645,
+    "generation_performed": false,
+    "independent_evaluation_model_used": false
+  },
+  "clusters": [
+    {
+      "cluster_id": "C11",
+      "article_count": 15,
+      "body_chars": 34916,
+      "combinations_requested": 455,
+      "raw_model_status_values": [
+        "NO_SET"
+      ],
+      "model_status": "NO_SET",
+      "primary_ids": null,
+      "reserve_ids": null,
+      "overview": "モデルが選定不可と判定。",
+      "primary_review": null,
+      "reserve_review": null,
+      "usage": {
+        "input_tokens": 29960,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1310,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 31270
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C12",
+      "article_count": 12,
+      "body_chars": 29699,
+      "combinations_requested": 220,
+      "raw_model_status_values": [
+        "TWO_SETS"
+      ],
+      "model_status": "TWO_SETS",
+      "primary_ids": [
+        "F443",
+        "F699",
+        "F771"
+      ],
+      "reserve_ids": [
+        "F443",
+        "F699",
+        "F053"
+      ],
+      "overview": "両組とも不適。対象者・用途・提供段階の混在。",
+      "primary_review": "不適。企業向けウェルネス、自治体での高齢者フレイル実装検証、介護施設での健康変化検知実証を同じ選択肢としてまとめている。",
+      "reserve_review": "不適。企業向けウェルネス、自治体の高齢者実装検証、独居高齢者の見守り共同開発を混在。",
+      "usage": {
+        "input_tokens": 25957,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 2761,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 28718
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C13",
+      "article_count": 9,
+      "body_chars": 25355,
+      "combinations_requested": 84,
+      "raw_model_status_values": [
+        "TWO_SETS"
+      ],
+      "model_status": "TWO_SETS",
+      "primary_ids": [
+        "F438",
+        "F065",
+        "F637"
+      ],
+      "reserve_ids": [
+        "F065",
+        "F637",
+        "F908"
+      ],
+      "overview": "第一候補は有望。予備は不適。",
+      "primary_review": "候補として有望。不動産仲介の物件情報登録・入稿の手作業削減という目的がそろう。ただしFaciloの記事内の3プロダクトを混ぜず、AI駆動コンバーターを対象に固定する。",
+      "reserve_review": "不適。マイソクの店舗情報帯の編集は、物件情報登録・複数ポータル入稿とは別工程。モデル自身もG2を△としている。",
+      "usage": {
+        "input_tokens": 22161,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 2873,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 25034
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C14",
+      "article_count": 5,
+      "body_chars": 12508,
+      "combinations_requested": 10,
+      "raw_model_status_values": [
+        "NO_SET"
+      ],
+      "model_status": "NO_SET",
+      "primary_ids": null,
+      "reserve_ids": null,
+      "overview": "モデルが選定不可と判定。",
+      "primary_review": null,
+      "reserve_review": null,
+      "usage": {
+        "input_tokens": 11307,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1115,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 12422
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C15",
+      "article_count": 5,
+      "body_chars": 22879,
+      "combinations_requested": 10,
+      "raw_model_status_values": [
+        "NO_SET"
+      ],
+      "model_status": "NO_SET",
+      "primary_ids": null,
+      "reserve_ids": null,
+      "overview": "モデルが選定不可と判定。",
+      "primary_review": null,
+      "reserve_review": null,
+      "usage": {
+        "input_tokens": 17359,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 985,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 18344
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C16",
+      "article_count": 6,
+      "body_chars": 14167,
+      "combinations_requested": 20,
+      "raw_model_status_values": [
+        "ONE_SET",
+        "NO_SET"
+      ],
+      "model_status": "INCONSISTENT",
+      "primary_ids": null,
+      "reserve_ids": null,
+      "overview": "応答不整合。冒頭1組・末尾0組、3記事組は未成立。",
+      "primary_review": "有効な3記事の組なし。冒頭はONE_SETだが本文ではF868・F332の2記事だけで、G1〜G6を不合格とし、末尾でNO_SETに変更している。",
+      "reserve_review": "なし。",
+      "usage": {
+        "input_tokens": 12891,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1123,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 14014
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false,
+      "response_contract_errors": [
+        "Header ONE_SET but conclusion NO_SET",
+        "Only two candidate articles",
+        "G1-G6 all marked failed"
+      ]
+    },
+    {
+      "cluster_id": "C17",
+      "article_count": 13,
+      "body_chars": 38606,
+      "combinations_requested": 286,
+      "raw_model_status_values": [
+        "TWO_SETS"
+      ],
+      "model_status": "TWO_SETS",
+      "primary_ids": [
+        "F488",
+        "F333",
+        "F411"
+      ],
+      "reserve_ids": [
+        "F538",
+        "F541",
+        "F333"
+      ],
+      "overview": "第一候補は条件整理が必要。予備は不適。",
+      "primary_review": "比較候補として有望だが、ツールと受託診断、Webとモバイルの対象範囲、改修支援の有無を根拠に沿って固定する必要がある。",
+      "reserve_review": "不適。AI利用リスクの専門家点検、生成AIの継続的ガバナンス管理、Web脆弱性診断を同じ目的の代替候補として扱っている。",
+      "usage": {
+        "input_tokens": 32679,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 3143,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 35822
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C18",
+      "article_count": 14,
+      "body_chars": 41569,
+      "combinations_requested": 364,
+      "raw_model_status_values": [
+        "TWO_SETS"
+      ],
+      "model_status": "TWO_SETS",
+      "primary_ids": [
+        "F095",
+        "F267",
+        "F509"
+      ],
+      "reserve_ids": [
+        "F784",
+        "F819",
+        "F788"
+      ],
+      "overview": "両組とも不適。完成サービスと周辺ツール・解析技術の混在。",
+      "primary_review": "不適。記事制作の一貫支援サービス2件に、文章校正・文字数計算等の無料ツール群を第三の同種サービスとして加えている。",
+      "reserve_review": "不適。特許出願書類作成・知財業務支援に、化学構造式の抽出・構造化ツールを加えており、支援する工程と選択目的が異なる。",
+      "usage": {
+        "input_tokens": 33509,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 2722,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 36231
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C19",
+      "article_count": 26,
+      "body_chars": 94498,
+      "combinations_requested": 2600,
+      "raw_model_status_values": [
+        "TWO_SETS"
+      ],
+      "model_status": "TWO_SETS",
+      "primary_ids": [
+        "F708",
+        "F722",
+        "F951"
+      ],
+      "reserve_ids": [
+        "F835",
+        "F748",
+        "F708"
+      ],
+      "overview": "第一候補は無効（同一サービス重複）。予備は要再検討。",
+      "primary_review": "無効。F708とF722は同じOne Cueの共同開発・提供発表であり、3記事から3つの異なるサービスを得られていない。",
+      "reserve_review": "要再検討。研修プログラム、組織開発支援、研修後のコーチ伴走という支援段階が異なる。対象を管理職のどの課題に絞るか明確化が必要。",
+      "usage": {
+        "input_tokens": 79061,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 3505,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 82566
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false,
+      "primary_distinct_subjects": 2,
+      "duplicate_subject_article_ids": [
+        "F708",
+        "F722"
+      ]
+    },
+    {
+      "cluster_id": "C20",
+      "article_count": 7,
+      "body_chars": 19292,
+      "combinations_requested": 35,
+      "raw_model_status_values": [
+        "NO_SET"
+      ],
+      "model_status": "NO_SET",
+      "primary_ids": null,
+      "reserve_ids": null,
+      "overview": "モデルが選定不可と判定。",
+      "primary_review": null,
+      "reserve_review": null,
+      "usage": {
+        "input_tokens": 17458,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1182,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 18640
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C21",
+      "article_count": 11,
+      "body_chars": 43978,
+      "combinations_requested": 165,
+      "raw_model_status_values": [
+        "TWO_SETS"
+      ],
+      "model_status": "TWO_SETS",
+      "primary_ids": [
+        "F156",
+        "F463",
+        "F578"
+      ],
+      "reserve_ids": [
+        "F606",
+        "F828",
+        "F625"
+      ],
+      "overview": "第一候補は不適。予備は要再検討。",
+      "primary_review": "不適。現場のAI実装・定着支援と、既存の実装支援体制を前提とする独立した経営判断のセカンドオピニオンは、代替というより補完的な役割。",
+      "reserve_review": "要再検討。建設業の知識・設計施工支援基盤、工程表作成、汎用プロジェクト管理で範囲と役割が異なる。",
+      "usage": {
+        "input_tokens": 36623,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 3306,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 39929
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C22",
+      "article_count": 16,
+      "body_chars": 42535,
+      "combinations_requested": 560,
+      "raw_model_status_values": [
+        "TWO_SETS"
+      ],
+      "model_status": "TWO_SETS",
+      "primary_ids": [
+        "F730",
+        "F903",
+        "F831"
+      ],
+      "reserve_ids": [
+        "F730",
+        "F903",
+        "F673"
+      ],
+      "overview": "両組とも候補として有望。提供範囲と根拠の修正は必要。",
+      "primary_review": "有望。PeopleX AI面接・Our AI面接・タレスカAI面接は法人の採用面接をAIで支援するという用途と比較単位がそろう。",
+      "reserve_review": "有望。タレスカをCareer Gateへ替えた、別の3記事組である。AI面接そのものを対象にすれば共通の選択課題を設定できる。",
+      "usage": {
+        "input_tokens": 35652,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 3114,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 38766
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C23",
+      "article_count": 8,
+      "body_chars": 23392,
+      "combinations_requested": 56,
+      "raw_model_status_values": [
+        "TWO_SETS"
+      ],
+      "model_status": "TWO_SETS",
+      "primary_ids": [
+        "F308",
+        "F599",
+        "F798"
+      ],
+      "reserve_ids": [
+        "F930",
+        "F308",
+        "F149"
+      ],
+      "overview": "両組とも不適。サービス独立性・比較単位に問題。",
+      "primary_review": "不適。住宅の導入事例とIoTプラットフォームの単位が混在し、Gハウスと分譲マンションのHomeLinkを別の独立サービスとして数える根拠も不足。",
+      "reserve_review": "不適。集合住宅の総合スマートホーム基盤・居住者アプリに、IoT宅配ボックスという補完機器を並べている。",
+      "usage": {
+        "input_tokens": 21163,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 2573,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 23736
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C24",
+      "article_count": 7,
+      "body_chars": 21455,
+      "combinations_requested": 35,
+      "raw_model_status_values": [
+        "TWO_SETS"
+      ],
+      "model_status": "TWO_SETS",
+      "primary_ids": [
+        "F408",
+        "F519",
+        "F181"
+      ],
+      "reserve_ids": [
+        "F408",
+        "F519",
+        "F428"
+      ],
+      "overview": "両組とも比較対象・処理環境の整理が必要。",
+      "primary_review": "条件整理が必要。現場でカメラから値を電子帳票へ入力するOCRと、紙・PDF帳票を後からデータ化するサービスで入力元・処理工程が異なる。",
+      "reserve_review": "条件整理が必要。Excel帳票を電子化する機能と、OCR結果を既存Excelテンプレートへ出力する機能を同じExcel連携として評価しない。",
+      "usage": {
+        "input_tokens": 18650,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 2646,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 21296
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C25",
+      "article_count": 13,
+      "body_chars": 43526,
+      "combinations_requested": 286,
+      "raw_model_status_values": [
+        "TWO_SETS"
+      ],
+      "model_status": "TWO_SETS",
+      "primary_ids": [
+        "F671",
+        "F985",
+        "F793"
+      ],
+      "reserve_ids": [
+        "F671",
+        "F870",
+        "F580"
+      ],
+      "overview": "両組とも要再検討。機器カテゴリ・AI機能・装着形状に問題。",
+      "primary_review": "要再検討。イヤホンと専用ボイスレコーダーを混在させており、今回の厳格なカテゴリ一致条件ではそのまま採用しない。",
+      "reserve_review": "要再検討。オープン型イヤホンというテーマに対してHeara Airの開放型構造は本文で確認できず、AI翻訳とAI通話ノイズ抑制も同じ機能として扱えない。",
+      "usage": {
+        "input_tokens": 33646,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 2803,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 36449
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C26",
+      "article_count": 11,
+      "body_chars": 33757,
+      "combinations_requested": 165,
+      "raw_model_status_values": [
+        "NO_SET"
+      ],
+      "model_status": "NO_SET",
+      "primary_ids": null,
+      "reserve_ids": null,
+      "overview": "モデルが選定不可と判定。",
+      "primary_review": null,
+      "reserve_review": null,
+      "usage": {
+        "input_tokens": 26717,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1231,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 27948
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C27",
+      "article_count": 11,
+      "body_chars": 28916,
+      "combinations_requested": 165,
+      "raw_model_status_values": [
+        "TWO_SETS"
+      ],
+      "model_status": "TWO_SETS",
+      "primary_ids": [
+        "F206",
+        "F278",
+        "F711"
+      ],
+      "reserve_ids": [
+        "F902",
+        "F711",
+        "F278"
+      ],
+      "overview": "第一候補は粒度整理が必要。予備は有望だが機種・予定時期の固定が必要。",
+      "primary_review": "条件整理が必要。AI監視システム一式とカメラ単体で導入・比較単位が異なる。",
+      "reserve_review": "候補として有望。屋外の施設監視用ネットワークカメラという用途が近い。i-PROやAZxは複数機種があるため対象機種を固定し、i-PROは12月発売予定と明記する必要がある。",
+      "usage": {
+        "input_tokens": 26056,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 2944,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 29000
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C28",
+      "article_count": 7,
+      "body_chars": 17231,
+      "combinations_requested": 35,
+      "raw_model_status_values": [
+        "NO_SET"
+      ],
+      "model_status": "NO_SET",
+      "primary_ids": null,
+      "reserve_ids": null,
+      "overview": "モデルが選定不可と判定。",
+      "primary_review": null,
+      "reserve_review": null,
+      "usage": {
+        "input_tokens": 15148,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1069,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 16217
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C29",
+      "article_count": 5,
+      "body_chars": 16013,
+      "combinations_requested": 10,
+      "raw_model_status_values": [
+        "NO_SET"
+      ],
+      "model_status": "NO_SET",
+      "primary_ids": null,
+      "reserve_ids": null,
+      "overview": "モデルが選定不可と判定。",
+      "primary_review": null,
+      "reserve_review": null,
+      "usage": {
+        "input_tokens": 14437,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 886,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 15323
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    },
+    {
+      "cluster_id": "C30",
+      "article_count": 9,
+      "body_chars": 34901,
+      "combinations_requested": 84,
+      "raw_model_status_values": [
+        "NO_SET"
+      ],
+      "model_status": "NO_SET",
+      "primary_ids": null,
+      "reserve_ids": null,
+      "overview": "モデルが選定不可と判定。",
+      "primary_review": null,
+      "reserve_review": null,
+      "usage": {
+        "input_tokens": 28739,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1250,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 29989
+      },
+      "generation_performed": false,
+      "independent_evaluation_model_used": false,
+      "all_combinations_independently_checked": false
+    }
+  ]
+}

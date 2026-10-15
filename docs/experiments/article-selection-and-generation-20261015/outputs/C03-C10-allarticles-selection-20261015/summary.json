@@ -1,0 +1,298 @@
+{
+  "totals": {
+    "clusters": 8,
+    "input_articles": 93,
+    "body_chars": 303076,
+    "successful_selection_api_calls": 8,
+    "model_status_counts": {
+      "TWO_SETS": 4,
+      "NO_SET": 4
+    },
+    "input_tokens": 249522,
+    "output_tokens": 17296,
+    "generation_performed": false,
+    "separate_evaluation_model_used": false
+  },
+  "clusters": [
+    {
+      "cluster_id": "C03",
+      "input_articles": 19,
+      "body_chars": 53601,
+      "combinations_requested": 969,
+      "model": "gpt-4.1-2025-04-14",
+      "model_selection_status": "TWO_SETS",
+      "primary_ids": [
+        "F010",
+        "F456",
+        "F932"
+      ],
+      "reserve_ids": [
+        "F865",
+        "F456",
+        "F932"
+      ],
+      "distinct_article_sets": true,
+      "primary_theme": "HARMONY／Navie／GeN：顧客対応AI",
+      "reserve_theme": "AvaTwin Chatbot／Navie／GeN：問い合わせ対応AI",
+      "assistant_primary_review": "要再検討。有人コンタクトセンター運営支援と、利用者が直接使う自動回答エージェントの役割が異なる。",
+      "assistant_reserve_review": "候補として有望。ただし比較軸の修正が必要。誤回答率・自己解決率・コスト削減を同じ指標として扱わない。",
+      "overview": "第一候補は役割の混在。予備候補は比較候補として有望だが根拠表を修正する必要がある。",
+      "usage": {
+        "input_tokens": 44435,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 3268,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 47703
+      },
+      "generation_performed": false,
+      "separate_evaluation_model_used": false,
+      "no_set_is_nonexistence_proof": false
+    },
+    {
+      "cluster_id": "C04",
+      "input_articles": 19,
+      "body_chars": 81070,
+      "combinations_requested": 969,
+      "model": "gpt-4.1-2025-04-14",
+      "model_selection_status": "TWO_SETS",
+      "primary_ids": [
+        "F017",
+        "F140",
+        "F303"
+      ],
+      "reserve_ids": [
+        "F017",
+        "F140",
+        "F135"
+      ],
+      "distinct_article_sets": true,
+      "primary_theme": "ServiceNow／Zscaler／Vectra AI：AI活用型セキュリティ基盤",
+      "reserve_theme": "ServiceNow／Zscaler／Cohesity：防御・復旧基盤",
+      "assistant_primary_review": "要再検討。製品群全体と個別のSOC・検知機能で比較範囲が異なり、提供予定機能の混在もある。",
+      "assistant_reserve_review": "今回の厳格なカテゴリ・目的基準では不適。防御・SOC運用とAI基盤のバックアップ・復旧という補完的な役割を混在させている。",
+      "overview": "第一候補は比較範囲・提供時期の整理が必要。予備候補は防御と復旧の混在。",
+      "usage": {
+        "input_tokens": 58651,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 3510,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 62161
+      },
+      "generation_performed": false,
+      "separate_evaluation_model_used": false,
+      "no_set_is_nonexistence_proof": false
+    },
+    {
+      "cluster_id": "C05",
+      "input_articles": 12,
+      "body_chars": 27308,
+      "combinations_requested": 220,
+      "model": "gpt-4.1-2025-04-14",
+      "model_selection_status": "NO_SET",
+      "primary_ids": null,
+      "reserve_ids": null,
+      "distinct_article_sets": null,
+      "primary_theme": "なし",
+      "reserve_theme": "なし",
+      "assistant_primary_review": "モデルが選定不可と判定。",
+      "assistant_reserve_review": "なし。",
+      "overview": "モデルは選定不可。水位・漏水・浄化槽・農業・介護などで監視対象と利用者が異なる。",
+      "usage": {
+        "input_tokens": 25654,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1269,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 26923
+      },
+      "generation_performed": false,
+      "separate_evaluation_model_used": false,
+      "no_set_is_nonexistence_proof": false
+    },
+    {
+      "cluster_id": "C06",
+      "input_articles": 8,
+      "body_chars": 23068,
+      "combinations_requested": 56,
+      "model": "gpt-4.1-2025-04-14",
+      "model_selection_status": "NO_SET",
+      "primary_ids": null,
+      "reserve_ids": null,
+      "distinct_article_sets": null,
+      "primary_theme": "なし",
+      "reserve_theme": "なし",
+      "assistant_primary_review": "モデルが選定不可と判定。",
+      "assistant_reserve_review": "なし。",
+      "overview": "モデルは選定不可。外観検査関連も食品用装置・塗装用測定器・学習基盤で用途と比較単位が異なる。",
+      "usage": {
+        "input_tokens": 21148,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1089,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 22237
+      },
+      "generation_performed": false,
+      "separate_evaluation_model_used": false,
+      "no_set_is_nonexistence_proof": false
+    },
+    {
+      "cluster_id": "C07",
+      "input_articles": 13,
+      "body_chars": 30383,
+      "combinations_requested": 286,
+      "model": "gpt-4.1-2025-04-14",
+      "model_selection_status": "NO_SET",
+      "primary_ids": null,
+      "reserve_ids": null,
+      "distinct_article_sets": null,
+      "primary_theme": "なし",
+      "reserve_theme": "なし",
+      "assistant_primary_review": "モデルが選定不可と判定。",
+      "assistant_reserve_review": "なし。",
+      "overview": "モデルは選定不可。用途の分散に加え、F809とF876はほぼ同じ内容と判定。",
+      "usage": {
+        "input_tokens": 25435,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1426,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 26861
+      },
+      "generation_performed": false,
+      "separate_evaluation_model_used": false,
+      "no_set_is_nonexistence_proof": false
+    },
+    {
+      "cluster_id": "C08",
+      "input_articles": 5,
+      "body_chars": 16972,
+      "combinations_requested": 10,
+      "model": "gpt-4.1-2025-04-14",
+      "model_selection_status": "TWO_SETS",
+      "primary_ids": [
+        "F038",
+        "F429",
+        "F518"
+      ],
+      "reserve_ids": [
+        "F038",
+        "F429",
+        "F110"
+      ],
+      "distinct_article_sets": true,
+      "primary_theme": "xPilot／Vusion／mcframe X：クラウド業務基盤",
+      "reserve_theme": "xPilot／Vusion／e-Stand：現場データ活用",
+      "assistant_primary_review": "不適。小売店舗運営プラットフォーム2件に製造業ERPを組み合わせ、DX・業務効率化という広い共通語で採用している。",
+      "assistant_reserve_review": "不適。小売向け2件に建設業ダッシュボードを組み合わせている。モデル自身もG2を△としており、必須条件の全合格という指示に反する。",
+      "overview": "両組とも不適。小売・製造・建設の異なる業務をDXという上位概念でまとめている。",
+      "usage": {
+        "input_tokens": 15171,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 2745,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 17916
+      },
+      "generation_performed": false,
+      "separate_evaluation_model_used": false,
+      "no_set_is_nonexistence_proof": false
+    },
+    {
+      "cluster_id": "C09",
+      "input_articles": 5,
+      "body_chars": 12166,
+      "combinations_requested": 10,
+      "model": "gpt-4.1-2025-04-14",
+      "model_selection_status": "NO_SET",
+      "primary_ids": null,
+      "reserve_ids": null,
+      "distinct_article_sets": null,
+      "primary_theme": "なし",
+      "reserve_theme": "なし",
+      "assistant_primary_review": "モデルが選定不可と判定。",
+      "assistant_reserve_review": "なし。",
+      "overview": "モデルは選定不可。メーター・ランプの点検、現場防犯、土質判別という用途が異なる。",
+      "usage": {
+        "input_tokens": 12324,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1074,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 13398
+      },
+      "generation_performed": false,
+      "separate_evaluation_model_used": false,
+      "no_set_is_nonexistence_proof": false
+    },
+    {
+      "cluster_id": "C10",
+      "input_articles": 12,
+      "body_chars": 58508,
+      "combinations_requested": 220,
+      "model": "gpt-4.1-2025-04-14",
+      "model_selection_status": "TWO_SETS",
+      "primary_ids": [
+        "F950",
+        "F677",
+        "F698"
+      ],
+      "reserve_ids": [
+        "F950",
+        "F677",
+        "F698"
+      ],
+      "distinct_article_sets": false,
+      "primary_theme": "Xiaomi／Roborock／ECOVACS：家庭用ロボット掃除機",
+      "reserve_theme": "同じ3記事のまま、ECOVACSの対象機種だけ変更",
+      "assistant_primary_review": "比較候補として有望。各記事の複数機種から対象を明示し、同じ機種・仕様・価格種別にそろえる必要がある。",
+      "assistant_reserve_review": "予備の記事組として無効。第一候補と同じ3記事であり、別の記事構成の予備を選ぶという指示を満たさない。",
+      "overview": "第一候補が最も有望。ただし複数機種の混在を修正する必要がある。予備は同一記事組のため無効。",
+      "usage": {
+        "input_tokens": 46704,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 2915,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 49619
+      },
+      "generation_performed": false,
+      "separate_evaluation_model_used": false,
+      "no_set_is_nonexistence_proof": false
+    }
+  ]
+}

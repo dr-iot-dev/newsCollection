@@ -1,0 +1,36 @@
+{
+  "cluster_id": "C16",
+  "article_count": 6,
+  "body_chars": 14167,
+  "combinations_requested": 20,
+  "raw_model_status_values": [
+    "ONE_SET",
+    "NO_SET"
+  ],
+  "model_status": "INCONSISTENT",
+  "primary_ids": null,
+  "reserve_ids": null,
+  "overview": "応答不整合。冒頭1組・末尾0組、3記事組は未成立。",
+  "primary_review": "有効な3記事の組なし。冒頭はONE_SETだが本文ではF868・F332の2記事だけで、G1〜G6を不合格とし、末尾でNO_SETに変更している。",
+  "reserve_review": "なし。",
+  "usage": {
+    "input_tokens": 12891,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 1123,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 14014
+  },
+  "generation_performed": false,
+  "independent_evaluation_model_used": false,
+  "all_combinations_independently_checked": false,
+  "response_contract_errors": [
+    "Header ONE_SET but conclusion NO_SET",
+    "Only two candidate articles",
+    "G1-G6 all marked failed"
+  ]
+}

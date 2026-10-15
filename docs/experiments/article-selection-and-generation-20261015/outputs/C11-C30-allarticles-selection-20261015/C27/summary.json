@@ -1,0 +1,38 @@
+{
+  "cluster_id": "C27",
+  "article_count": 11,
+  "body_chars": 28916,
+  "combinations_requested": 165,
+  "raw_model_status_values": [
+    "TWO_SETS"
+  ],
+  "model_status": "TWO_SETS",
+  "primary_ids": [
+    "F206",
+    "F278",
+    "F711"
+  ],
+  "reserve_ids": [
+    "F902",
+    "F711",
+    "F278"
+  ],
+  "overview": "第一候補は粒度整理が必要。予備は有望だが機種・予定時期の固定が必要。",
+  "primary_review": "条件整理が必要。AI監視システム一式とカメラ単体で導入・比較単位が異なる。",
+  "reserve_review": "候補として有望。屋外の施設監視用ネットワークカメラという用途が近い。i-PROやAZxは複数機種があるため対象機種を固定し、i-PROは12月発売予定と明記する必要がある。",
+  "usage": {
+    "input_tokens": 26056,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 2944,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 29000
+  },
+  "generation_performed": false,
+  "independent_evaluation_model_used": false,
+  "all_combinations_independently_checked": false
+}

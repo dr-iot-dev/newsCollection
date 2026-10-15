@@ -1,0 +1,37 @@
+{
+  "confirmed_at": "2026-10-15",
+  "cluster_articles_in_full_input_experiments": 327,
+  "latest_generation": {
+    "groups": 7,
+    "appropriate": 2,
+    "inappropriate": 5,
+    "model": "gpt-6.1-sol"
+  },
+  "independent_model_verification_performed_in_this_experiment": false,
+  "diagrams": [
+    "experiment-flow.svg",
+    "implemented-pipeline-flow.svg"
+  ],
+  "implementation_sources": [
+    {
+      "repository_path": "docs/seven-stage-system-design-20261015.md",
+      "sha256": "f8be9d77be195330eb68569d0d1818d1dc028384f2e473a6b955754aaaeb737f"
+    },
+    {
+      "repository_path": "app/pipeline.py",
+      "sha256": "000e994b67629363261129e7eaee380aafe9d1377abc7c66dbac919b790558f0"
+    },
+    {
+      "repository_path": "app/clustering.py",
+      "sha256": "6a6ce781a13835ce8dd64c3792b2ba0167fdb59bbb11b64ab9aae40ae852688d"
+    },
+    {
+      "repository_path": "app/model_client.py",
+      "sha256": "474a501768ed82624081c70bc410db3b90da09168790dd3f92f84173702e7abc"
+    },
+    {
+      "repository_path": "app/settings.py",
+      "sha256": "08d26101d19c5ee2bb1a689119f21101f91694903b7f8a90fba16f3cc5d62ba0"
+    }
+  ]
+}
