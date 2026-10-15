@@ -50,4 +50,5 @@ def schema_sql(path: Path, dialect_name: str = "postgresql") -> None:
         statements.append(str(CreateTable(table).compile(dialect=dialect)).strip() + ";")
         statements.extend(str(CreateIndex(i).compile(dialect=dialect)) + ";" for i in table.indexes)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n\n".join(statements) + "\n", encoding="utf-8")
+    sql = "\n\n".join(statements)
+    path.write_text("\n".join(line.rstrip() for line in sql.splitlines()) + "\n", encoding="utf-8")

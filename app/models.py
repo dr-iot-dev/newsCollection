@@ -70,31 +70,58 @@ class Comparison(Base):
     __table_args__ = (
         UniqueConstraint("run_id", "cluster_id"),
         CheckConstraint("cluster_id >= 0"),
-        CheckConstraint("source1 <> source2 AND source1 <> source3 AND source2 <> source3"),
+        *(
+            CheckConstraint(
+                f"({a} IS NULL AND {b} IS NULL AND {c} IS NULL) OR "
+                f"({a} IS NOT NULL AND {b} IS NOT NULL AND {c} IS NOT NULL "
+                f"AND {a} <> {b} AND {a} <> {c} AND {b} <> {c})"
+            )
+            for a, b, c in (("source1", "source2", "source3"), ("reserve1", "reserve2", "reserve3"))
+        ),
+        CheckConstraint("reserve1 IS NULL OR source1 IS NOT NULL"),
         *(
             ForeignKeyConstraint(
                 ["run_id", field], ["run_articles.run_id", "run_articles.article_id"]
             )
-            for field in ("source1", "source2", "source3")
+            for field in ("source1", "source2", "source3", "reserve1", "reserve2", "reserve3")
         ),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
     run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"))
     cluster_id: Mapped[int]
-    source1: Mapped[str]
-    source2: Mapped[str]
-    source3: Mapped[str]
+    source1: Mapped[str | None]
+    source2: Mapped[str | None]
+    source3: Mapped[str | None]
+    reserve1: Mapped[str | None]
+    reserve2: Mapped[str | None]
+    reserve3: Mapped[str | None]
+    candidate_article_ids: Mapped[list[str]] = mapped_column(JSON)
+    selection_result: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+    def source_ids(self, role: str = "PRIMARY") -> list[str]:
+        values = (
+            [self.source1, self.source2, self.source3]
+            if role == "PRIMARY"
+            else [self.reserve1, self.reserve2, self.reserve3]
+        )
+        return values if all(values) else []
 
 
 class Draft(Base):
     __tablename__ = "drafts"
     __table_args__ = (
-        UniqueConstraint("comparison_id", "revision"),
+        UniqueConstraint("comparison_id", "set_role", "revision"),
+        CheckConstraint("set_role IN ('PRIMARY', 'RESERVE')"),
+        CheckConstraint("generation_status IN ('APPROPRIATE', 'INAPPROPRIATE')"),
         CheckConstraint("revision IN (0, 1)"),
         CheckConstraint("revision = 1 OR markdown IS NOT NULL"),
+        CheckConstraint("revision = 1 OR generation_status IS NOT NULL"),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
     comparison_id: Mapped[str] = mapped_column(ForeignKey("comparisons.id"))
+    set_role: Mapped[str] = mapped_column(default="PRIMARY")
+    generation_status: Mapped[str | None]
+    generation_reason: Mapped[str | None]
     revision: Mapped[int] = mapped_column(default=0)
     # A reserved repair has no text until its one generation request succeeds.
     markdown: Mapped[str | None]

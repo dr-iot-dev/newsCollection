@@ -10,9 +10,10 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.clustering import cluster, select_three
+from app.clustering import cluster, selection_candidates
 from app.model_client import (
     GENERATION_SCHEMA,
+    SELECTION_SCHEMA,
     VERIFICATION_SCHEMA,
     validate_result,
 )
@@ -33,7 +34,40 @@ def sources(articles: list[Article]) -> list[dict]:
 
 
 def article_mark(markdown: str) -> str:
-    return markdown.strip().splitlines()[0].lstrip("# ").strip()
+    lines = markdown.strip().splitlines()
+    return lines[0].lstrip("# ").strip() if lines else ""
+
+
+def validate_selection(result: dict, candidates: list[str]) -> None:
+    validate_result(result, SELECTION_SCHEMA)
+    primary, reserve = result["primary_article_ids"], result["reserve_article_ids"]
+    expected = {"TWO_SETS": (3, 3), "ONE_SET": (3, 0), "NO_SET": (0, 0)}
+    if (len(primary), len(reserve)) != expected[result["selection_status"]]:
+        raise ValueError("SELECTION_STATUS_MISMATCH")
+    if not result["reason"].strip():
+        raise ValueError("EMPTY_SELECTION_REASON")
+    for ids in (primary, reserve):
+        if len(set(ids)) != len(ids) or not set(ids) <= set(candidates):
+            raise ValueError("INVALID_SELECTION_ARTICLES")
+    if reserve and set(primary) == set(reserve):
+        raise ValueError("DUPLICATE_SELECTION_SETS")
+
+
+def apply_generation(draft: Draft, result: dict) -> None:
+    validate_result(result, GENERATION_SCHEMA)
+    status, text = result["status"], result["article_markdown"]
+    if not result["reason"].strip():
+        raise ValueError("EMPTY_GENERATION_REASON")
+    if status == "APPROPRIATE":
+        if not text.strip():
+            raise ValueError("EMPTY_ARTICLE")
+        if article_mark(text) == "比較不適（公開不可）":
+            raise ValueError("GENERATION_STATUS_MISMATCH")
+    elif text.strip():
+        raise ValueError("INAPPROPRIATE_HAS_ARTICLE")
+    draft.generation_status = status
+    draft.generation_reason = result["reason"]
+    draft.markdown = text
 
 
 class Pipeline:
@@ -44,7 +78,7 @@ class Pipeline:
         record = settings.record()
         record["prompts"] = {
             name: (prompt_dir() / (name + ".txt")).read_text(encoding="utf-8")
-            for name in ("generation", "verification")
+            for name in ("selection", "generation", "verification")
         }
         run = Run(settings=record)
         self.session.add(run)
@@ -82,7 +116,7 @@ class Pipeline:
         )
 
     def reject_marked(self, draft: Draft) -> Verification | None:
-        if draft.markdown is None or article_mark(draft.markdown) != "比較不適（公開不可）":
+        if draft.generation_status != "INAPPROPRIATE":
             return None
         result = self.session.get(Verification, draft.id)
         if result is None:
@@ -90,7 +124,8 @@ class Pipeline:
                 draft_id=draft.id,
                 status="ineligible",
                 score=None,
-                reason="生成本文が比較不適（公開不可）を明示したため不適で確定。評価モデルは未実行。",
+                reason="生成時にINAPPROPRIATEと判定。評価モデルは未実行。"
+                + (draft.generation_reason or ""),
             )
             self.session.add(result)
         return result
@@ -101,6 +136,8 @@ class Pipeline:
             return result
         result = self.reject_marked(draft)
         if result is None:
+            if draft.generation_status != "APPROPRIATE":
+                raise ValueError("GENERATION_STATUS_REQUIRED_FOR_VERIFICATION")
             output = self.provider.complete(
                 settings.verification_model,
                 prompts["verification"],
@@ -123,23 +160,25 @@ class Pipeline:
         return result
 
     def verify_comparison(self, comparison: Comparison, settings, prompts) -> None:
+        if not comparison.source_ids():
+            return
+        role = self.active_role(comparison)
         drafts = list(
             self.session.scalars(
-                select(Draft).where(Draft.comparison_id == comparison.id).order_by(Draft.revision)
+                select(Draft)
+                .where(Draft.comparison_id == comparison.id, Draft.set_role == role)
+                .order_by(Draft.revision)
             )
         )
         initial = drafts[0]
-        articles = [
-            self.session.get(Article, i)
-            for i in (comparison.source1, comparison.source2, comparison.source3)
-        ]
+        articles = [self.session.get(Article, i) for i in comparison.source_ids(role)]
         verdict = self.evaluate(initial, articles, settings, prompts)
-        if verdict.status == "eligible" or article_mark(initial.markdown) == "比較不適（公開不可）":
+        if verdict.status == "eligible" or initial.generation_status == "INAPPROPRIATE":
             return
         if len(drafts) == 1:
             # Persist the only repair slot before sending the request. An uncertain
             # outcome must never cause resume to send a second repair request.
-            revised = Draft(comparison_id=comparison.id, revision=1, markdown=None)
+            revised = Draft(comparison_id=comparison.id, set_role=role, revision=1, markdown=None)
             self.session.add(revised)
             self.session.commit()
             output = self.provider.complete(
@@ -152,10 +191,7 @@ class Pipeline:
                 },
                 GENERATION_SCHEMA,
             )
-            validate_result(output, GENERATION_SCHEMA)
-            if not output["article_markdown"].strip():
-                raise ValueError("EMPTY_ARTICLE")
-            revised.markdown = output["article_markdown"]
+            apply_generation(revised, output)
             self.reject_marked(revised)
             self.session.commit()
         else:
@@ -164,6 +200,46 @@ class Pipeline:
                 raise ValueError("REPAIR_RESULT_UNAVAILABLE")
         # This result is final regardless of status. There is no further repair.
         self.evaluate(revised, articles, settings, prompts)
+
+    def initial(self, comparison: Comparison, role: str) -> Draft | None:
+        return self.session.scalar(
+            select(Draft).where(
+                Draft.comparison_id == comparison.id, Draft.set_role == role, Draft.revision == 0
+            )
+        )
+
+    def active_role(self, comparison: Comparison) -> str:
+        primary = self.initial(comparison, "PRIMARY")
+        if (
+            primary is not None
+            and primary.generation_status == "INAPPROPRIATE"
+            and comparison.source_ids("RESERVE")
+        ):
+            return "RESERVE"
+        return "PRIMARY"
+
+    def generate_comparison(self, comparison: Comparison, settings, prompts) -> None:
+        for role in ("PRIMARY", "RESERVE"):
+            ids = comparison.source_ids(role)
+            if not ids:
+                break
+            draft = self.initial(comparison, role)
+            if draft is None:
+                articles = [self.session.get(Article, i) for i in ids]
+                result = self.provider.complete(
+                    settings.generation_model,
+                    prompts["generation"],
+                    {"sources": sources(articles)},
+                    GENERATION_SCHEMA,
+                )
+                draft = Draft(comparison_id=comparison.id, set_role=role)
+                apply_generation(draft, result)
+                self.session.add(draft)
+                self.session.flush()
+                self.reject_marked(draft)
+                self.session.commit()
+            if draft.generation_status == "APPROPRIATE":
+                break
 
     def process(self, run_id: str) -> Run:
         run = self.session.get(Run, run_id)
@@ -217,16 +293,37 @@ class Pipeline:
                 for label, candidates in sorted(groups.items()):
                     if label in existing:
                         continue
-                    ids = select_three(candidates)
+                    ids = selection_candidates(candidates, settings.selection_candidate_limit)
                     if not ids:
                         continue
+                    articles = [self.session.get(Article, i) for i in ids]
+                    selection = self.provider.complete(
+                        settings.selection_model,
+                        prompts["selection"],
+                        {
+                            "cluster_id": label,
+                            "candidates": [
+                                {"article_id": a.id, "centroid_rank": rank, **sources([a])[0]}
+                                for rank, a in enumerate(articles, 1)
+                            ],
+                        },
+                        SELECTION_SCHEMA,
+                    )
+                    validate_selection(selection, ids)
+                    primary = selection["primary_article_ids"] or [None] * 3
+                    reserve = selection["reserve_article_ids"] or [None] * 3
                     self.session.add(
                         Comparison(
                             run_id=run.id,
                             cluster_id=label,
-                            source1=ids[0],
-                            source2=ids[1],
-                            source3=ids[2],
+                            source1=primary[0],
+                            source2=primary[1],
+                            source3=primary[2],
+                            reserve1=reserve[0],
+                            reserve2=reserve[1],
+                            reserve3=reserve[2],
+                            candidate_article_ids=ids,
+                            selection_result=selection,
                         )
                     )
                     self.session.commit()
@@ -243,34 +340,7 @@ class Pipeline:
             )
             if run.step == "generate":
                 for comparison in comparisons:
-                    if self.session.scalar(
-                        select(Draft).where(
-                            Draft.comparison_id == comparison.id, Draft.revision == 0
-                        )
-                    ):
-                        continue
-                    articles = [
-                        self.session.get(Article, i)
-                        for i in (
-                            comparison.source1,
-                            comparison.source2,
-                            comparison.source3,
-                        )
-                    ]
-                    result = self.provider.complete(
-                        settings.generation_model,
-                        prompts["generation"],
-                        {"sources": sources(articles)},
-                        GENERATION_SCHEMA,
-                    )
-                    validate_result(result, GENERATION_SCHEMA)
-                    if not result["article_markdown"].strip():
-                        raise ValueError("EMPTY_ARTICLE")
-                    draft = Draft(comparison_id=comparison.id, markdown=result["article_markdown"])
-                    self.session.add(draft)
-                    self.session.flush()
-                    self.reject_marked(draft)
-                    self.session.commit()
+                    self.generate_comparison(comparison, settings, prompts)
                 run.step = "verify"
                 self.session.commit()
             if run.step == "verify":
@@ -290,34 +360,69 @@ class Pipeline:
     def export(self, run_id: str, output: Path) -> dict:
         output.mkdir(parents=True, exist_ok=True)
         rows = []
-        latest = {}
-        for comparison, draft, verification in self.session.execute(
-            select(Comparison, Draft, Verification)
-            .join(Draft, Draft.comparison_id == Comparison.id)
-            .outerjoin(Verification, Verification.draft_id == Draft.id)
-            .where(Comparison.run_id == run_id)
-            .order_by(Comparison.cluster_id, Draft.revision)
+        for comparison in self.session.scalars(
+            select(Comparison).where(Comparison.run_id == run_id).order_by(Comparison.cluster_id)
         ):
-            latest[comparison.id] = (comparison, draft, verification)
-        for comparison, draft, verification in latest.values():
+            role = self.active_role(comparison)
+            attempts = list(
+                self.session.scalars(
+                    select(Draft)
+                    .where(Draft.comparison_id == comparison.id)
+                    .order_by(Draft.set_role, Draft.revision)
+                )
+            )
+            active = [d for d in attempts if d.set_role == role]
+            draft = active[-1] if active else None
+            verification = self.session.get(Verification, draft.id) if draft else None
             filename = None
-            if draft.markdown is not None:
+            report = None
+            if draft and draft.markdown and draft.generation_status == "APPROPRIATE":
                 filename = f"cluster-{comparison.cluster_id}.md"
                 (output / filename).write_text(draft.markdown, encoding="utf-8")
-            final = verification is not None and (
-                draft.revision == 1
-                or verification.status == "eligible"
-                or article_mark(draft.markdown) == "比較不適（公開不可）"
+            elif draft and draft.generation_status == "INAPPROPRIATE":
+                report = f"cluster-{comparison.cluster_id}-inappropriate.md"
+                (output / report).write_text(
+                    "# 比較不適（公開不可）\n\n" + draft.generation_reason, encoding="utf-8"
+                )
+            final = (
+                draft is not None
+                and verification is not None
+                and (
+                    draft.revision == 1
+                    or verification.status == "eligible"
+                    or draft.generation_status == "INAPPROPRIATE"
+                )
             )
+            no_set = comparison.selection_result["selection_status"] == "NO_SET"
             rows.append(
                 {
                     "comparison_id": comparison.id,
-                    "revision": draft.revision,
+                    "cluster_id": comparison.cluster_id,
+                    "selection": comparison.selection_result,
+                    "candidate_article_ids": comparison.candidate_article_ids,
+                    "set_role": role,
+                    "revision": draft.revision if draft else None,
                     "article": filename,
-                    "sources": [comparison.source1, comparison.source2, comparison.source3],
-                    "status": verification.status if final else None,
+                    "inappropriate_report": report,
+                    "sources": comparison.source_ids(role),
+                    "generation_status": draft.generation_status if draft else None,
+                    "status": "not_selected" if no_set else verification.status if final else None,
                     "score": verification.score if final else None,
-                    "reason": verification.reason if final else None,
+                    "reason": comparison.selection_result["reason"]
+                    if no_set
+                    else verification.reason
+                    if final
+                    else None,
+                    "attempts": [
+                        {
+                            "set_role": d.set_role,
+                            "revision": d.revision,
+                            "generation_status": d.generation_status,
+                            "generation_reason": d.generation_reason,
+                            "sources": comparison.source_ids(d.set_role),
+                        }
+                        for d in attempts
+                    ],
                 }
             )
         result = {"run_id": run_id, "articles": rows}

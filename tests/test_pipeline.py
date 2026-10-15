@@ -14,7 +14,7 @@ from app.acquisition import Collector, parse_article, save_article
 from app.cli import main
 from app.clustering import cluster, select_three
 from app.db import engine_for, initialize, schema_sql
-from app.model_client import GENERATION_SCHEMA, VERIFICATION_SCHEMA, OpenAI
+from app.model_client import GENERATION_SCHEMA, SELECTION_SCHEMA, VERIFICATION_SCHEMA, OpenAI
 from app.models import Article, Comparison, Draft, RunArticle, Verification
 from app.pipeline import Pipeline
 from app.settings import Settings
@@ -70,9 +70,25 @@ class Provider:
     def complete(self, model, prompt, data, schema):
         self.calls.append((schema, model, data))
         self.prompts.append((schema, prompt))
+        if schema == SELECTION_SCHEMA:
+            return {
+                "selection_status": "ONE_SET",
+                "primary_article_ids": [x["article_id"] for x in data["candidates"][:3]],
+                "reserve_article_ids": [],
+                "reason": "3つの共通軸と2つの有意差を本文から確認。",
+            }
         if schema == GENERATION_SCHEMA:
-            return {"article_markdown": "# 比較記事\n\n3件の原資料に基づく比較である。"}
+            return generation("# 比較記事\n\n3件の原資料に基づく比較である。")
         return {"status": self.status, "score": self.score, "reason": "個別の原資料に基づく評価"}
+
+
+def generation(text):
+    rejected = isinstance(text, str) and text.lstrip().startswith("# 比較不適")
+    return {
+        "status": "INAPPROPRIATE" if rejected else "APPROPRIATE",
+        "reason": text if rejected else "G1〜G6の本文根拠を確認した。",
+        "article_markdown": "" if rejected else text,
+    }
 
 
 def labels(values, settings):
@@ -144,7 +160,7 @@ def test_verification_receives_actual_frozen_generation_instruction(session, tmp
 
     temporary = tmp_path / "prompts"
     temporary.mkdir()
-    for name in ("generation", "verification"):
+    for name in ("selection", "generation", "verification"):
         (temporary / (name + ".txt")).write_text(
             (prompt_dir() / (name + ".txt")).read_text(encoding="utf-8"),
             encoding="utf-8",
@@ -175,8 +191,10 @@ def test_uncertain_article_mark_cannot_be_saved_as_eligible(session):
     original = provider.complete
 
     def contradictory(model, prompt, data, schema):
+        if schema == SELECTION_SCHEMA:
+            return original(model, prompt, data, schema)
         if schema == GENERATION_SCHEMA:
-            return {"article_markdown": "# 要確認（公開不可）\n\n原資料に重大な疑義がある。"}
+            return generation("# 要確認（公開不可）\n\n原資料に重大な疑義がある。")
         return original(model, prompt, data, schema)
 
     provider.complete = contradictory
@@ -195,15 +213,19 @@ def test_generation_ineligible_is_final_without_verification_or_repair(session, 
     original = provider.complete
 
     def unsuitable(model, prompt, data, schema):
+        if schema == SELECTION_SCHEMA:
+            return original(model, prompt, data, schema)
         assert schema == GENERATION_SCHEMA
         original(model, prompt, data, schema)
-        return {"article_markdown": "\n# 比較不適（公開不可）  \n\n対象が重複している。"}
+        return generation("\n# 比較不適（公開不可）  \n\n対象が重複している。")
 
     provider.complete = unsuitable
     pipeline = Pipeline(session, provider, labels)
     run = pipeline.process(pipeline.start(Settings()).id)
     assert run.step == "complete"
-    assert [c[0] for c in provider.calls if c[0] != "embed"] == [GENERATION_SCHEMA]
+    assert [c[0] for c in provider.calls if c[0] not in ("embed", SELECTION_SCHEMA)] == [
+        GENERATION_SCHEMA
+    ]
     assert len(session.scalars(select(Draft)).all()) == 1
     row = pipeline.export(run.id, tmp_path / "export")["articles"][0]
     assert row["status"] == "ineligible" and row["score"] is None
@@ -222,12 +244,14 @@ def test_generation_rejection_saved_before_next_cluster_generation_fails(session
 
     def interrupted(model, prompt, data, schema):
         nonlocal generated
+        if schema == SELECTION_SCHEMA:
+            return original(model, prompt, data, schema)
         assert schema == GENERATION_SCHEMA
         generated += 1
         if generated == 2:
             raise ValueError("NEXT_CLUSTER_FAILURE")
         original(model, prompt, data, schema)
-        return {"article_markdown": "# 比較不適（公開不可）\n\n対象が重複している。"}
+        return generation("# 比較不適（公開不可）\n\n対象が重複している。")
 
     provider.complete = interrupted
     pipeline = Pipeline(session, provider, lambda v, _: [0, 0, 0, 1, 1, 1])
@@ -255,9 +279,11 @@ def test_exactly_one_repair_and_latest_verdict_is_final(
 
     def responding(model, prompt, data, schema):
         nonlocal checks
+        if schema == SELECTION_SCHEMA:
+            return original(model, prompt, data, schema)
         original(model, prompt, data, schema)
         if schema == GENERATION_SCHEMA:
-            return {"article_markdown": revised_text if "feedback" in data else initial_text}
+            return generation(revised_text if "feedback" in data else initial_text)
         checks += 1
         if checks == 1:
             return {"status": initial_status, "score": 45, "reason": feedback}
@@ -266,7 +292,7 @@ def test_exactly_one_repair_and_latest_verdict_is_final(
     provider.complete = responding
     pipeline = Pipeline(session, provider, labels)
     run = pipeline.process(pipeline.start(Settings()).id)
-    calls = [c for c in provider.calls if c[0] != "embed"]
+    calls = [c for c in provider.calls if c[0] not in ("embed", SELECTION_SCHEMA)]
     assert [c[0] for c in calls] == [
         GENERATION_SCHEMA,
         VERIFICATION_SCHEMA,
@@ -312,9 +338,11 @@ def test_repair_may_conclude_comparison_is_ineligible_without_second_verificatio
     original = provider.complete
 
     def responding(model, prompt, data, schema):
+        if schema == SELECTION_SCHEMA:
+            return original(model, prompt, data, schema)
         result = original(model, prompt, data, schema)
         if schema == GENERATION_SCHEMA and "feedback" in data:
-            return {"article_markdown": "# 比較不適（公開不可）\n\n対象が重複している。"}
+            return generation("# 比較不適（公開不可）\n\n対象が重複している。")
         return result
 
     provider.complete = responding
@@ -323,7 +351,7 @@ def test_repair_may_conclude_comparison_is_ineligible_without_second_verificatio
     revised = session.scalar(select(Draft).where(Draft.revision == 1))
     final = session.get(Verification, revised.id)
     assert run.step == "complete" and final.status == "ineligible" and final.score is None
-    assert [c[0] for c in provider.calls if c[0] != "embed"] == [
+    assert [c[0] for c in provider.calls if c[0] not in ("embed", SELECTION_SCHEMA)] == [
         GENERATION_SCHEMA,
         VERIFICATION_SCHEMA,
         GENERATION_SCHEMA,
@@ -339,6 +367,8 @@ def test_resume_after_repaired_text_saved_only_retries_verification(session, tmp
 
     def interrupted(model, prompt, data, schema):
         nonlocal checks
+        if schema == SELECTION_SCHEMA:
+            return original(model, prompt, data, schema)
         if schema == VERIFICATION_SCHEMA:
             checks += 1
             if checks == 2:
@@ -371,11 +401,13 @@ def test_failed_repair_never_sends_another_repair_on_resume(session, tmp_path, f
     original = provider.complete
 
     def interrupted(model, prompt, data, schema):
+        if schema == SELECTION_SCHEMA:
+            return original(model, prompt, data, schema)
         result = original(model, prompt, data, schema)
         if schema == GENERATION_SCHEMA and "feedback" in data:
             if failure == "transport":
                 raise ValueError("SIMULATED_REPAIR_FAILURE")
-            return {"article_markdown": "" if failure == "empty" else 123}
+            return generation("" if failure == "empty" else 123)
         return result
 
     provider.complete = interrupted
@@ -414,6 +446,8 @@ def test_resume_persisted_embeddings_and_generated_article(session):
 
     def interrupted(*args):
         nonlocal count
+        if args[3] == SELECTION_SCHEMA:
+            return original(*args)
         count += 1
         if count == 2:
             raise ValueError("SIMULATED_INTERRUPTION")
@@ -449,7 +483,7 @@ def test_small_cluster_does_not_produce_three_sources():
     assert select_three([("a", "url-a", [1.0, 0.0]), ("b", "url-b", [0.0, 1.0])]) == []
 
 
-def test_no_selection_api_and_noise_or_small_clusters_are_not_generated(session):
+def test_selection_api_skips_noise_and_small_clusters(session):
     for company in range(1, 8):
         add(session, company)
     provider = Provider()
@@ -458,12 +492,13 @@ def test_no_selection_api_and_noise_or_small_clusters_are_not_generated(session)
     pipeline.process(run.id)
     choices = session.scalars(select(Comparison)).all()
     assert len(choices) == 1 and choices[0].cluster_id == 1
-    assert [c[0] for c in provider.calls if c[0] != "embed"] == [
+    assert [c[0] for c in provider.calls if c[0] not in ("embed", SELECTION_SCHEMA)] == [
         GENERATION_SCHEMA,
         VERIFICATION_SCHEMA,
     ]
-    assert set(run.settings["prompts"]) == {"generation", "verification"}
-    assert "selection_model" not in run.settings
+    assert set(run.settings["prompts"]) == {"selection", "generation", "verification"}
+    assert run.settings["selection_model"] == Settings.selection_model
+    assert len([c for c in provider.calls if c[0] == SELECTION_SCHEMA]) == 1
 
 
 def test_minimal_schema_and_incompatible_database_guard(session, tmp_path):
@@ -657,3 +692,309 @@ def test_cli_import_and_list_without_external_api(tmp_path, capsys):
     assert json.loads(capsys.readouterr().out)["accepted"] == 1
     assert main(["--database", database, "list"]) == 0
     assert json.loads(capsys.readouterr().out) == []
+
+
+def two_sets(data):
+    ids = [x["article_id"] for x in data["candidates"]]
+    return {
+        "selection_status": "TWO_SETS",
+        "primary_article_ids": ids[:3],
+        "reserve_article_ids": ids[1:4],
+        "reason": "本命と予備についてG1〜G6、共通軸3つと有意差2つを確認。",
+    }
+
+
+@pytest.mark.parametrize("limit", [0, 2, 31, True])
+def test_selection_limit_is_a_hard_cap(limit):
+    with pytest.raises(ValueError, match="between 3 and 30"):
+        Settings(selection_candidate_limit=limit).validate()
+
+
+def test_selection_receives_at_most_30_full_articles(session):
+    for company in range(1, 36):
+        add(session, company, body="IoT 本文を省略しない。" * 50)
+    provider = Provider()
+    pipeline = Pipeline(session, provider, labels)
+    run = pipeline.process(pipeline.start(Settings()).id)
+    calls = [c for c in provider.calls if c[0] == SELECTION_SCHEMA]
+    assert len(calls) == 1 and calls[0][1] == Settings.selection_model
+    candidates = calls[0][2]["candidates"]
+    assert len(candidates) == 30
+    assert [c["centroid_rank"] for c in candidates] == list(range(1, 31))
+    for item in candidates:
+        assert item["text"] == session.get(Article, item["article_id"]).body
+    comparison = session.scalar(select(Comparison))
+    assert comparison.candidate_article_ids == [c["article_id"] for c in candidates]
+    assert run.settings["selection_candidate_limit"] == 30
+
+
+@pytest.mark.parametrize("reject_reserve", [False, True])
+def test_primary_rejection_uses_reserve_and_only_appropriate_is_verified(
+    session, tmp_path, reject_reserve
+):
+    for company in range(1, 5):
+        add(session, company)
+    provider = Provider()
+    original = provider.complete
+    generated = []
+
+    def responding(model, prompt, data, schema):
+        result = original(model, prompt, data, schema)
+        if schema == SELECTION_SCHEMA:
+            return two_sets(data)
+        if schema == GENERATION_SCHEMA:
+            generated.append(data["sources"])
+            if len(generated) == 1 or reject_reserve:
+                return generation("# 比較不適（公開不可）\n\nG2：比較単位が異なる。")
+        return result
+
+    provider.complete = responding
+    pipeline = Pipeline(session, provider, labels)
+    run = pipeline.process(pipeline.start(Settings()).id)
+    assert len(generated) == 2 and generated[0] != generated[1]
+    verified = [c for c in provider.calls if c[0] == VERIFICATION_SCHEMA]
+    assert len(verified) == (0 if reject_reserve else 1)
+    if verified:
+        assert verified[0][1] != Settings.generation_model
+        assert verified[0][2]["sources"] == generated[1]
+        assert verified[0][2]["generation_instructions"] == run.settings["prompts"]["generation"]
+    row = pipeline.export(run.id, tmp_path / "export")["articles"][0]
+    assert row["set_role"] == "RESERVE" and len(row["attempts"]) == 2
+    assert row["status"] == ("ineligible" if reject_reserve else "eligible")
+    assert row["score"] == (None if reject_reserve else 98)
+    assert (row["article"] is None) == reject_reserve
+    assert (row["inappropriate_report"] is not None) == reject_reserve
+    before = len(provider.calls)
+    run.step = "generate"
+    session.commit()
+    pipeline.process(run.id)
+    assert len(provider.calls) == before
+
+
+def test_no_set_is_saved_and_not_generated_or_selected_again(session, tmp_path):
+    for company in range(1, 4):
+        add(session, company)
+    provider = Provider()
+    original = provider.complete
+
+    def no_set(model, prompt, data, schema):
+        original(model, prompt, data, schema)
+        assert schema == SELECTION_SCHEMA
+        return {
+            "selection_status": "NO_SET",
+            "primary_article_ids": [],
+            "reserve_article_ids": [],
+            "reason": "G2：カテゴリが不一致。",
+        }
+
+    provider.complete = no_set
+    pipeline = Pipeline(session, provider, labels)
+    run = pipeline.process(pipeline.start(Settings()).id)
+    assert run.step == "complete" and not session.scalars(select(Draft)).all()
+    assert not session.scalars(select(Verification)).all()
+    assert session.scalar(select(Comparison)).source_ids() == []
+    row = pipeline.export(run.id, tmp_path / "export")["articles"][0]
+    assert row["status"] == "not_selected" and row["score"] is None
+    before = len(provider.calls)
+    run.step = "select"
+    session.commit()
+    pipeline.process(run.id)
+    assert len(provider.calls) == before
+
+
+@pytest.mark.parametrize("defect", ["outside", "duplicate", "same_set", "status"])
+def test_invalid_selection_stops_before_generation(session, defect):
+    for company in range(1, 5):
+        add(session, company)
+    provider = Provider()
+    original = provider.complete
+
+    def invalid(model, prompt, data, schema):
+        original(model, prompt, data, schema)
+        assert schema == SELECTION_SCHEMA
+        result = two_sets(data)
+        if defect == "outside":
+            result["primary_article_ids"][0] = "not-in-the-candidate-pool"
+        elif defect == "duplicate":
+            result["primary_article_ids"][0] = result["primary_article_ids"][1]
+        elif defect == "same_set":
+            result["reserve_article_ids"] = list(reversed(result["primary_article_ids"]))
+        else:
+            result["selection_status"] = "NO_SET"
+        return result
+
+    provider.complete = invalid
+    pipeline = Pipeline(session, provider, labels)
+    run = pipeline.start(Settings())
+    with pytest.raises(ValueError):
+        pipeline.process(run.id)
+    assert run.step == "select" and not session.scalars(select(Comparison)).all()
+    assert not session.scalars(select(Draft)).all()
+
+
+def test_reserve_failure_resumes_without_repeating_primary_or_selection(session, tmp_path):
+    for company in range(1, 5):
+        add(session, company)
+    provider = Provider()
+    original = provider.complete
+    generated = 0
+
+    def responding(model, prompt, data, schema):
+        nonlocal generated
+        result = original(model, prompt, data, schema)
+        if schema == SELECTION_SCHEMA:
+            return two_sets(data)
+        if schema == GENERATION_SCHEMA:
+            generated += 1
+            if generated == 1:
+                return generation("# 比較不適（公開不可）\n\nG4：根拠不足。")
+            if generated == 2:
+                raise ValueError("RESERVE_TRANSPORT_FAILURE")
+        return result
+
+    provider.complete = responding
+    pipeline = Pipeline(session, provider, labels)
+    run = pipeline.start(Settings())
+    with pytest.raises(ValueError, match="RESERVE_TRANSPORT_FAILURE"):
+        pipeline.process(run.id)
+    pending = pipeline.export(run.id, tmp_path / "export")["articles"][0]
+    assert pending["set_role"] == "RESERVE" and pending["status"] is None
+    with Session(session.bind, expire_on_commit=False) as reopened:
+        Pipeline(reopened, provider, labels).process(run.id)
+    assert len([c for c in provider.calls if c[0] == SELECTION_SCHEMA]) == 1
+    assert generated == 3
+
+
+def test_primary_appropriate_does_not_generate_reserve_even_after_verification_rejection(session):
+    for company in range(1, 5):
+        add(session, company)
+    provider = Provider("ineligible", 40)
+    original = provider.complete
+
+    def responding(model, prompt, data, schema):
+        result = original(model, prompt, data, schema)
+        return two_sets(data) if schema == SELECTION_SCHEMA else result
+
+    provider.complete = responding
+    pipeline = Pipeline(session, provider, labels)
+    pipeline.process(pipeline.start(Settings()).id)
+    drafts = session.scalars(select(Draft)).all()
+    assert len(drafts) == 2 and all(d.set_role == "PRIMARY" for d in drafts)
+    assert len([c for c in provider.calls if c[0] == VERIFICATION_SCHEMA]) == 2
+
+
+@pytest.mark.parametrize(
+    "status,text",
+    [
+        ("APPROPRIATE", ""),
+        ("APPROPRIATE", "# 比較不適（公開不可）"),
+        ("INAPPROPRIATE", "# 比較記事を返してはいけない"),
+    ],
+)
+def test_inconsistent_generation_is_not_a_normal_rejection(session, status, text):
+    for company in range(1, 4):
+        add(session, company)
+    provider = Provider()
+    original = provider.complete
+
+    def invalid(model, prompt, data, schema):
+        result = original(model, prompt, data, schema)
+        if schema == GENERATION_SCHEMA:
+            return {"status": status, "reason": "判定の理由。", "article_markdown": text}
+        return result
+
+    provider.complete = invalid
+    pipeline = Pipeline(session, provider, labels)
+    with pytest.raises(ValueError):
+        pipeline.process(pipeline.start(Settings()).id)
+    assert not session.scalars(select(Draft)).all()
+    assert not session.scalars(select(Verification)).all()
+
+
+def test_sol_request_includes_reasoning_and_explicit_generation_status():
+    payloads = []
+
+    def handler(request):
+        payloads.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "status": "completed",
+                "output": [
+                    {
+                        "content": [
+                            {"type": "output_text", "text": json.dumps(generation("# 比較記事"))}
+                        ]
+                    }
+                ],
+            },
+        )
+
+    api = OpenAI("test-key", httpx.MockTransport(handler))
+    api.complete("gpt-6.1-sol", "prompt", {"sources": []}, GENERATION_SCHEMA)
+    api.close()
+    assert payloads[0]["reasoning"] == {"effort": "medium"}
+    assert payloads[0]["store"] is False
+    assert "temperature" not in payloads[0]
+
+
+def test_source_migration_preserves_original_database_and_ids(session, tmp_path):
+    from maintenance.migrate_ai_selection import migrate
+
+    original = add(session, 1)
+    source = tmp_path / "pipeline.sqlite"
+    before = source.read_bytes()
+    target = "sqlite:///" + (tmp_path / "ai-selection.sqlite").as_posix()
+    assert migrate(source, target) == 1
+    assert source.read_bytes() == before
+    with Session(engine_for(target)) as copied:
+        article = copied.get(Article, original.id)
+        assert (article.body, article.snapshot_hash) == (original.body, original.snapshot_hash)
+        assert copied.scalars(select(Comparison)).all() == []
+    with pytest.raises(ValueError, match="TARGET_NOT_EMPTY"):
+        migrate(source, target)
+    with pytest.raises(ValueError, match="SEPARATE_DATABASE"):
+        migrate(source, "sqlite:///" + source.as_posix())
+
+
+def test_selection_ranking_is_stable_and_uses_full_cluster_centroid():
+    from app.clustering import selection_candidates
+
+    candidates = [("a", "a", [1.0, 0.0]), ("b", "b", [0.0, 1.0])]
+    candidates += [(f"z{i:02d}", "z", [0.0, 1.0]) for i in range(35)]
+    ids = selection_candidates(candidates)
+    assert len(ids) == 30 and "a" not in ids
+    assert ids == selection_candidates(list(reversed(candidates)))
+
+
+def test_migration_readonly_uri_supports_unc_paths():
+    from pathlib import PureWindowsPath
+
+    from maintenance.migrate_ai_selection import readonly_uri
+
+    uri = readonly_uri(PureWindowsPath("//server/share/news articles.sqlite"))
+    assert uri == "file:////server/share/news%20articles.sqlite?mode=ro"
+
+
+def test_successful_cluster_selection_is_not_repeated_after_next_selection_fails(session):
+    for company in range(1, 7):
+        add(session, company)
+    provider = Provider()
+    original = provider.complete
+    selected = []
+
+    def interrupted(model, prompt, data, schema):
+        if schema == SELECTION_SCHEMA:
+            selected.append(data["cluster_id"])
+            if len(selected) == 2:
+                raise ValueError("SELECTION_TRANSPORT_FAILURE")
+        return original(model, prompt, data, schema)
+
+    provider.complete = interrupted
+    pipeline = Pipeline(session, provider, lambda v, _: [0, 0, 0, 1, 1, 1])
+    run = pipeline.start(Settings())
+    with pytest.raises(ValueError, match="SELECTION_TRANSPORT_FAILURE"):
+        pipeline.process(run.id)
+    assert run.step == "select" and len(session.scalars(select(Comparison)).all()) == 1
+    pipeline.process(run.id)
+    assert selected == [0, 1, 1]

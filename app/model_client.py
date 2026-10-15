@@ -19,7 +19,21 @@ def object_schema(properties: dict) -> dict:
     }
 
 
-GENERATION_SCHEMA = object_schema({"article_markdown": STRING})
+SELECTION_SCHEMA = object_schema(
+    {
+        "selection_status": {"type": "string", "enum": ["TWO_SETS", "ONE_SET", "NO_SET"]},
+        "primary_article_ids": {"type": "array", "items": STRING},
+        "reserve_article_ids": {"type": "array", "items": STRING},
+        "reason": STRING,
+    }
+)
+GENERATION_SCHEMA = object_schema(
+    {
+        "status": {"type": "string", "enum": ["APPROPRIATE", "INAPPROPRIATE"]},
+        "reason": STRING,
+        "article_markdown": STRING,
+    }
+)
 VERIFICATION_SCHEMA = object_schema(
     {
         "status": {"type": "string", "enum": ["eligible", "ineligible", "needs_confirmation"]},
@@ -89,24 +103,24 @@ class OpenAI:
         return response.json()
 
     def complete(self, model: str, prompt: str, data: dict, schema: dict) -> dict:
-        result = self.post(
-            "responses",
-            {
-                "model": model,
-                "instructions": prompt,
-                "input": json.dumps(data, ensure_ascii=False),
-                "store": False,
-                "max_output_tokens": 16000,
-                "text": {
-                    "format": {
-                        "type": "json_schema",
-                        "name": "result",
-                        "strict": True,
-                        "schema": schema,
-                    }
-                },
+        payload = {
+            "model": model,
+            "instructions": prompt,
+            "input": json.dumps(data, ensure_ascii=False),
+            "store": False,
+            "max_output_tokens": 16000,
+            "text": {
+                "format": {
+                    "type": "json_schema",
+                    "name": "result",
+                    "strict": True,
+                    "schema": schema,
+                }
             },
-        )
+        }
+        if model.startswith("gpt-6.1-sol"):
+            payload["reasoning"] = {"effort": "medium"}
+        result = self.post("responses", payload)
         if result.get("status") != "completed":
             raise ValueError("MODEL_RESPONSE_INCOMPLETE")
         parts = []

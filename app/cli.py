@@ -35,6 +35,8 @@ def parser():
     )
     run = commands.add_parser("run")
     run.add_argument("--embedding-model", default=Settings.embedding_model)
+    run.add_argument("--selection-model", default=Settings.selection_model)
+    run.add_argument("--selection-candidate-limit", type=int, default=30)
     run.add_argument("--generation-model", default=Settings.generation_model)
     run.add_argument("--verification-model", default=Settings.verification_model)
     run.add_argument("--n-components", type=int, default=15)

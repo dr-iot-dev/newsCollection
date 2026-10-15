@@ -11,6 +11,7 @@
 !maintenance/
 !maintenance/check_environment.py
 !maintenance/retired-paths.json
+!maintenance/migrate_ai_selection.py
 **/__pycache__
 **/*.pyc
 **/.pytest_cache

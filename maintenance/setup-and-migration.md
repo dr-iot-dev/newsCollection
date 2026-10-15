@@ -42,3 +42,17 @@ python -m maintenance.import_sources --database sqlite:///.local/pipeline-v2.sql
 - wheelに移行処理・旧モジュールが含まれないこと、生成・検証の2指示が同梱されることを確認した。
 - Dockerビルドの事前環境チェックと、ネットワークなし・読み取り専用のテストが通過した。実モデルAPIへの送信は行っていない。
 - 稼働環境の切替と実データ全件の移行は行っていない。
+
+## AI選定・本命/予備に対応したDBへの移行
+
+comparisonsには候補ID・選定応答・本命と予備の3ID、draftsには本命/予備・生成時status・理由を追加する。テーブル数は6のまま、旧カラム構成は拒否する。稼働中DBを自動変更しない。
+
+既存アプリのSQLite DBから、原資料だけを別の新DBへ移す場合：
+
+```powershell
+python -m maintenance.migrate_ai_selection --source .local/pipeline-v2.sqlite --database sqlite:///.local/pipeline-ai-selection.sqlite
+```
+
+移行元を読み取り専用で開き、同じSQLiteファイルや原資料・実行が既にある移行先は拒否する。記事ID・本文・スナップショットハッシュを保持し、過去の実行・選定・生成・判定は元DBに残す。移行後の新規runでは②から処理する。移行プログラムはアプリパッケージには含めない。
+
+実験記録はexperiments/に保存し、現行仕様だけを置くdocs/とは分離する。

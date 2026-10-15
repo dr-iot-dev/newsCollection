@@ -8,7 +8,9 @@ from pathlib import Path
 @dataclass(frozen=True)
 class Settings:
     embedding_model: str = "text-embedding-3-small"
-    generation_model: str = "gpt-4.1-mini-2025-04-14"
+    selection_model: str = "gpt-4.1-2025-04-14"
+    selection_candidate_limit: int = 30
+    generation_model: str = "gpt-6.1-sol"
     verification_model: str = "gpt-4.1-2025-04-14"
     n_components: int = 15
     n_neighbors: int = 15
@@ -16,6 +18,10 @@ class Settings:
     min_samples: int = 5
 
     def validate(self) -> None:
+        if type(self.selection_candidate_limit) is not int or not (
+            3 <= self.selection_candidate_limit <= 30
+        ):
+            raise ValueError("selection candidate limit must be between 3 and 30")
         if self.generation_model == self.verification_model:
             raise ValueError("generation and verification must use different models")
         if self.n_components < 2 or self.n_neighbors < 2:

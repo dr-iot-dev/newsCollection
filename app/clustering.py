@@ -39,8 +39,12 @@ def cluster(values: list[list[float]], settings: Settings) -> list[int]:
     return [int(label) for label in labels]
 
 
-def select_three(candidates: list[tuple[str, str, list[float]]]) -> list[str]:
-    """Choose three cluster members closest to their original-space centroid."""
+def selection_candidates(
+    candidates: list[tuple[str, str, list[float]]], limit: int = 30
+) -> list[str]:
+    """Rank against the full cluster centroid, then bound the AI input size."""
+    if type(limit) is not int or not 3 <= limit <= 30:
+        raise ValueError("INVALID_SELECTION_LIMIT")
     if len(candidates) < 3:
         return []
     if len({item[0] for item in candidates}) != len(candidates):
@@ -54,5 +58,11 @@ def select_three(candidates: list[tuple[str, str, list[float]]]) -> list[str]:
     vectors = vectors / norms[:, None]
     center = vectors.mean(axis=0)
     # Scaling the centroid does not change the nearest-member order.
-    order = np.argsort(-(vectors @ center))[:3]
-    return [candidates[int(i)][0] for i in order]
+    scores = vectors @ center
+    order = sorted(range(len(candidates)), key=lambda i: (-scores[i], candidates[i][0]))
+    return [candidates[i][0] for i in order[:limit]]
+
+
+def select_three(candidates: list[tuple[str, str, list[float]]]) -> list[str]:
+    """Original ranking helper; production selection now uses the AI candidate pool."""
+    return selection_candidates(candidates, 3)

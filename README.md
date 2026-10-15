@@ -6,11 +6,11 @@ PR TIMESの原資料から比較記事を作り、1本ずつ検証する7段階�
 2. PR TIMES企業IDごとに公開日時が最新の1記事を選択。
 3. 選択した記事のタイトル・本文から埋め込みを計算。
 4. UMAP → HDBSCANでクラスタリング。
-5. 各クラスター内で、元の埋め込みベクトルの重心に近い3記事を選択（AIは使用しない）。
-6. 3資料全文から指定書式の比較記事を生成。
+5. 各クラスターの元ベクトルの重心に近い最大30記事をGPT-4.1へ渡し、本命・予備の3記事組を最大2組選択。
+6. 本命3資料全文をGPT 6.1 Solで判定し、APPROPRIATEなら記事生成。INAPPROPRIATEなら予備があるときだけ予備で試行。
 7. 別モデルが比較記事1本・3資料全文・生成時のモデル指示を個別検証。不備があれば同じ生成モデルで1回だけ修正し、再検証の結果を最終結果とする。
 
-生成本文が「比較不適（公開不可）」の場合は、評価・修正を呼ばず即座に最終不適とします。この場合の点数は未採点（null）です。再検証で不備が残っても修正を繰り返しません。
+生成時にAPPROPRIATEになった記事は必ず別モデルで独立検証・採点します。生成不適の組には記事本文を作らず、理由を保存し採点はnullです。選定不可、生成時の自己判定、独立検証の最終採否を区別します。検証不適・要確認は同じ3資料で1回だけ修正・再検証し、予備への切り替えは初回本命の生成不適の場合だけです。再検証で不備が残っても修正を繰り返しません。
 
 [新設計と最小DBスキーマ](docs/seven-stage-system-design-20261015.md)が現行の仕様です。
 実装を始める前に `python maintenance/check_environment.py` を実行してください。環境準備・データ移行は[専用手順](maintenance/setup-and-migration.md)に分離しています。
@@ -27,18 +27,27 @@ news-weave --database sqlite:///.local/pipeline-v2.sqlite list
 news-weave --database sqlite:///.local/pipeline-v2.sqlite export <run_id> --output .local/results
 ```
 
-collectは公開記事のGET、runは埋め込み・生成・検証のAPIを実行します。3記事の選択はローカルで計算します。
+collectは公開記事のGET、runは埋め込み・選定・生成・検証のAPIを実行します。選定の入力を最大30記事に絞る順位はローカルで計算し、その全文からAIが本命・予備を選びます。
 .envは自動読込しません。AI_API_KEY（またはOPENAI_API_KEY）とPIPELINE_DATABASE_URLは実行環境へ設定します。
 生成と検証に同じモデルを指定することはできません。
 
 取得済みHTMLは、url・htmlを持つJSON配列からimport-htmlで読み込めます。
 中断した実行はresume <run_id>で再開できます。完了済みの同一実行の処理は繰り返しません。
 修正要求は送信前に記録します。応答を保存できなかった場合は停止し、resumeでも修正要求を再送しません。修正版を保存済みなら再検証から再開します。
-新しいrunでは②で選び直し、③で埋め込みを計算します。実行間の埋め込みキャッシュはありません。
+新しいrunでは②で選び直し、③で埋め込みを計算します。実行間の埋め込みキャッシュはありません。選定モデルと3指示も実行開始時に固定し、保存済みの選定・生成を再開時に呼び直しません。
+
+既定のモデルは選定`gpt-4.1-2025-04-14`、生成`gpt-6.1-sol`、検証`gpt-4.1-2025-04-14`です。`run --selection-model ... --selection-candidate-limit 30 --generation-model ... --verification-model ...`で設定できます。候補上限は3〜30に限定します。
+
+既存DBはカラム構成が変わるため、そのまま更新せず保持します。新しい接続先に原資料だけを移す場合は、次の明示的な移行を使います。過去の実行・記事・判定は元DBに残ります。
+
+```powershell
+python -m maintenance.migrate_ai_selection --source .local/pipeline-v2.sqlite --database sqlite:///.local/pipeline-ai-selection.sqlite
+news-weave --database sqlite:///.local/pipeline-ai-selection.sqlite run
+```
 
 ## DBとDocker
 
-DBはarticles・runs・run_articles・comparisons・drafts・verificationsの6テーブルです。
+DBはarticles・runs・run_articles・comparisons・drafts・verificationsの6テーブルです。comparisonsに候補・本命・予備・選定応答、draftsに本命/予備と生成判定・理由を保持します。
 SQLiteでもPostgreSQLでも同じ構造を使います。[PostgreSQL DDL](schema/pipeline.sql)を同梱します。
 既存のDBスキーマが一致しない場合は初期化を拒否します。
 

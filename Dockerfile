@@ -15,6 +15,7 @@ FROM base AS test
 USER root
 RUN pip install --no-cache-dir ".[dev]"
 COPY tests ./tests
+COPY maintenance/migrate_ai_selection.py ./maintenance/
 USER 10001:10001
 CMD ["pytest", "-p", "no:cacheprovider"]
 FROM base AS runtime
